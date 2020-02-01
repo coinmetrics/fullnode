@@ -1,4 +1,5 @@
 { nixpkgs ? import <nixpkgs> {}
+, imageBaseName ? "coinmetrics/fullnode"
 }:
 let
   fullnodes = {
@@ -10,7 +11,7 @@ let
     pkgs = nixpkgs;
     inherit version;
   }).image {
-    name = "coinmetrics/fullnode";
+    name = imageBaseName;
     tag = "${fullnode}-${version}";
   };
 
@@ -31,7 +32,16 @@ let
 
   allImagesList = builtins.attrValues allImages;
 
+  pushAllImagesScript = nixpkgs.writeScript "push-all-images" ''
+    #!${nixpkgs.stdenv.shell} -e
+
+    ${ builtins.concatStringsSep "" (map (image: ''
+      echo 'Pushing ${imageBaseName}:${image}...'
+      ${nixpkgs.skopeo}/bin/skopeo copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${allImages.${image}} docker://${imageBaseName}:${image}
+    '') (builtins.attrNames allImages)) }
+  '';
+
 in rec {
-  inherit images allImages allImagesList;
-  touch = allImages;
+  inherit images allImages allImagesList pushAllImagesScript;
+  touch = { inherit pushAllImagesScript; };
 }

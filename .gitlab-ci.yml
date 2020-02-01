@@ -1,0 +1,9 @@
+stages:
+- build
+
+images:
+  stage: build
+  script:
+  - nix-build --no-out-link -QA allImagesList ./release.nix
+  tags:
+  - coinmetrics-nix-build-runner

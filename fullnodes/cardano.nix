@@ -1,4 +1,4 @@
-{ pkgs, version }:
+{ nixpkgs, version }:
 rec {
   repo = import (builtins.fetchGit {
     url = "https://gitlab.com/coinmetrics/fullnodes/forks/cardano-sl.git";
@@ -8,12 +8,12 @@ rec {
   explorer = repo.connectScripts.mainnet.explorer;
 
   image = { name, tag }:
-    pkgs.dockerTools.buildImage {
+    nixpkgs.dockerTools.buildImage {
       inherit name tag;
-      contents = [ pkgs.iana-etc ];
+      contents = [ nixpkgs.iana-etc ];
       config = {
         Entrypoint = [ "${explorer}" ];
-        Env = [ "PATH=${pkgs.busybox}/bin" ];
+        Env = [ "PATH=${nixpkgs.busybox}/bin" ];
         User = "1000:1000";
         WorkingDir = "/opt/data";
       };

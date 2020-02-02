@@ -7,8 +7,7 @@ rec {
 
   # image for fullnode version
   withVersion = { fullnode, version }: (fullnodes.${fullnode} {
-    pkgs = nixpkgs;
-    inherit version;
+    inherit nixpkgs version;
   }).image {
     name = imageBaseName;
     tag = "${fullnode}-${version}";

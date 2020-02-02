@@ -1,23 +1,27 @@
 # Unofficial fullnode images
 
-This is unofficial fullnode images of various blockchains by Coin Metrics.
+This repo contain scripts to build fullnode images of various blockchains by Coin Metrics.
 
 These images are being used internally at Coin Metrics, and are published in the hope they will be useful, but without any warranty.
 No support is available. You are using them at your own risk.
 
 This repository is **new**, **experimental**, and **work in progress**. If you want more stable experience, please consider the [Fullnodes](https://gitlab.com/coinmetrics/fullnodes) group of repositories by Coin Metrics, which are still updated.
 
-Distinctive features of images:
+## Features
 
-* Built from sources, no official binaries used
-* [Nix](https://nixos.org/nix/)-based
-* Include very minimal set of dependencies, just enough to run the node
-* Rebuilt regularly with latest versions of dependencies
+* The scripts build fullnodes from source, rather than by packaging official binaries
+* [Nix](https://nixos.org/nix/) is used for building binaries and images
+* Images are very minimal and include only necessary packages to run a fullnode (Nix closure)
+
+## Images
 
 All images are pushed into a single Docker Hub repository [coinmetrics/fullnode](https://hub.docker.com/r/coinmetrics/fullnode), with tags formatted `<fullnode>-<version>`.
 
+The images are rebuilt regularly with latest versions of dependencies. Builds are performed on Coin Metrics infrastructure.
+
 ## Fullnodes
 
+* Bitcoin
 * Cardano
 
 ## License

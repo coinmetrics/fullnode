@@ -2,46 +2,27 @@
 , imageBaseName ? "coinmetrics/fullnode"
 }:
 let
-  fullnodes = {
-    cardano = import ./fullnodes/cardano.nix;
+  funcs = import ./default.nix {
+    inherit nixpkgs imageBaseName;
   };
-
-  # image for fullnode version
-  withVersion = { fullnode, version }: (fullnodes.${fullnode} {
-    pkgs = nixpkgs;
-    inherit version;
-  }).image {
-    name = imageBaseName;
-    tag = "${fullnode}-${version}";
-  };
-
-  # make a set with item per version
-  withVersions = fullnode: versions:
-    builtins.foldl' (m: version: m // { ${version} = withVersion { inherit fullnode version; }; }) {} versions;
 
   # versions to build
   fullnodeVersions = import ./versions.nix;
 
+  # set of sets: .<fullnode>.<version> = image
   images = builtins.foldl'
-    (m: fullnode: m // { ${fullnode} = withVersions fullnode fullnodeVersions.${fullnode}; })
+    (m: fullnode: m // { ${fullnode} = funcs.withVersions fullnode fullnodeVersions.${fullnode}; })
     {} (builtins.attrNames fullnodeVersions);
 
-  prependFullnode = fullnode: s: builtins.foldl' (m: n: m // { "${fullnode}-${n}" = s.${n}; }) {} (builtins.attrNames s);
-
-  allImages = builtins.foldl' (m: fullnode: m // (prependFullnode fullnode images.${fullnode})) {} (builtins.attrNames images);
-
+  # set of images: .<fullnode>-<version> = image
+  allImages = funcs.flattenImagesSet images;
+  # list of images
   allImagesList = builtins.attrValues allImages;
 
-  pushAllImagesScript = nixpkgs.writeScript "push-all-images" ''
-    #!${nixpkgs.stdenv.shell} -e
-
-    ${ builtins.concatStringsSep "" (map (image: ''
-      echo 'Pushing ${imageBaseName}:${image}...'
-      ${nixpkgs.skopeo}/bin/skopeo copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${allImages.${image}} docker://${imageBaseName}:${image}
-    '') (builtins.attrNames allImages)) }
-  '';
+  pushAllImagesScript = funcs.pushImagesScript allImages;
+  installAllImagesScript = funcs.installImagesScript allImages;
 
 in rec {
-  inherit images allImages allImagesList pushAllImagesScript;
+  inherit images allImages allImagesList pushAllImagesScript installAllImagesScript;
   touch = { inherit pushAllImagesScript; };
 }

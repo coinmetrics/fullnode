@@ -31,7 +31,7 @@ rec {
 
     ${ builtins.concatStringsSep "" (map (image: ''
       echo 'Pushing ${imageBaseName}:${image}...'
-      ${nixpkgs.skopeo}/bin/skopeo copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${imageBaseName}:${image}
+      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${imageBaseName}:${image}
     '') (builtins.attrNames images)) }
   '';
 
@@ -41,7 +41,7 @@ rec {
 
     ${ builtins.concatStringsSep "" (map (image: ''
       echo 'Installing ${imageBaseName}:${image}...'
-      ${nixpkgs.skopeo}/bin/skopeo copy docker-archive:${images.${image}} docker-daemon:${imageBaseName}:${image}
+      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy docker-archive:${images.${image}} docker-daemon:${imageBaseName}:${image}
     '') (builtins.attrNames images)) }
   '';
 }

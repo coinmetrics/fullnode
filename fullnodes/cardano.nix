@@ -7,15 +7,13 @@ rec {
 
   explorer = repo.connectScripts.mainnet.explorer;
 
-  image = { name, tag }:
-    nixpkgs.dockerTools.buildImage {
-      inherit name tag;
-      contents = [ nixpkgs.iana-etc ];
-      config = {
-        Entrypoint = [ "${explorer}" ];
-        Env = [ "PATH=${nixpkgs.busybox}/bin" ];
-        User = "1000:1000";
-        WorkingDir = "/opt/data";
-      };
+  imageConfig = {
+    contents = [ nixpkgs.iana-etc ];
+    config = {
+      Entrypoint = [ "${explorer}" ];
+      Env = [ "PATH=${nixpkgs.busybox}/bin" ];
+      User = "1000:1000";
+      WorkingDir = "/opt/data";
     };
+  };
 }

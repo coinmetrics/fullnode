@@ -23,12 +23,10 @@ rec {
     enableParallelBuilding = true;
   };
 
-  image = { name, tag }:
-    nixpkgs.dockerTools.buildImage {
-      inherit name tag;
-      config = {
-        Entrypoint = [ "${package}/bin/bitcoind" ];
-        User = "1000:1000";
-      };
+  imageConfig = {
+    config = {
+      Entrypoint = [ "${package}/bin/bitcoind" ];
+      User = "1000:1000";
     };
+  };
 }

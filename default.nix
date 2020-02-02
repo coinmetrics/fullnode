@@ -7,12 +7,12 @@ rec {
   };
 
   # image for fullnode version
-  withVersion = { fullnode, version }: (fullnodes.${fullnode} {
-    inherit nixpkgs version;
-  }).image {
+  withVersion = { fullnode, version }: nixpkgs.dockerTools.buildImage ({
     name = imageBaseName;
     tag = "${fullnode}-${version}";
-  };
+  } // (fullnodes.${fullnode} {
+    inherit nixpkgs version;
+  }).imageConfig);
 
   # make a set with item per version
   withVersions = fullnode: versions:

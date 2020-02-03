@@ -22,6 +22,9 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 ## Fullnodes
 
 * Bitcoin
+* Bitcoin ABC
+* Bitcoin Gold
+* Bitcoin SV
 * Cardano
 
 ## License

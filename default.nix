@@ -3,6 +3,7 @@ rec {
   # all fullnodes
   fullnodes = {
     bitcoin = import ./fullnodes/bitcoin.nix;
+    bitcoin-abc = import ./fullnodes/bitcoin-abc.nix;
     cardano = import ./fullnodes/cardano.nix;
   };
 

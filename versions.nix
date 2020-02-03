@@ -1,3 +1,4 @@
+# order matters: last item in every list becomes "latest" tag
 {
   bitcoin = [
     "0.19.0.1"

@@ -19,7 +19,12 @@ rec {
 
   # make a set with item per version
   withVersions = fullnode: versions:
-    builtins.foldl' (m: version: m // { ${version} = withVersion { inherit fullnode version; }; }) {} versions;
+    builtins.foldl' (m: version: m // { ${version} = withVersion { inherit fullnode version; }; }) {
+      latest = withVersion {
+        inherit fullnode;
+        version = nixpkgs.lib.last versions;
+      };
+    } versions;
 
   # convert set of sets of images to set of versioned images
   # { <fullnode> = { <version> = <image>; }; }   =>   { <fullnode>-<version> = <image>; }

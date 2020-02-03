@@ -1,11 +1,21 @@
-{ nixpkgs, version }:
+{ nixpkgs, version, fork ? false }:
 rec {
-  repo = import (builtins.fetchGit {
-    url = "https://gitlab.com/coinmetrics/fullnodes/forks/cardano-sl.git";
-    ref = "${version}";
-  }) {};
+  repo = builtins.fetchGit {
+    url = "https://github.com/input-output-hk/cardano-sl.git";
+    ref = version;
+  };
 
-  explorer = repo.connectScripts.mainnet.explorer;
+  src = if fork
+    then nixpkgs.applyPatches {
+      src = repo;
+      name = "cardano-repo-forked";
+      patches = [
+        ./cardano/expose_inputs.patch
+      ];
+    }
+    else repo;
+
+  explorer = (import src {}).connectScripts.mainnet.explorer;
 
   imageConfig = {
     contents = [ nixpkgs.iana-etc ];

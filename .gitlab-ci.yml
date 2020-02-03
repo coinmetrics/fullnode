@@ -4,7 +4,7 @@ stages:
 images:
   stage: build
   script:
-  - export PUSH_IMAGES_SCRIPT=$(nix-build --no-out-link -QA pushAllImagesScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+  - PUSH_IMAGES_SCRIPT=$(nix-build --no-out-link -QA pushAllImagesScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
   - |
     if [ -n "${DOCKER_USERNAME}" ] && [ -n "${DOCKER_PASSWORD}" ]
     then

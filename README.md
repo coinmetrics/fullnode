@@ -1,6 +1,6 @@
 # Unofficial fullnode images
 
-This repo contain scripts to build fullnode images of various blockchains by Coin Metrics.
+This repo contains scripts to build fullnode images of various blockchains by Coin Metrics.
 
 These images are being used internally at Coin Metrics, and are published in the hope they will be useful, but without any warranty.
 No support is available. You are using them at your own risk.
@@ -12,6 +12,13 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 * The scripts build fullnodes from source, rather than by packaging official binaries
 * [Nix](https://nixos.org/nix/) is used for building binaries and images
 * Images are very minimal and include only necessary packages to run a fullnode (Nix closure)
+
+## Changes to source code
+
+Scripts use original source code downloads for building software, but may also apply additional patches to fix known issues in blockchain software in a backward-compatible way, before new official release is made.
+Such patches are placed in `fullnodes/<specific fullnode>` directories.
+
+Coin Metrics also maintains patches which may break compatibility with vanilla fullnodes, adding features necessary for Coin Metrics purposes. Docker images built with use of those patches contain `cmfork` in their image tag, to differentiate from vanilla images. Patches are placed in the same directories.
 
 ## Images
 

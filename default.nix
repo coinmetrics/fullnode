@@ -7,7 +7,7 @@ rec {
     bitcoin-gold = import ./fullnodes/bitcoin-gold.nix;
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     cardano = import ./fullnodes/cardano.nix;
-    cardano-fork = args: import ./fullnodes/cardano.nix (args // { fork = true; });
+    cardano-cmfork = args: import ./fullnodes/cardano.nix (args // { cmfork = true; });
   };
 
   # image for fullnode version

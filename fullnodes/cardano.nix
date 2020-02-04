@@ -1,16 +1,16 @@
-{ nixpkgs, version, fork ? false }:
+{ nixpkgs, version, cmfork ? false }:
 rec {
   repo = builtins.fetchGit {
     url = "https://github.com/input-output-hk/cardano-sl.git";
     ref = version;
   };
 
-  src = if fork
+  src = if cmfork
     then nixpkgs.applyPatches {
       src = repo;
-      name = "cardano-repo-forked";
+      name = "cardano-repo-cmfork";
       patches = [
-        ./cardano/expose_inputs.patch
+        ./cardano/cmfork_expose_inputs.patch
       ];
     }
     else repo;

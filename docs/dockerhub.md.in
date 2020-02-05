@@ -15,5 +15,13 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 * Rebuilt regularly with latest versions of dependencies
 * Intended for analytical purposes. Optional features like wallet/GUI are excluded
 
-## Tags
+## Builds & tags
+
+This section is updated automatically on every rebuild.
+
+Source code: https://github.com/coinmetrics-io/fullnode
+Commit: ${CI_COMMIT_SHA}
+NIX_PATH: ${NIX_PATH}
+
+Tags:
 

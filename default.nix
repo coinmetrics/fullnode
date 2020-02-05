@@ -73,7 +73,7 @@ rec {
     '') images) }
   '';
 
-  updateDockerHubDescriptionScript = description: nixpkgs.writeScript "update-docker-hub-desc" ''
+  updateDockerHubDescriptionScript = descriptionScript: nixpkgs.writeScript "update-docker-hub-desc" ''
     #!${nixpkgs.stdenv.shell} -e
 
     echo 'Logging into Docker Hub...'
@@ -83,7 +83,7 @@ rec {
 
     echo 'Updating ${imageBaseName} description...'
     ${nixpkgs.curl}/bin/curl --fail -H "Authorization: JWT ''${TOKEN}" \
-      -X PATCH --data-urlencode full_description@${description} \
+      -X PATCH --data-urlencode full_description@<(${descriptionScript}) \
       https://hub.docker.com/v2/repositories/${imageBaseName}/
   '';
 }

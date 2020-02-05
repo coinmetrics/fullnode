@@ -25,7 +25,7 @@ let
   dockerHubDescriptionScript = nixpkgs.writeScript "docker-hub-desc" ''
     #!${nixpkgs.stdenv.shell} -e
 
-    envsubst < ${./docs/dockerhub.md.in}
+    ${nixpkgs.envsubst}/bin/envsubst < ${./docs/dockerhub.md.in}
     cat ${funcs.docImagesMarkdown images}
   '';
   updateDockerHubDescriptionScript = funcs.updateDockerHubDescriptionScript dockerHubDescriptionScript;

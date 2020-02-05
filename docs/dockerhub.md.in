@@ -19,9 +19,11 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 
 This section is updated automatically on every rebuild.
 
-Source code: https://github.com/coinmetrics-io/fullnode
-Commit: ${CI_COMMIT_SHA}
-NIX_PATH: ${NIX_PATH}
+Build scripts source repo: https://github.com/coinmetrics-io/fullnode
 
-Tags:
+The repo's commit: `${CI_COMMIT_SHA}`
+
+NIX_PATH: `${NIX_PATH}`
+
+### Tags
 

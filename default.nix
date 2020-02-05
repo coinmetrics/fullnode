@@ -8,6 +8,7 @@ rec {
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     cardano = import ./fullnodes/cardano.nix;
     cardano-cmfork = args: import ./fullnodes/cardano.nix (args // { cmfork = true; });
+    ethereum-parity = import ./fullnodes/ethereum-parity.nix;
   };
 
   # image for fullnode version

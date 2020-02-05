@@ -23,4 +23,8 @@ rec {
     "3.2.0"
   ];
   cardano-cmfork = cardano;
+  ethereum-parity = [
+    "2.6.8"
+    "2.5.13"
+  ];
 }

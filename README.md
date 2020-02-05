@@ -33,6 +33,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Bitcoin Gold
 * Bitcoin SV
 * Cardano
+* Ethereum Parity
 
 ## License
 

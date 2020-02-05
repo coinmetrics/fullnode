@@ -54,4 +54,36 @@ rec {
       ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy docker-archive:${images.${image}} docker-daemon:${imageBaseName}:${image}
     '') (builtins.attrNames images)) }
   '';
+
+  docImagesMarkdown = images: nixpkgs.writeText "docImagesMarkdown" ''
+    ${ builtins.concatStringsSep "" (nixpkgs.lib.mapAttrsToList (fullnode: imagesByVersion: let
+      # [ { image = version; }... ]
+      versionsWithImage = nixpkgs.lib.mapAttrsToList (version: image: { ${builtins.unsafeDiscardStringContext image} = version; }) imagesByVersion;
+      # [ [ version... ]... ]
+      versionGroups =
+        builtins.sort (v1: v2: builtins.compareVersions (nixpkgs.lib.last v1) (nixpkgs.lib.last v2) > 0)
+        (nixpkgs.lib.mapAttrsToList
+          (image: versions: builtins.sort (v1: v2: builtins.compareVersions v1 v2 < 0) versions)
+          (nixpkgs.lib.foldAttrs (e: l: [e] ++ l) [] versionsWithImage)
+        );
+
+    in ''
+      **${fullnode}**: ${ builtins.concatStringsSep "; " (map (versions: builtins.concatStringsSep " = " (map (version: "`${fullnode}-${version}`") versions)) versionGroups) }
+
+    '') images) }
+  '';
+
+  updateDockerHubDescriptionScript = description: nixpkgs.writeScript "update-docker-hub-desc" ''
+    #!${nixpkgs.stdenv.shell} -e
+
+    echo 'Logging into Docker Hub...'
+    TOKEN=$(${nixpkgs.curl}/bin/curl --fail -H 'Content-Type: application/json' \
+      -d "{\"username\":\"''${DOCKERHUB_USERNAME}\",\"password\":\"''${DOCKERHUB_PASSWORD}\"}" \
+      https://hub.docker.com/v2/users/login/ | ${nixpkgs.jq}/bin/jq -r .token)
+
+    echo 'Updating ${imageBaseName} description...'
+    ${nixpkgs.curl}/bin/curl --fail -H "Authorization: JWT ''${TOKEN}" \
+      -X PATCH --data-urlencode full_description@${description} \
+      https://hub.docker.com/v2/repositories/${imageBaseName}/
+  '';
 }

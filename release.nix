@@ -22,7 +22,19 @@ let
   pushAllImagesScript = funcs.pushImagesScript allImages;
   installAllImagesScript = funcs.installImagesScript allImages;
 
+  dockerHubDescription = nixpkgs.writeText "docker-hub-desc.md"
+    "${builtins.readFile ./docs/dockerhub.md.in}${builtins.readFile (funcs.docImagesMarkdown images)}";
+  updateDockerHubDescriptionScript = funcs.updateDockerHubDescriptionScript dockerHubDescription;
+
+  updateDockerHubScript = nixpkgs.writeScript "update-docker-hub" ''
+    #!${nixpkgs.stdenv.shell} -e
+
+    ${pushAllImagesScript}
+    ${updateDockerHubDescriptionScript}
+  '';
+
 in rec {
-  inherit images allImages allImagesList pushAllImagesScript installAllImagesScript;
-  touch = { inherit pushAllImagesScript; };
+  inherit images allImages allImagesList pushAllImagesScript installAllImagesScript
+    dockerHubDescription updateDockerHubDescriptionScript updateDockerHubScript;
+  touch = { inherit updateDockerHubScript; };
 }

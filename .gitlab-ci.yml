@@ -4,11 +4,11 @@ stages:
 images:
   stage: build
   script:
-  - PUSH_IMAGES_SCRIPT=$(nix-build --no-out-link -QA pushAllImagesScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+  - UPDATE_DOCKERHUB_SCRIPT=$(nix-build --no-out-link -QA updateDockerHubScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
   - |
-    if [ -n "${DOCKER_USERNAME}" ] && [ -n "${DOCKER_PASSWORD}" ]
+    if [ -n "${DOCKER_USERNAME}" ] && [ -n "${DOCKER_PASSWORD}" ] && [ -n "${DOCKERHUB_USERNAME}" ] && [ -n "${DOCKERHUB_PASSWORD}" ]
     then
-      $PUSH_IMAGES_SCRIPT
+      $UPDATE_DOCKERHUB_SCRIPT
     fi
   tags:
   - coinmetrics-nix-build-runner

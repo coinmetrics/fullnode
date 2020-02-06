@@ -24,8 +24,8 @@ rec {
   ];
   cardano-cmfork = cardano;
   elements = [
-    "0.18.1.4"
     "0.18.1.3"
+    "0.18.1.4"
   ];
   ethereum-parity = [
     "2.6.8"

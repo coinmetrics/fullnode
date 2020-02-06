@@ -2,7 +2,7 @@
 rec {
   repo = builtins.fetchGit {
     url = "https://github.com/input-output-hk/cardano-sl.git";
-    ref = version;
+    ref = "refs/tags/${version}";
   };
 
   src = if cmfork

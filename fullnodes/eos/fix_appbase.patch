@@ -1,0 +1,19 @@
+--- a/libraries/appbase/CMakeLists.txt
++++ b/libraries/appbase/CMakeLists.txt
+@@ -44,7 +44,7 @@ endif()
+ 
+ add_library( appbase
+              application.cpp
+-             version.cpp
++             ${CMAKE_CURRENT_BINARY_DIR}/version.cpp
+              ${HEADERS}
+            )
+ 
+@@ -61,7 +61,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_FOUND)
+   add_custom_target(appbase_version ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/version.cmake BYPRODUCTS version.cpp)
+   add_dependencies(appbase appbase_version)
+ else()
+-  set(VERSION_STRING "Unknown")
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/version.cpp @ONLY ESCAPE_QUOTES)
+ endif()
+ 

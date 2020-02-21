@@ -4,7 +4,7 @@ rec {
     pname = "ethereum-parity";
     inherit version;
     cargoSha256 = {
-      "2.5.13" = "16nf6y0hyffwdhxn1w4ms4zycs5lkzir8sj6c2lgsabig057hb6z";
+      "2.5.13" = "0v942qap7pbmwnhra58xjyynws5b3rknv85mri53db7wha6c6ng7";
       "2.6.8" = "1kxvwi63v3rilavm29y8xz1hyg7xpd502p57260zdfx8055xfibx";
       "2.7.2" = "164sv7xs8qgpxf978dqb343w607y6dlbc2bzn1ma45d0pz0k0n7k";
     }.${version};

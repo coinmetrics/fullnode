@@ -4,7 +4,16 @@ rec {
     pname = "omnicore";
     inherit version;
 
-    src = builtins.fetchGit {
+    # temp hack for pre-release version
+    src = if version == "0.8.0-develop"
+      then
+    builtins.fetchGit {
+      url = "https://github.com/OmniLayer/omnicore.git";
+      ref = "develop";
+      rev = "70fe939da40a67f8ab056e64f0e7ba67f6cdd0f9";
+    }
+      else
+    builtins.fetchGit {
       url = "https://github.com/OmniLayer/omnicore.git";
       ref = "refs/tags/v${version}";
     };

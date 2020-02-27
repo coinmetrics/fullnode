@@ -35,6 +35,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Cardano
 * Elements
 * Ethereum Parity
+* OmniCore
 
 ## License
 

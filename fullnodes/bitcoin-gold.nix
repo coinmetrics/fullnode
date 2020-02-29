@@ -4,7 +4,10 @@ rec {
     pname = "bitcoin-gold";
     inherit version;
 
-    src = builtins.fetchTarball "https://github.com/BTCGPU/BTCGPU/releases/download/v${version}/bitcoin-gold-${version}.tar.gz";
+    src = builtins.fetchGit {
+      url = "https://github.com/BTCGPU/BTCGPU.git";
+      ref = "refs/tags/v${version}";
+    };
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 

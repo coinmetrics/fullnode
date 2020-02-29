@@ -14,6 +14,7 @@ rec {
   ];
   bitcoin-gold = [
     "0.15.2"
+    "0.17.1"
   ];
   bitcoin-sv = [
     "1.0.0"

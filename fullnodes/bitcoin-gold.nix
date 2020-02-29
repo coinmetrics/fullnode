@@ -11,7 +11,7 @@ rec {
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl libsodium ];
+    buildInputs = [ boost libevent openssl libsodium libb2 ];
 
     configureFlags = [
       "--with-boost-libdir=${boost.out}/lib"

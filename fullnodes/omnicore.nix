@@ -12,12 +12,11 @@ rec {
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl ];
+    buildInputs = [ boost libevent openssl db48 ];
 
     configureFlags = [
       "--with-boost-libdir=${boost.out}/lib"
       "--disable-shared"
-      "--disable-wallet"
       "--disable-bench"
       "--disable-tests"
     ];

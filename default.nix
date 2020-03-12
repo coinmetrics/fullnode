@@ -10,6 +10,7 @@ rec {
     cardano-cmfork = args: import ./fullnodes/cardano.nix (args // { cmfork = true; });
     elements = import ./fullnodes/elements.nix;
     ethereum-parity = import ./fullnodes/ethereum-parity.nix;
+    grin = import ./fullnodes/grin.nix;
     omnicore = import ./fullnodes/omnicore.nix;
   };
 

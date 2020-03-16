@@ -12,6 +12,7 @@ rec {
     ethereum-parity = import ./fullnodes/ethereum-parity.nix;
     grin = import ./fullnodes/grin.nix;
     omnicore = import ./fullnodes/omnicore.nix;
+    ripple = import ./fullnodes/ripple.nix;
   };
 
   # image for fullnode version

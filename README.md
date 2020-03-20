@@ -36,6 +36,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Elements
 * Ethereum Parity
 * Grin
+* Monero
 * OmniCore
 * Ripple
 

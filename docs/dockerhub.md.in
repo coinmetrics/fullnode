@@ -5,7 +5,7 @@ This is unofficial fullnode images of various blockchains by Coin Metrics.
 These images are being used internally at Coin Metrics, and are published in the hope they will be useful, but without any warranty.
 No support is available. You are using them at your own risk.
 
-This repository is **new**, **experimental**, and **work in progress**. If you want more stable experience, please consider the [Fullnodes](https://gitlab.com/coinmetrics/fullnodes) group of repositories by Coin Metrics, which are still updated.
+This repository is **new**, **experimental**, and **work in progress**. If you want more stable experience, please consider the [Fullnodes](https://gitlab.com/coinmetrics/fullnodes) group of repositories by Coin Metrics, which is still maintained.
 
 ## Features
 
@@ -15,15 +15,17 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 * Rebuilt regularly with latest versions of dependencies
 * Intended for analytical purposes. Optional features like wallet/GUI are excluded
 
-## Builds & tags
+## Source
 
-This section is updated automatically on every rebuild.
+Build scripts repo: https://github.com/coinmetrics-io/fullnode
 
-Build scripts source repo: https://github.com/coinmetrics-io/fullnode
+## Building locally
 
-The repo's commit: `${CI_COMMIT_SHA}`
+The following command will build and install into local Docker the exact same images:
 
-NIX_PATH: `${NIX_PATH}`
+```bash
+sudo $(NIX_PATH=${NIX_PATH} nix-build --no-out-link -QE '(import "$${builtins.fetchGit { url = "https://github.com/coinmetrics-io/fullnode.git"; rev = "${CI_COMMIT_SHA}"; }}/release.nix" {}).installAllImagesScript')
+```
 
 ### Tags
 

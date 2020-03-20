@@ -11,6 +11,7 @@ rec {
     elements = import ./fullnodes/elements.nix;
     ethereum-parity = import ./fullnodes/ethereum-parity.nix;
     grin = import ./fullnodes/grin.nix;
+    monero = import ./fullnodes/monero.nix;
     omnicore = import ./fullnodes/omnicore.nix;
     ripple = import ./fullnodes/ripple.nix;
   };

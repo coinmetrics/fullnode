@@ -32,6 +32,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Bitcoin ABC
 * Bitcoin Gold
 * Bitcoin SV
+* Bitcoin ZMCE (CoinMetrics fork)
 * Cardano
 * Elements
 * Ethereum Parity

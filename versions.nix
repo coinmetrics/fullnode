@@ -21,6 +21,10 @@ rec {
     "1.0.1"
     "1.0.2"
   ];
+  # Bitcoin Core fork by CoinMetrics with additional ZMQ publishers for Mempool and Chain events.
+  bitcoin-zmce = [
+    "0.19.1"
+  ];
   cardano = [
     "3.0.3"
     "3.1.0"

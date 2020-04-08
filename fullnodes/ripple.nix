@@ -2,7 +2,7 @@
 with nixpkgs; rec {
   package = {
     "1.4.0" = callPackage ./ripple/ripple-1.4.0.nix {
-      boost = boost17x;
+      boost = boost171;
     };
   }.${version};
 

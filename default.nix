@@ -15,6 +15,7 @@ rec {
     monero = import ./fullnodes/monero.nix;
     omnicore = import ./fullnodes/omnicore.nix;
     ripple = import ./fullnodes/ripple.nix;
+    vertcoin = import ./fullnodes/vertcoin.nix;
   };
 
   # image for fullnode version

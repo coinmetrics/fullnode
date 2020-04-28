@@ -20,6 +20,7 @@ rec {
     "1.0.0"
     "1.0.1"
     "1.0.2"
+    "1.0.3"
   ];
   # Bitcoin Core fork by CoinMetrics with additional ZMQ publishers for Mempool and Chain events.
   bitcoin-zmce = [

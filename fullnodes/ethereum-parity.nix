@@ -7,6 +7,7 @@ rec {
       "2.5.13" = "0v942qap7pbmwnhra58xjyynws5b3rknv85mri53db7wha6c6ng7";
       "2.6.8" = "1kxvwi63v3rilavm29y8xz1hyg7xpd502p57260zdfx8055xfibx";
       "2.7.2" = "04633m5kcqqadbzgqc30c1ww7y5hbfzyzfn3gxp8r6g6dih2x76m";
+      "3.0.0" = "1jx14aj4mws3dk8hmgwzj5c9giga2arlnzs8bcsrmvv3c576qn66";
     }.${version};
     src = builtins.fetchGit {
       url = "https://github.com/openethereum/openethereum.git";
@@ -26,7 +27,7 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint = [ "${package}/bin/parity" ];
+      Entrypoint = [ "${package}/bin/${ if builtins.compareVersions version "3.0.0" < 0 then "parity" else "openethereum" }" ];
       User = "1000:1000";
     };
   };

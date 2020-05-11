@@ -9,7 +9,7 @@ rec {
       "2.7.2" = "04633m5kcqqadbzgqc30c1ww7y5hbfzyzfn3gxp8r6g6dih2x76m";
     }.${version};
     src = builtins.fetchGit {
-      url = "https://github.com/paritytech/parity-ethereum.git";
+      url = "https://github.com/openethereum/openethereum.git";
       ref = "refs/tags/v${version}";
     };
 

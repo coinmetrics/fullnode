@@ -1,22 +1,38 @@
 { nixpkgs, version }:
 rec {
+  useCmakeBuild = builtins.compareVersions version "0.21.6" >= 0;
+
   package = with nixpkgs; stdenv.mkDerivation rec {
     pname = "bitcoin-abc";
     inherit version;
 
     src = builtins.fetchTarball "https://download.bitcoinabc.org/${version}/src/bitcoin-abc-${version}.tar.gz";
 
-    nativeBuildInputs = [ pkgconfig autoreconfHook ];
+    nativeBuildInputs = if useCmakeBuild
+      then [ pkgconfig cmake python3 ]
+      else [ pkgconfig autoreconfHook ];
 
     buildInputs = [ boost libevent openssl ];
 
-    configureFlags = [
+    configureFlags = lib.optionals (!useCmakeBuild) [
       "--with-boost-libdir=${boost.out}/lib"
       "--disable-shared"
       "--disable-wallet"
       "--disable-bench"
       "--disable-tests"
     ];
+
+    cmakeFlags = lib.optionals useCmakeBuild [
+      "-DBUILD_BITCOIN_WALLET=OFF"
+      "-DBUILD_BITCOIN_QT=OFF"
+      "-DBUILD_BITCOIN_ZMQ=OFF"
+      "-DENABLE_UPNP=OFF"
+    ];
+    postConfigure = ''
+      # not sure why it's broken
+      find . -name 'build_native_*.sh' -exec chmod +x {} +
+      find . -name 'run_native_*.sh' -exec chmod +x {} +
+    '';
 
     doCheck = false;
 

@@ -26,6 +26,9 @@ rec {
   bitcoin-zmce = [
     "0.20.0"
   ];
+  cardano = [
+    "1.14.2"
+  ];
   coregeth = [
     "1.11.10"
     "1.11.11"

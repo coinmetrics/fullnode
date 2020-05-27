@@ -35,7 +35,6 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Bitcoin ZMCE (CoinMetrics fork)
 * Cardano
 * Elements
-* EOS
 * Ethereum Parity
 * Grin
 * Monero

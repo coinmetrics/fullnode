@@ -1,13 +1,13 @@
 { nixpkgs, version }:
 rec {
   package = with nixpkgs; rustPlatform.buildRustPackage {
-    pname = "ethereum-parity";
+    pname = "ethereum";
     inherit version;
     cargoSha256 = {
-      "2.5.13" = "0v942qap7pbmwnhra58xjyynws5b3rknv85mri53db7wha6c6ng7";
-      "2.6.8" = "1kxvwi63v3rilavm29y8xz1hyg7xpd502p57260zdfx8055xfibx";
-      "2.7.2" = "04633m5kcqqadbzgqc30c1ww7y5hbfzyzfn3gxp8r6g6dih2x76m";
-      "3.0.0" = "1jx14aj4mws3dk8hmgwzj5c9giga2arlnzs8bcsrmvv3c576qn66";
+      "2.5.13" = "0kgc67r0i2i7nql8jrmsyjvky1rzcqgr6ayaxxqxkia1wjzajwya";
+      "2.6.8" = "0l89fa44rkphjibaiglvgcsk6n9gqhzf3sqs0af78jxw9ya8pchm";
+      "2.7.2" = "1mfi8rh6gbdgq7gdxwdpnr53dd5cxavmy8w12b9nvbxc8lpwf832";
+      "3.0.0" = "1y5kq1kmzlrax02x40wiyq4g714jl8vbfgyzaya7mybci7qy0cz2";
     }.${version};
     src = builtins.fetchGit {
       url = "https://github.com/openethereum/openethereum.git";

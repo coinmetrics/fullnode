@@ -35,7 +35,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Bitcoin ZMCE (CoinMetrics fork)
 * Cardano
 * Elements
-* Ethereum Parity
+* Ethereum
 * Grin
 * Monero
 * OmniCore
@@ -59,4 +59,4 @@ For most of the fullnodes it is enough to add an appropriate line to `versions.n
 
 Some fullnodes are special cases.
 
-* Rust-based nodes (Ethereum Parity): due to a sad state of Rust support in Nix, hashes of resulting packages must be hardcoded into corresponding `.nix` file, per version, for `cargoSha256` argument. [The official way to calculate hash](https://nixos.org/nixpkgs/manual/#compiling-rust-applications-with-cargo) is to try to compile it with fake hash, and then take the correct hash from error message in the build log.
+* Rust-based nodes (Ethereum): due to a sad state of Rust support in Nix, hashes of resulting packages must be hardcoded into corresponding `.nix` file, per version, for `cargoSha256` argument. [The official way to calculate hash](https://nixos.org/nixpkgs/manual/#compiling-rust-applications-with-cargo) is to try to compile it with fake hash, and then take the correct hash from error message in the build log.

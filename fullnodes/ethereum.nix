@@ -16,6 +16,7 @@ rec {
     };
 
     cargoPatches = {
+      "2.5.13" = [./ethereum/2.5.13.patch];
       "3.0.1" = [./ethereum/3.0.1.patch];
     }.${version} or [];
 

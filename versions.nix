@@ -1,10 +1,10 @@
 # order matters: last item in every list becomes "latest" tag
 rec {
   bitcoin = [
-    "0.18.0"
     "0.18.1"
     "0.19.0.1"
     "0.19.1"
+    "0.20.0"
   ];
   bitcoin-abc = [
     "0.21.5"

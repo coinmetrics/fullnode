@@ -8,7 +8,7 @@ rec {
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl ];
+    buildInputs = [ boost libevent ] ++ lib.optional (builtins.compareVersions version "0.20.0" < 0) openssl;
 
     configureFlags = [
       "--with-boost-libdir=${boost.out}/lib"

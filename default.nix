@@ -12,6 +12,7 @@ rec {
     elements = import ./fullnodes/elements.nix;
     ethereum = import ./fullnodes/ethereum.nix;
     grin = import ./fullnodes/grin.nix;
+    litecoin = import ./fullnodes/litecoin.nix;
     monero = import ./fullnodes/monero.nix;
     omnicore = import ./fullnodes/omnicore.nix;
     pivx = import ./fullnodes/pivx.nix;

@@ -12,7 +12,7 @@ rec {
       then [ pkgconfig cmake python3 ]
       else [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl ];
+    buildInputs = [ boost libevent openssl jemalloc ];
 
     configureFlags = lib.optionals (!useCmakeBuild) [
       "--with-boost-libdir=${boost.out}/lib"

@@ -25,12 +25,6 @@ rec {
   bitcoin-zmce = [
     "0.20.0"
   ];
-  cardano = [
-    "3.0.3"
-    "3.1.0"
-    "3.2.0"
-  ];
-  cardano-cmfork = cardano;
   elements = [
     "0.18.1.3"
     "0.18.1.4"

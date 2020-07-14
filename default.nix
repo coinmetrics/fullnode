@@ -7,8 +7,6 @@ rec {
     bitcoin-gold = import ./fullnodes/bitcoin-gold.nix;
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     bitcoin-zmce = import ./fullnodes/bitcoin-zmce.nix;
-    cardano = import ./fullnodes/cardano.nix;
-    cardano-cmfork = args: import ./fullnodes/cardano.nix (args // { cmfork = true; });
     elements = import ./fullnodes/elements.nix;
     ethereum = import ./fullnodes/ethereum.nix;
     grin = import ./fullnodes/grin.nix;

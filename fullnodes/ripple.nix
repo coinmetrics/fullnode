@@ -4,6 +4,9 @@ with nixpkgs; rec {
     "1.4.0" = callPackage ./ripple/ripple-1.4.0.nix {
       boost = boost171;
     };
+    "1.5.0" = callPackage ./ripple/ripple-1.5.0.nix {
+      boost = boost171;
+    };
   }.${version};
 
   imageConfig = {

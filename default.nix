@@ -7,6 +7,7 @@ rec {
     bitcoin-gold = import ./fullnodes/bitcoin-gold.nix;
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     bitcoin-zmce = import ./fullnodes/bitcoin-zmce.nix;
+    coregeth = import ./fullnodes/coregeth.nix;
     elements = import ./fullnodes/elements.nix;
     openethereum = import ./fullnodes/openethereum.nix;
     grin = import ./fullnodes/grin.nix;

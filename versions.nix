@@ -26,6 +26,9 @@ rec {
   bitcoin-zmce = [
     "0.20.0"
   ];
+  coregeth = [
+    "1.11.9"
+  ];
   elements = [
     "0.18.1.3"
     "0.18.1.4"

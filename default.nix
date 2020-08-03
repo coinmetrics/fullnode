@@ -8,7 +8,7 @@ rec {
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     bitcoin-zmce = import ./fullnodes/bitcoin-zmce.nix;
     elements = import ./fullnodes/elements.nix;
-    ethereum = import ./fullnodes/ethereum.nix;
+    openethereum = import ./fullnodes/openethereum.nix;
     grin = import ./fullnodes/grin.nix;
     litecoin = import ./fullnodes/litecoin.nix;
     monero = import ./fullnodes/monero.nix;

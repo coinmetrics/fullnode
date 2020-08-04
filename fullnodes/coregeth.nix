@@ -1,7 +1,7 @@
 { nixpkgs, version }:
 rec {
   package = with nixpkgs; buildGoModule {
-    pname = "openethereum";
+    pname = "coregeth";
     inherit version;
     vendorSha256 = {
       "1.11.9" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";

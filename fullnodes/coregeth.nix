@@ -5,6 +5,7 @@ rec {
     inherit version;
     vendorSha256 = {
       "1.11.9" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";
+      "1.11.10" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";
     }.${version} or (builtins.trace "CoreGeth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
     src = builtins.fetchGit {
       url = "https://github.com/etclabscore/core-geth.git";

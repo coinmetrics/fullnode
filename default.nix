@@ -16,7 +16,6 @@ rec {
     omnicore = import ./fullnodes/omnicore.nix;
     pivx = import ./fullnodes/pivx.nix;
     ripple = import ./fullnodes/ripple.nix;
-    ton = import ./fullnodes/ton.nix;
     vertcoin = import ./fullnodes/vertcoin.nix;
   };
 

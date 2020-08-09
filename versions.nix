@@ -66,9 +66,6 @@ rec {
   ripple = [
     "1.5.0"
   ];
-  ton = [
-    "master"
-  ];
   vertcoin = [
     "0.14.0"
     "0.15.0.1"

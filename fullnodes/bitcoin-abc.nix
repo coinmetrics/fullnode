@@ -6,7 +6,10 @@ rec {
     pname = "bitcoin-abc";
     inherit version;
 
-    src = builtins.fetchTarball "https://download.bitcoinabc.org/${version}/src/bitcoin-abc-${version}.tar.gz";
+    src = builtins.fetchGit {
+      url = "https://github.com/Bitcoin-ABC/bitcoin-abc.git";
+      ref = "refs/tags/v${version}";
+    };
 
     nativeBuildInputs = if useCmakeBuild
       then [ pkgconfig cmake python3 ]

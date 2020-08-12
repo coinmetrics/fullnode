@@ -14,6 +14,7 @@ rec {
     grin = import ./fullnodes/grin.nix;
     litecoin = import ./fullnodes/litecoin.nix;
     monero = import ./fullnodes/monero.nix;
+    neo-go = import ./fullnodes/neo-go.nix;
     omnicore = import ./fullnodes/omnicore.nix;
     pivx = import ./fullnodes/pivx.nix;
     ripple = import ./fullnodes/ripple.nix;

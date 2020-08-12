@@ -26,6 +26,8 @@ rec {
         cp -r --reflink=auto ${usb}/hidapi vendor/github.com/karalabe/usb
       '';
     };
+
+    doCheck = false;
   };
 
   imageConfig = {

@@ -4,28 +4,16 @@ rec {
     pname = "coregeth";
     inherit version;
     vendorSha256 = {
-      "1.11.9" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";
-      "1.11.10" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";
-      "1.11.11" = "0ljpl6s48f93x0sc9j7yibs03v2an5m33q34zp7qa42k4qj6k4xn";
+      "1.11.9" = "1b6pbrlcxnj9284ia30m8x5cs6fpxbycs2dzq8p9qgar5ga9kamb";
+      "1.11.10" = "1b6pbrlcxnj9284ia30m8x5cs6fpxbycs2dzq8p9qgar5ga9kamb";
+      "1.11.11" = "1b6pbrlcxnj9284ia30m8x5cs6fpxbycs2dzq8p9qgar5ga9kamb";
     }.${version} or (builtins.trace "CoreGeth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
     src = builtins.fetchGit {
       url = "https://github.com/etclabscore/core-geth.git";
       ref = "refs/tags/v${version}";
     };
 
-    overrideModAttrs = _: let
-      usb = fetchFromGitHub {
-        owner = "karalabe";
-        repo = "usb";
-        rev = "911d15fe12a9c411cf5d0dd5635231c759399bed";
-        sha256 = "0asd5fz2rhzkjmd8wjgmla5qmqyz4jaa6qf0n2ycia16jsck6wc2";
-      };
-      in {
-      postBuild = ''
-        cp -r --reflink=auto ${usb}/libusb vendor/github.com/karalabe/usb
-        cp -r --reflink=auto ${usb}/hidapi vendor/github.com/karalabe/usb
-      '';
-    };
+    runVend = true;
 
     doCheck = false;
   };

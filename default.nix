@@ -10,6 +10,7 @@ rec {
     coregeth = import ./fullnodes/coregeth.nix;
     elements = import ./fullnodes/elements.nix;
     openethereum = import ./fullnodes/openethereum.nix;
+    geth = import ./fullnodes/geth.nix;
     grin = import ./fullnodes/grin.nix;
     litecoin = import ./fullnodes/litecoin.nix;
     monero = import ./fullnodes/monero.nix;

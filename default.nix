@@ -8,6 +8,7 @@ rec {
     bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
     bitcoin-zmce = import ./fullnodes/bitcoin-zmce.nix;
     coregeth = import ./fullnodes/coregeth.nix;
+    cosmos = import ./fullnodes/cosmos.nix;
     elements = import ./fullnodes/elements.nix;
     openethereum = import ./fullnodes/openethereum.nix;
     geth = import ./fullnodes/geth.nix;

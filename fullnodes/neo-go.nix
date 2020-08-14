@@ -11,6 +11,8 @@ rec {
       ref = "refs/tags/v${version}";
     };
 
+    buildFlagsArray = [ "-ldflags=-X github.com/nspcc-dev/neo-go/pkg/config.Version=${version}" ];
+
     runVend = true;
 
     doCheck = false;

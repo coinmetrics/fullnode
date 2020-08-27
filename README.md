@@ -35,6 +35,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * Bitcoin ZMCE (CoinMetrics fork)
 * Cosmos
 * CoreGeth
+* Decred
 * Elements
 * Ethereum
 * Geth

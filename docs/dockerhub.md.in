@@ -11,9 +11,9 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 
 * Built from sources, no official binaries used
 * [Nix](https://nixos.org/nix/)-based
-* Include very minimal set of dependencies, just enough to run the node
+* Include very minimal set of dependencies, just enough to run a node
 * Rebuilt regularly with latest versions of dependencies
-* Intended for analytical purposes. Optional features like wallet/GUI are excluded
+* Intended for analytical purposes. Features like wallet/GUI are excluded if possible
 
 ## Source
 

@@ -4,7 +4,7 @@ stages:
 images:
   stage: build
   script:
-  - $(nix-build --no-out-link -QA updateDockerHubScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+  - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
   tags:
   - coinmetrics-nix-build-runner
   only:
@@ -13,7 +13,7 @@ images:
 images-mr:
   stage: build
   script:
-  - nix-build --no-out-link -QA updateDockerHubScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
+  - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
   tags:
   - coinmetrics-nix-build-runner
   only:

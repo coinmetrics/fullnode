@@ -42,18 +42,18 @@ rec {
 
   # convert set of sets of images to set of versioned images
   # { <fullnode> = { <version> = <image>; }; }   =>   { <fullnode>-<version> = <image>; }
-  flattenImagesSet = let
-    prependFullnode = fullnode: s: builtins.foldl' (m: n: m // { "${fullnode}-${n}" = s.${n}; }) {} (builtins.attrNames s);
-    in images: builtins.foldl' (m: fullnode: m // (prependFullnode fullnode images.${fullnode})) {} (builtins.attrNames images);
+  flattenImagesSet = { sep ? "-", images }: let
+    prependFullnode = fullnode: s: builtins.foldl' (m: n: m // { "${fullnode}${sep}${n}" = s.${n}; }) {} (builtins.attrNames s);
+    in builtins.foldl' (m: fullnode: m // (prependFullnode fullnode images.${fullnode})) {} (builtins.attrNames images);
 
   # script to push images to registry
   # depends on runtime vars DOCKER_USERNAME and DOCKER_PASSWORD
-  pushImagesScript = images: nixpkgs.writeScript "push-images" ''
+  pushImagesScript = { images, repoBaseName ? "${imageBaseName}:" }: nixpkgs.writeScript "push-images" ''
     #!${nixpkgs.stdenv.shell} -e
 
     ${ builtins.concatStringsSep "" (map (image: ''
-      echo 'Pushing ${imageBaseName}:${image}...'
-      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${imageBaseName}:${image}
+      echo 'Pushing ${repoBaseName}${image}...'
+      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${repoBaseName}${image}
     '') (builtins.attrNames images)) }
   '';
 

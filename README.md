@@ -1,6 +1,7 @@
 # Unofficial fullnode images
 
 Docker Hub: [coinmetrics/fullnode](https://hub.docker.com/r/coinmetrics/fullnode)
+
 Github Docker packages: [coinmetrics-io/fullnode](https://github.com/coinmetrics-io/fullnode/packages)
 
 This repo contains scripts to build fullnode images of various blockchains by Coin Metrics.
@@ -29,25 +30,25 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 
 ## Fullnodes
 
-* Bitcoin
-* Bitcoin ABC
-* Bitcoin Gold
-* Bitcoin SV
-* Bitcoin ZMCE (CoinMetrics fork)
-* Cosmos
-* CoreGeth
-* Decred
-* Elements
-* Ethereum
-* Geth
-* Grin
-* Litecoin
-* Monero
-* NEO Go
-* OmniCore
-* PIVX
-* Ripple
-* Vertcoin
+* [Bitcoin](https://bitcoincore.org/)
+* [Bitcoin ABC](https://github.com/Bitcoin-ABC/bitcoin-abc)
+* [Bitcoin Gold](https://github.com/BTCGPU/BTCGPU)
+* [Bitcoin SV](https://bitcoinsv.io/)
+* Bitcoin ZMCE (CoinMetrics fork of Bitcoin Core)
+* [Cosmos](https://github.com/cosmos/gaia)
+* [CoreGeth](https://github.com/etclabscore/core-geth)
+* [Decred](https://github.com/decred/dcrd)
+* [Elements](https://github.com/ElementsProject/elements)
+* [Geth](https://github.com/ethereum/go-ethereum)
+* [Grin](https://github.com/mimblewimble/grin)
+* [Litecoin](https://github.com/litecoin-project/litecoin)
+* [Monero](https://github.com/monero-project/monero)
+* [NEO Go](https://github.com/nspcc-dev/neo-go)
+* [OmniCore](https://github.com/OmniLayer/omnicore)
+* [OpenEthereum](https://github.com/openethereum/openethereum)
+* [PIVX](https://github.com/PIVX-Project/PIVX)
+* [Ripple](https://github.com/ripple/rippled)
+* [Vertcoin](https://github.com/vertcoin-project/vertcoin-core)
 
 ## License
 

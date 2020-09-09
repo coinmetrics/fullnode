@@ -32,6 +32,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 
 * [Bitcoin](https://bitcoincore.org/)
 * [Bitcoin ABC](https://github.com/Bitcoin-ABC/bitcoin-abc)
+* [Bitcoin Cash Node](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node)
 * [Bitcoin Gold](https://github.com/BTCGPU/BTCGPU)
 * [Bitcoin SV](https://bitcoinsv.io/)
 * Bitcoin ZMCE (CoinMetrics fork of Bitcoin Core)

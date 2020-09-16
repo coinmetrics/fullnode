@@ -9,6 +9,7 @@ rec {
       "4.0.0" = "1pw9kc18whb421y3gw6x9q25brh52izbdz3p95jm2jkdkm9j29xn";
       "4.0.1" = "1n9k9jd089m4bmnw8gz5bvz923q2ddddqdn9mhi97lxwnvmq8idi";
       "4.0.2" = "0k2gq8dl5d7sfqybs6r0q27hgm55lh2cfzknkhl0hyg8zl1i6ci4";
+      "4.1.0" = "0x79q943v0xw1hlgk1sgx1xkjj6gsyv15jr9q1xagchlk6hwvblg";
     }.${version} or (builtins.trace "Grin fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
     src = builtins.fetchGit {
       url = "https://github.com/mimblewimble/grin.git";

@@ -2,26 +2,26 @@
 rec {
   # all fullnodes
   fullnodes = {
-    bitcoin = import ./fullnodes/bitcoin.nix;
-    bitcoin-abc = import ./fullnodes/bitcoin-abc.nix;
-    bitcoin-cash-node = import ./fullnodes/bitcoin-cash-node.nix;
-    bitcoin-gold = import ./fullnodes/bitcoin-gold.nix;
-    bitcoin-sv = import ./fullnodes/bitcoin-sv.nix;
-    bitcoin-zmce = import ./fullnodes/bitcoin-zmce.nix;
-    coregeth = import ./fullnodes/coregeth.nix;
-    cosmos = import ./fullnodes/cosmos.nix;
-    decred = import ./fullnodes/decred.nix;
-    elements = import ./fullnodes/elements.nix;
-    openethereum = import ./fullnodes/openethereum.nix;
-    geth = import ./fullnodes/geth.nix;
-    grin = import ./fullnodes/grin.nix;
-    litecoin = import ./fullnodes/litecoin.nix;
-    monero = import ./fullnodes/monero.nix;
-    neo-go = import ./fullnodes/neo-go.nix;
-    omnicore = import ./fullnodes/omnicore.nix;
-    pivx = import ./fullnodes/pivx.nix;
-    ripple = import ./fullnodes/ripple.nix;
-    vertcoin = import ./fullnodes/vertcoin.nix;
+    bitcoin = import ./fullnodes/bitcoin;
+    bitcoin-abc = import ./fullnodes/bitcoin-abc;
+    bitcoin-cash-node = import ./fullnodes/bitcoin-cash-node;
+    bitcoin-gold = import ./fullnodes/bitcoin-gold;
+    bitcoin-sv = import ./fullnodes/bitcoin-sv;
+    bitcoin-zmce = import ./fullnodes/bitcoin-zmce;
+    coregeth = import ./fullnodes/coregeth;
+    cosmos = import ./fullnodes/cosmos;
+    decred = import ./fullnodes/decred;
+    elements = import ./fullnodes/elements;
+    openethereum = import ./fullnodes/openethereum;
+    geth = import ./fullnodes/geth;
+    grin = import ./fullnodes/grin;
+    litecoin = import ./fullnodes/litecoin;
+    monero = import ./fullnodes/monero;
+    neo-go = import ./fullnodes/neo-go;
+    omnicore = import ./fullnodes/omnicore;
+    pivx = import ./fullnodes/pivx;
+    ripple = import ./fullnodes/ripple;
+    vertcoin = import ./fullnodes/vertcoin;
   };
 
   # image for fullnode version

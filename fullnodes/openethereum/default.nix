@@ -17,8 +17,8 @@ rec {
     };
 
     cargoPatches = {
-      "2.5.13" = [./openethereum/2.5.13.patch];
-      "3.0.1" = [./openethereum/3.0.1.patch];
+      "2.5.13" = [./2.5.13.patch];
+      "3.0.1" = [./3.0.1.patch];
     }.${version} or [];
 
     nativeBuildInputs = [ cmake llvmPackages.llvm llvmPackages.clang ];

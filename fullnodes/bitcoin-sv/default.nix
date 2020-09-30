@@ -6,7 +6,7 @@ rec {
 
     src = builtins.fetchTarball "https://download.bitcoinsv.io/bitcoinsv/${version}/bitcoin-sv-${version}.tar.gz";
 
-    patches = nixpkgs.lib.optional (builtins.compareVersions version "1.0.1" == 0) ./bitcoin-sv/1.0.1-fix-json.patch;
+    patches = nixpkgs.lib.optional (builtins.compareVersions version "1.0.1" == 0) ./1.0.1-fix-json.patch;
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 

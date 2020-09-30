@@ -10,7 +10,7 @@ rec {
     };
 
     patches = [
-      ./ton/use_nix_deps.patch
+      ./use_nix_deps.patch
     ];
 
     nativeBuildInputs = [ pkgconfig cmake ];

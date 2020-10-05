@@ -13,6 +13,13 @@ with nixpkgs; rec {
       ref = "refs/tags/v${version}";
     };
 
+    buildFlagsArray = [ ("-ldflags=" + builtins.concatStringsSep " " [
+      "-X github.com/cosmos/cosmos-sdk/version.Name=gaia"
+      "-X github.com/cosmos/cosmos-sdk/version.ServerName=gaiad"
+      "-X github.com/cosmos/cosmos-sdk/version.ClientName=gaiacli"
+      "-X github.com/cosmos/cosmos-sdk/version.Version=${version}"
+    ]) ];
+
     runVend = true;
     doCheck = false;
   };

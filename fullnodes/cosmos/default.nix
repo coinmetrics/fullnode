@@ -1,6 +1,6 @@
 { nixpkgs, version }:
-rec {
-  package = with nixpkgs; buildGoModule {
+with nixpkgs; rec {
+  package = buildGoModule {
     pname = "cosmos";
     inherit version;
 
@@ -17,11 +17,34 @@ rec {
     doCheck = false;
   };
 
+  # initial home dir
+  home = runCommand "cosmos-home" {} ''
+    mkdir -p $out/opt
+    ${package}/bin/gaiad init --home $out/opt coinmetrics
+    ln -sf /genesis.json $out/opt/config/genesis.json
+    mv $out/opt/config $out/opt/init-config
+    ln -s /tmp/config $out/opt/config
+  '';
+
+  # this default entrypoint expects:
+  # tmpfs to be mapped to /tmp
+  # genesis.json to be mapped to /genesis.json
+  # /opt/data to be mapped to data folder
+  # env var SEEDS to be set to comma-separated list of seeds
+  entrypoint = writeScript "cosmos-entrypoint" ''
+    set -e
+    ${busybox}/bin/cp -r /opt/init-config /tmp/config
+    ${busybox}/bin/chmod -R u+w /tmp/config
+    ${busybox}/bin/sed -i -e "s/seeds = \"\"/seeds = \"$SEEDS\"/" -e 's?laddr = "tcp://127.0.0.1:26657"?laddr = "tcp://0.0.0.0:26657"?' /tmp/config/config.toml
+    exec -- gaiad --home /opt $*
+  '';
+
   imageConfig = {
     config = {
-      Entrypoint = [ "gaiad" ];
+      Entrypoint = [ "${bash}/bin/bash" entrypoint ];
       Env = [ "PATH=${package}/bin" ];
       User = "1000:1000";
     };
+    contents = [ home ];
   };
 }

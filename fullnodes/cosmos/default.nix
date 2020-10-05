@@ -19,7 +19,8 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint = [ "${package}/bin/gaiad" ];
+      Entrypoint = [ "gaiad" ];
+      Env = [ "PATH=${package}/bin" ];
       User = "1000:1000";
     };
   };

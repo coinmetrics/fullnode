@@ -29,13 +29,14 @@ with nixpkgs; rec {
     mkdir -p $out/opt
     ${package}/bin/gaiad init --home $out/opt coinmetrics
     ln -sf /genesis.json $out/opt/config/genesis.json
+    ln -s ${builtins.fetchurl "https://raw.githubusercontent.com/cosmos/launch/master/genesis.json"} $out/genesis.json
     mv $out/opt/config $out/opt/init-config
     ln -s /tmp/config $out/opt/config
   '';
 
   # this default entrypoint expects:
   # tmpfs to be mapped to /tmp
-  # genesis.json to be mapped to /genesis.json
+  # genesis.json to be mapped to /genesis.json (if different from default cosmos)
   # /opt/data to be mapped to data folder
   # env var SEEDS to be set to comma-separated list of seeds
   entrypoint = writeScript "cosmos-entrypoint" ''

@@ -38,6 +38,9 @@ rec {
   cosmos = [
     "2.0.13"
   ];
+  cosmos-rosetta = [
+    "0.1.0"
+  ];
   decred = [
     "1.5.2"
   ];

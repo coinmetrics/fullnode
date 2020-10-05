@@ -36,7 +36,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * [Bitcoin Gold](https://github.com/BTCGPU/BTCGPU)
 * [Bitcoin SV](https://bitcoinsv.io/)
 * Bitcoin ZMCE (CoinMetrics fork of Bitcoin Core)
-* [Cosmos](https://github.com/cosmos/gaia)
+* [Cosmos](https://github.com/cosmos/gaia) (+ [Rosetta Gateway](https://github.com/tendermint/cosmos-rosetta-gateway))
 * [CoreGeth](https://github.com/etclabscore/core-geth)
 * [Decred](https://github.com/decred/dcrd)
 * [Elements](https://github.com/ElementsProject/elements)

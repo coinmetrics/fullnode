@@ -10,6 +10,7 @@ rec {
     bitcoin-zmce = import ./fullnodes/bitcoin-zmce;
     coregeth = import ./fullnodes/coregeth;
     cosmos = import ./fullnodes/cosmos;
+    cosmos-rosetta = import ./fullnodes/cosmos-rosetta;
     decred = import ./fullnodes/decred;
     elements = import ./fullnodes/elements;
     openethereum = import ./fullnodes/openethereum;

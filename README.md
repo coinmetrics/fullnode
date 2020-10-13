@@ -48,6 +48,7 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * [OmniCore](https://github.com/OmniLayer/omnicore)
 * [OpenEthereum](https://github.com/openethereum/openethereum)
 * [PIVX](https://github.com/PIVX-Project/PIVX)
+* [Polkadot](https://github.com/paritytech/polkadot)
 * [Vertcoin](https://github.com/vertcoin-project/vertcoin-core)
 
 ## License

@@ -21,6 +21,7 @@ rec {
     neo-go = import ./fullnodes/neo-go;
     omnicore = import ./fullnodes/omnicore;
     pivx = import ./fullnodes/pivx;
+    polkadot = import ./fullnodes/polkadot;
     vertcoin = import ./fullnodes/vertcoin;
   };
 

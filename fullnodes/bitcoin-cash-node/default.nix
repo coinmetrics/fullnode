@@ -5,7 +5,7 @@ rec {
     inherit version;
 
     src = builtins.fetchGit {
-      url = "https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node";
+      url = "https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node.git";
       ref = "refs/tags/v${version}";
     };
 

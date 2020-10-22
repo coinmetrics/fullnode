@@ -9,6 +9,7 @@ images:
   - coinmetrics-nix-build-runner
   only:
   - master
+  - schedules
 
 images-mr:
   stage: build

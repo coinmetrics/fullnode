@@ -10,6 +10,7 @@ rec {
       "2.7.2" = "1i9vz3hjpndyyqm3si8lj3csx9zmfs93sb1i14i9lwj6bzqx1lcg";
       "3.0.0" = "0cpzjw5pdbagfpcsd2r11zzxzvh7mpinh5m0snbgql5cmiv6swks";
       "3.0.1" = "0sbrz27isaxw84mj224bwdsqwgxxyr5ifq19h3fx1254skz7x7wz";
+      "3.1.0" = "0lbsyxjjhgn3np17w2n5f3pwaw8fv5jli3hzxnb86s3w9ssrvk30";
     }.${version} or (builtins.trace "OpenEthereum fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
     src = builtins.fetchGit {
       url = "https://github.com/openethereum/openethereum.git";

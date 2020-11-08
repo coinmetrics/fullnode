@@ -5,6 +5,7 @@ rec {
     inherit version;
     cargoSha256 = {
       "0.8.26" = "0mjkiq6kih5vbmbmr3nmzw4zynha93lsqwbvams73871124mj7rc";
+      "0.8.26-1" = "1581xvarmcq5rgwpincc031q9wxaq4by4xwdvm45sh6n3xjf714v";
     }.${version} or (builtins.trace "Polkadot fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
     src = builtins.fetchGit {
       url = "https://github.com/paritytech/polkadot.git";

@@ -4,7 +4,10 @@ rec {
     pname = "bitcoin-sv";
     inherit version;
 
-    src = builtins.fetchTarball "https://download.bitcoinsv.io/bitcoinsv/${version}/bitcoin-sv-${version}.tar.gz";
+    src = builtins.fetchGit {
+      url = "https://github.com/bitcoin-sv/bitcoin-sv.git";
+      ref = "refs/tags/v${version}";
+    };
 
     patches = nixpkgs.lib.optional (builtins.compareVersions version "1.0.1" == 0) ./1.0.1-fix-json.patch;
 

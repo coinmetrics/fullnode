@@ -11,7 +11,9 @@ rec {
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl ];
+    buildInputs = [ boost libevent openssl ]
+      ++ lib.optionals (lib.strings.versionAtLeast version "0.16.0") [ gmp ]
+    ;
 
     configureFlags = [
       "--with-boost-libdir=${boost.out}/lib"

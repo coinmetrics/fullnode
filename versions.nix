@@ -15,6 +15,7 @@ rec {
   bitcoin-cash-node = [
     "22.0.0"
     "22.1.0"
+    "22.2.0"
   ];
   bitcoin-gold = [
     "0.17.1"

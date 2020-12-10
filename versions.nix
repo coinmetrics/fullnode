@@ -39,6 +39,7 @@ rec {
   ];
   cosmos = [
     "2.0.13"
+    "2.0.14"
   ];
   cosmos-rosetta = [
     "0.1.0"

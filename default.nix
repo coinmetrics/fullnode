@@ -55,7 +55,7 @@ rec {
 
     ${ builtins.concatStringsSep "" (map (image: ''
       echo 'Pushing ${repoBaseName}${image}...'
-      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${repoBaseName}${image}
+      ${nixpkgs.skopeo}/bin/skopeo --insecure-policy copy --retry-times 10 --dest-creds "$DOCKER_USERNAME:$DOCKER_PASSWORD" docker-archive:${images.${image}} docker://${repoBaseName}${image}
     '') (builtins.attrNames images)) }
   '';
 

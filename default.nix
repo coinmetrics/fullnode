@@ -3,7 +3,6 @@ rec {
   # all fullnodes
   fullnodes = {
     bitcoin = import ./fullnodes/bitcoin;
-    bitcoin-abc = import ./fullnodes/bitcoin-abc;
     bitcoin-cash-node = import ./fullnodes/bitcoin-cash-node;
     bitcoin-gold = import ./fullnodes/bitcoin-gold;
     bitcoin-sv = import ./fullnodes/bitcoin-sv;

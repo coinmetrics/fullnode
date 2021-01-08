@@ -13,6 +13,7 @@ rec {
         "0.17.1.6" = "0b6zyr3mzqvcxf48i2g45gr649x6nhppik5598jsvg0z7i2hxb9q";
         "0.17.1.7" = "1fdw4i4rw87yz3hz4yc1gdw0gr2mmf9038xaw2l4rrk5y50phjp4";
         "0.17.1.8" = "10blazbk1602slx3wrmw4jfgkdry55iclrhm5drdficc5v3h735g";
+        "0.17.1.9" = "0jqss4csvkcrhrmaa3vrnyv6yiwqpbfw7037clx9xcfm4qrrfiwy";
       }.${version} or (builtins.trace "Monero fullnode: using dummy SHA256" "0000000000000000000000000000000000000000000000000000");
     };
 

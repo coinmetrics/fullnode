@@ -21,6 +21,13 @@ rec {
       "--disable-tests"
     ];
 
+    patches =
+      # https://github.com/BTCGPU/BTCGPU/commit/ac59db66c0c7631fedd1150c2b61bd1c2878f8c9
+      nixpkgs.lib.optional (builtins.compareVersions version "0.17.3" < 0) (nixpkgs.fetchpatch {
+        url = "https://github.com/BTCGPU/BTCGPU/commit/ac59db66c0c7631fedd1150c2b61bd1c2878f8c9.diff";
+        sha256 = "1l2dqcdnfkpjs5k7yxg72601j6916zaxbb9b194qrz1nqjrw5mj2";
+      });
+
     doCheck = false;
 
     enableParallelBuilding = true;

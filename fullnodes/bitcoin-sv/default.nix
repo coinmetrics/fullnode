@@ -9,7 +9,12 @@ rec {
       ref = "refs/tags/v${version}";
     };
 
-    patches = nixpkgs.lib.optional (builtins.compareVersions version "1.0.1" == 0) ./1.0.1-fix-json.patch;
+    patches =
+      nixpkgs.lib.optional (builtins.compareVersions version "1.0.1" == 0) ./1.0.1-fix-json.patch ++
+      nixpkgs.lib.optional (builtins.compareVersions version "1.0.6" < 0) (nixpkgs.fetchpatch {
+        url = "https://github.com/bitcoin-sv/bitcoin-sv/commit/4b4351db791d58457e4f03b24aaf0cc74288a03e.diff";
+        sha256 = "0v5rbrwf3xpnk763qvzfgi6s9k7ss588jl0cdgkgi04s0nh0yjbw";
+      });
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 

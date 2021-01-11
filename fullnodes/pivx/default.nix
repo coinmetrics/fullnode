@@ -15,7 +15,7 @@ rec {
 
     buildInputs = [ boost libevent openssl gmp db48 ] ++ lib.optional g43 libsodium;
 
-    preConfigure = if g43 then ''
+    preAutoreconf = if g43 then ''
       sed -ie 's/: cargo-build/:/' src/Makefile.am
     '' else null;
 

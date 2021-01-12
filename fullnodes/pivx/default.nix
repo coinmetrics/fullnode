@@ -6,6 +6,7 @@ rec {
   };
 
   g43 = builtins.compareVersions version "4.3.0" >= 0;
+  g50 = builtins.compareVersions version "5.0.0" >= 0;
 
   package = with nixpkgs; stdenv.mkDerivation rec {
     pname = "pivx";
@@ -37,7 +38,11 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint = [ "${package}/bin/pivxd" ];
+      Entrypoint =
+        if g50 then
+          [ "${package}/bin/pivxd" "-paramsdir=${package}/share/pivx" ]
+        else
+          [ "${package}/bin/pivxd" ];
       User = "1000:1000";
     };
   };

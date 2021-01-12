@@ -28,6 +28,7 @@ rec {
   withVersion = { fullnode, version }: nixpkgs.dockerTools.buildImage ({
     name = imageBaseName;
     tag = "${fullnode}-${version}";
+    created = "now";
   } // (fullnodes.${fullnode} {
     inherit nixpkgs version;
   }).imageConfig);

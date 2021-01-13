@@ -1,6 +1,6 @@
 { nixpkgs, version }:
 rec {
-  package = with nixpkgs; stdenv.mkDerivation rec {
+  package = with nixpkgs; (overrideCC stdenv gcc9).mkDerivation rec {
     pname = "bitcoin-gold";
     inherit version;
 

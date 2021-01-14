@@ -54,6 +54,7 @@ rec {
     cargoSha256 = {
       "4.3.0" = "0gyglcp47fh4whpvrkb18gf7ds1fixqy3qldjqshx7gnqycjjhnm";
       "5.0.0" = "1hgxqi17nchdb193vpnlz6aj5sq7lr06izavbrv0znf3cy3lyahx";
+      "5.0.1" = "1zyiasj06hf8zy5q405rsnnmr239khq541hl4g7q8ikh7a0sic0n";
     }.${version} or (builtins.trace "PIVX librustzcash: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
 
     runVend = true;

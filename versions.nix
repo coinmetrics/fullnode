@@ -87,10 +87,9 @@ rec {
     "0.9.0"
   ];
   pivx = [
-    "4.1.1"
-    "4.2.0"
     "4.3.0"
-    "5.0.0"
+    "5.0.0" # WARNING: Vulnerable (see https://github.com/PIVX-Project/PIVX/releases/tag/v5.0.1)
+    "5.0.1"
   ];
   polkadot = [
     "0.8.26-1"

@@ -7,6 +7,7 @@ with nixpkgs; rec {
     vendorSha256 = {
       "2.0.13" = "1d08jx6wv8wr48lk9lwv2rs8ax6dcd1vs30bbhdp2yc104j2cyk8";
       "2.0.14" = "1wbv8v26z603j477g5754j8r4qqzl6m5hmydabz6ws3lgjadvqps";
+      "2.0.15" = "1wbv8v26z603j477g5754j8r4qqzl6m5hmydabz6ws3lgjadvqps";
     }.${version} or (builtins.trace "Cosmos fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

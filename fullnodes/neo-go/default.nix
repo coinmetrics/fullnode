@@ -10,6 +10,7 @@ rec {
       "0.78.1" = "11fvf1lnxbwxvks2vnnl4kkhzgx1aarhfhv9xvbhp206zdz255l5";
       "0.78.2" = "11fvf1lnxbwxvks2vnnl4kkhzgx1aarhfhv9xvbhp206zdz255l5";
       "0.92.0" = "0fzvxlnf7p1vay25h6sjdbraga8nzgyjhz1pk7rxxizs7vz1gx7m";
+      "0.78.3" = "11fvf1lnxbwxvks2vnnl4kkhzgx1aarhfhv9xvbhp206zdz255l5";
     }.${version} or (builtins.trace "NEO Go fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

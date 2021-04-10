@@ -45,5 +45,13 @@ rec {
       Entrypoint = [ "${package}/bin/bitcoind" ];
       User = "1000:1000";
     };
+
+    extraCommands = ''
+      mkdir ./bin && \
+      ln -s ${nixpkgs.dash}/bin/dash ./bin/sh && \
+      ln -s ${nixpkgs.gawk}/bin/awk ./bin/awk && \
+      ln -s ${package}/bin/bitcoind ./bin/bitcoind && \
+      ln -s ${package}/bin/bitcoin-cli ./bin/bitcoin-cli
+    '';
   };
 }

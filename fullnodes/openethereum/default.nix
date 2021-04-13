@@ -1,29 +1,30 @@
 { nixpkgs, version }:
 rec {
-  package = with nixpkgs; rustPackages_1_45.rustPlatform.buildRustPackage {
+  package = with nixpkgs; rustPlatform.buildRustPackage {
     pname = "openethereum";
     inherit version;
+
     cargoSha256 = {
-      "2.5.13" = "04g5jk48y4fi53ychq5l4xg99l65vfw41zvnhmrrbabzjh16cngk";
-      "3.1.0" = "0lbsyxjjhgn3np17w2n5f3pwaw8fv5jli3hzxnb86s3w9ssrvk30";
-      "3.1.1" = "01jf7zl97addkazdh1wmf1hvspzjc6x5ac7yfxvw1x9z60jljkm5";
-      "3.2.1" = "1rlfddg0680sr84dflibnkllz17dbmq6ilmr7fzppgvv3h3734cp";
+      "3.2.1" = "163kiy04iw20g8fm2vy7slq2qdmi1a34cgvf7cdsq5y6khky7f49";
     }.${version} or (builtins.trace "OpenEthereum fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
+
     src = builtins.fetchGit {
       url = "https://github.com/openethereum/openethereum.git";
       ref = "refs/tags/v${version}";
     };
 
-    cargoPatches = {
-      "2.5.13" = [./2.5.13.patch];
-      "3.0.1" = [./3.0.1.patch];
-    }.${version} or [];
-
-    nativeBuildInputs = [ cmake llvmPackages.llvm llvmPackages.clang ];
-
-    buildInputs = [ systemd llvmPackages.libclang ];
-
     LIBCLANG_PATH = "${llvmPackages.libclang}/lib";
+
+    nativeBuildInputs = [
+      cmake
+      llvmPackages.clang
+      llvmPackages.libclang
+      pkg-config
+    ];
+
+    buildInputs = [ openssl ]
+    ++ lib.optionals stdenv.isLinux [ systemd ]
+    ++ lib.optionals stdenv.isDarwin [ darwin.Security ];
 
     cargoBuildFlags = [ "--features final" ];
 
@@ -32,8 +33,15 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint = [ "${package}/bin/${ if builtins.compareVersions version "3.0.0" < 0 then "parity" else "openethereum" }" ];
+      Entrypoint = [ "${package}/bin/openethereum" ];
       User = "1000:1000";
     };
+
+    extraCommands = ''
+      mkdir ./bin && \
+      ln -s ${nixpkgs.dash}/bin/dash ./bin/sh && \
+      ln -s ${nixpkgs.gawk}/bin/awk ./bin/awk && \
+      ln -s ${package}/bin/openethereum ./bin/openethereum
+    '';
   };
 }

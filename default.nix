@@ -22,6 +22,7 @@ rec {
     pivx = import ./fullnodes/pivx;
     polkadot = import ./fullnodes/polkadot;
     vertcoin = import ./fullnodes/vertcoin;
+    zcash = import ./fullnodes/zcash;
   };
 
   # image for fullnode version

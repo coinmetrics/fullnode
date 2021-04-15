@@ -6,6 +6,7 @@ rec {
 
     cargoSha256 = {
       "3.2.1" = "163kiy04iw20g8fm2vy7slq2qdmi1a34cgvf7cdsq5y6khky7f49";
+      "3.2.3" = "1qgl15sd32s0r4q5xmx7lyp92sc81hd4ddc18ynbxjdxgl7knm4k";
     }.${version} or (builtins.trace "OpenEthereum fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

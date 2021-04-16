@@ -5,10 +5,9 @@ rec {
     inherit version;
 
     cargoSha256 = {
-      "3.2.1" = "163kiy04iw20g8fm2vy7slq2qdmi1a34cgvf7cdsq5y6khky7f49";
       "3.2.3" = "1qgl15sd32s0r4q5xmx7lyp92sc81hd4ddc18ynbxjdxgl7knm4k";
-      "3.2.4" = "0vs7nkmc1bddamwvm7r953c8gb7xm44p377z81qzmgamhp1r2p3y";
-    }.${version} or (builtins.trace "OpenEthereum fullnode: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
+      "3.2.4" = "1gm02pcfll362add8a0dcb0sk0mag8z0q23b87yb6fs870bqvhib";
+    }.${version} or lib.fakeSha256;
 
     src = builtins.fetchGit {
       url = "https://github.com/openethereum/openethereum.git";

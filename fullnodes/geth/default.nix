@@ -5,14 +5,6 @@ rec {
     inherit version;
 
     vendorSha256 = {
-      "1.9.19" = "1744df059bjksvih4653nnvb4kb1xvzdhypd0nnz36m1wrihqssv";
-      "1.9.20" = "1744df059bjksvih4653nnvb4kb1xvzdhypd0nnz36m1wrihqssv";
-      "1.9.21" = "155hmny3543h02ryn1nnlpmvs0qvhd0lb66vmkhw5351m6gkbx7x";
-      "1.9.22" = "1qbg44cryiv9kvcak6qjrbmkc9bxyk5fybj62vdkskqfjvv86068";
-      "1.9.23" = "1qbg44cryiv9kvcak6qjrbmkc9bxyk5fybj62vdkskqfjvv86068";
-      "1.9.24" = "1qbg44cryiv9kvcak6qjrbmkc9bxyk5fybj62vdkskqfjvv86068";
-      "1.9.25" = "08wgah8gxb5bscm5ca6zkfgssnmw2y2l6k9gfw7gbxyflsx74lya";
-      "1.10.0" = "186zyqmvj39d3s2bgrah0nw4pcqwswvf7wrzx2krbm34k6z8w30f";
       "1.10.1" = "186zyqmvj39d3s2bgrah0nw4pcqwswvf7wrzx2krbm34k6z8w30f";
       "1.10.2" = "1idqrlj1as05s77hzzrjb7z1x6kg63wdn2iasc76b4jdbynp1fm8";
     }.${version} or (builtins.trace "Geth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");

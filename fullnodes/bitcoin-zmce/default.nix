@@ -12,12 +12,14 @@ rec {
       sha256 = {
         "0.20.0" = "ec5a2358ee868d845115dc4fc3ed631ff063c57d5e0a713562d083c5c45efb28";
         "0.21.0" = "1a91202c62ee49fb64d57a52b8d6d01cd392fffcbef257b573800f9289655f37";
-      }.${version};
+        "0.21.1" = "1q51nqv64lhng5wh1cqb01jar7iswpnyyb1i7xslbkr0j9227zya";
+      }.${version} or lib.fakeSha256;
     };
 
     patches = {
       "0.20.0" = [ ./v0.20.0-zmce.patch ];
       "0.21.0" = [ ./v0.21.0-zmce.patch ];
+      "0.21.1" = [ ./v0.21.1-zmce.patch ];
     }.${version};
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];

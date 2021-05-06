@@ -34,10 +34,11 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * [Bitcoin Cash Node](https://gitlab.com/bitcoin-cash-node/bitcoin-cash-node)
 * [Bitcoin Gold](https://github.com/BTCGPU/BTCGPU)
 * [Bitcoin SV](https://bitcoinsv.io/)
-* Bitcoin ZMCE (CoinMetrics fork of Bitcoin Core)
+* [Bitcoin ZMCE](https://gitlab.com/coinmetrics/mempool-tools/bitcoin-zmq-mempool-chain-events) (CoinMetrics fork of Bitcoin Core)
 * [Cosmos](https://github.com/cosmos/gaia) (+ [Rosetta Gateway](https://github.com/tendermint/cosmos-rosetta-gateway))
 * [CoreGeth](https://github.com/etclabscore/core-geth)
 * [Decred](https://github.com/decred/dcrd)
+* [Dogecoin](https://github.com/dogecoin/dogecoin)
 * [Elements](https://github.com/ElementsProject/elements)
 * [Geth](https://github.com/ethereum/go-ethereum)
 * [Grin](https://github.com/mimblewimble/grin)
@@ -48,7 +49,9 @@ The images are rebuilt regularly with latest versions of dependencies. Builds ar
 * [OpenEthereum](https://github.com/openethereum/openethereum)
 * [PIVX](https://github.com/PIVX-Project/PIVX)
 * [Polkadot](https://github.com/paritytech/polkadot)
+* [TON](https://github.com/ton-blockchain/ton)
 * [Vertcoin](https://github.com/vertcoin-project/vertcoin-core)
+* [Zcash](https://github.com/zcash/zcash)
 
 ## License
 

@@ -11,6 +11,7 @@ rec {
     cosmos = import ./fullnodes/cosmos;
     cosmos-rosetta = import ./fullnodes/cosmos-rosetta;
     decred = import ./fullnodes/decred;
+    dogecoin = import ./fullnodes/dogecoin;
     elements = import ./fullnodes/elements;
     openethereum = import ./fullnodes/openethereum;
     geth = import ./fullnodes/geth;

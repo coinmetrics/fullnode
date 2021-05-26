@@ -7,6 +7,7 @@ rec {
     cargoSha256 = {
       "0.8.30" = "1xcadx5vnnaygqksyh58qc2jjgpg7hfgi3149l64aaf72316vi84";
       "0.9.2"  = "0gg42b6h8782wny3dr9gc38wl6bybyf4smashchgrpc649ds6w0a";
+      "0.9.3"  = "131fkdazcspblzblmd9nhkymwn7qh6lhaqvi1jqnsq4951l9f4ms";
     }.${version} or lib.fakeSha256;
 
     src = builtins.fetchGit {

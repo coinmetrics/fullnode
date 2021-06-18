@@ -1,21 +1,32 @@
 stages:
-- build
+  - build
 
 images:
+  image:
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.3.13-ci
+    entrypoint: [""]
   stage: build
   script:
-  - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+    - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
   tags:
-  - coinmetrics-nix-build-runner
+    - kubernetes
   only:
-  - master
-  - schedules
+    - master
+    - schedules
 
 images-mr:
+  image:
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.3.13-ci
+    entrypoint: [""]
   stage: build
+  before_script:
+    - cachix use $CACHIX_CI_CACHE
+    - nix path-info --all > /tmp/store-path-pre-build
   script:
-  - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
+    - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
+  after_script:
+    - bash -c "comm -13 <(sort /tmp/store-path-pre-build | grep -v '\.drv$') <(nix path-info --all | grep -v '\.drv$' | sort) | cachix push $CACHIX_CI_CACHE"
   tags:
-  - coinmetrics-nix-build-runner
+    - kubernetes
   only:
-  - merge_requests
+    - merge_requests

@@ -10,6 +10,7 @@ rec {
       "0.9.3"  = "131fkdazcspblzblmd9nhkymwn7qh6lhaqvi1jqnsq4951l9f4ms";
       "0.9.5"  = "18pg09v14991aqq7cjg0w5x36526y6sx1hvxlqb20zvrgmv722cq";
       "0.9.6"  = "17c45xi1wr77jbkcl1mkxflc8f9hilil02c43fihvlh2lm8kcs5j";
+      "0.9.7"  = "033dcv25kjniz7i3n072wrqam2g4krvnhd4svix27kz47pqz2y72";
     }.${version} or lib.fakeSha256;
 
     src = builtins.fetchGit {

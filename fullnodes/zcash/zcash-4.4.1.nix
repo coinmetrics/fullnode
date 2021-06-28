@@ -15,7 +15,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     sha256 = "19vhblyqkaf1lapx8s4v88xjpslqmrd1jnar46rschzcz0mm9sq4";
   };
 
-  cargoSha256 = "1yiy1506ijndxb9bx79p7fkfvw1c5zdsljil4m55xz1mv8dzhbgm";
+  cargoSha256 = "101j8cn2lg3l1gn53yg3svzwx783z331g9kzn9ici4azindyx903";
 
   nativeBuildInputs = [ autoreconfHook cargo hexdump makeWrapper pkg-config ];
   buildInputs = [ boost174 libevent libsodium utf8cpp ]

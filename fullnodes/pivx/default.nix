@@ -5,20 +5,15 @@ rec {
     ref = "refs/tags/v${version}";
   };
 
-  g43 = builtins.compareVersions version "4.3.0" >= 0;
-  g50 = builtins.compareVersions version "5.0.0" >= 0;
-
   package = with nixpkgs; stdenv.mkDerivation rec {
     pname = "pivx";
     inherit version src;
 
     nativeBuildInputs = [ pkgconfig autoreconfHook ];
 
-    buildInputs = [ boost libevent openssl gmp db48 ] ++ lib.optional g43 libsodium;
+    buildInputs = [ boost libevent openssl gmp db48 libsodium ];
 
-    preAutoreconf = if g43 then ''
-      sed -ie 's/: cargo-build/:/' src/Makefile.am
-    '' else null;
+    preAutoreconf = "sed -ie 's/: cargo-build/:/' src/Makefile.am";
 
     configureFlags = [
       "--with-boost-libdir=${boost.out}/lib"
@@ -29,7 +24,7 @@ rec {
       "--disable-online-rust"
     ];
 
-    makeFlags = lib.optional g43 "LIBRUSTZCASH=${librustzcash}/lib/librustzcash.a";
+    makeFlags = "LIBRUSTZCASH=${librustzcash}/lib/librustzcash.a";
 
     doCheck = false;
 
@@ -38,11 +33,7 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint =
-        if g50 then
-          [ "${package}/bin/pivxd" "-paramsdir=${package}/share/pivx" ]
-        else
-          [ "${package}/bin/pivxd" ];
+      Entrypoint = [ "${package}/bin/pivxd" "-paramsdir=${package}/share/pivx" ];
       User = "1000:1000";
     };
   };
@@ -52,10 +43,8 @@ rec {
     inherit version src;
 
     cargoSha256 = {
-      "4.3.0" = "0gyglcp47fh4whpvrkb18gf7ds1fixqy3qldjqshx7gnqycjjhnm";
-      "5.0.0" = "1hgxqi17nchdb193vpnlz6aj5sq7lr06izavbrv0znf3cy3lyahx";
-      "5.0.1" = "1zyiasj06hf8zy5q405rsnnmr239khq541hl4g7q8ikh7a0sic0n";
-      "5.1.0" = "03y86bb1i0b10wj374rcd8cazsp2ipf0bhddhjj58rwfb14n4h8l";
+      "5.1.0"   = "03y86bb1i0b10wj374rcd8cazsp2ipf0bhddhjj58rwfb14n4h8l";
+      "5.2.0.1" = "1xx5qk3hjvygirkbh3zdj378v9bd88cwk8xmdjpmwrz9xkc6n5r8";
     }.${version} or (builtins.trace "PIVX librustzcash: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
 
     runVend = true;

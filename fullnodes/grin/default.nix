@@ -5,7 +5,7 @@ rec {
     inherit version;
 
     cargoSha256 = {
-      "5.0.4" = "0afa34yyc7z3a54rhz43396vd0r62wjgql3z6rvmpnr927ch8qli";
+      "5.0.4" = "1fxq7ybb5immakjdgsy60y730jjfwj8nd148sw7nphn2m03brjz5";
       "5.1.0" = "12ciinv2136x8vr011v71ixlhixnrwifjfx36kkj1nblrrg0vawd";
     }.${version} or lib.fakeSha256;
 

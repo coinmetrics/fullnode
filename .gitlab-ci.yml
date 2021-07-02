@@ -20,12 +20,11 @@ images-mr:
     entrypoint: [""]
   stage: build
   before_script:
-    - cachix use $CACHIX_CI_CACHE
-    - nix path-info --all > /tmp/store-path-pre-build
+    - /before_script.sh
   script:
     - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
   after_script:
-    - bash -c "comm -13 <(sort /tmp/store-path-pre-build | grep -v '\.drv$') <(nix path-info --all | grep -v '\.drv$' | sort) | cachix push $CACHIX_CI_CACHE"
+    - /after_script.sh
   tags:
     - kubernetes
   only:

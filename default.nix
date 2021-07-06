@@ -13,7 +13,8 @@ rec {
     decred = import ./fullnodes/decred;
     dogecoin = import ./fullnodes/dogecoin;
     elements = import ./fullnodes/elements;
-    openethereum = import ./fullnodes/openethereum;
+    # [AW] Temporary. See: https://github.com/openethereum/openethereum/issues/442
+    # openethereum = import ./fullnodes/openethereum;
     geth = import ./fullnodes/geth;
     grin = import ./fullnodes/grin;
     litecoin = import ./fullnodes/litecoin;

@@ -12,7 +12,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    sha256 = "19vhblyqkaf1lapx8s4v88xjpslqmrd1jnar46rschzcz0mm9sq4";
+    sha256 = "0nhrjizx518khrl8aygag6a1ianzzqpchasggi963f807kv7ipb7";
   };
 
   cargoSha256 = "101j8cn2lg3l1gn53yg3svzwx783z331g9kzn9ici4azindyx903";

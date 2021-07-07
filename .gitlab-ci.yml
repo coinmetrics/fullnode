@@ -6,8 +6,12 @@ images:
     name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.3.14-ci
     entrypoint: [""]
   stage: build
+  before_script:
+    - /before_script.sh
   script:
     - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+  after_script:
+    - /after_script.sh
   tags:
     - kubernetes
   only:

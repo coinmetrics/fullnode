@@ -12,7 +12,7 @@
 
 rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
   pname = "openethereum";
-  version = "3.2.6";
+  version = "3.3.0-rc4";
 
   src = fetchFromGitHub {
     owner = "openethereum";
@@ -26,7 +26,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     ./patches/001-logos.patch
   ];
 
-  cargoSha256 = "1m3wlhvk22axzny3gw1bymnnaypy2pvzjh7wfgciqzmr3h2gsqq1";
+  cargoSha256 = "1xhk1qg66hh59y3zfvxm28ym26xcmjz6df5ixhs3c0i8njsrpfr8";
 
   nativeBuildInputs = [ cmake pkg-config ];
 

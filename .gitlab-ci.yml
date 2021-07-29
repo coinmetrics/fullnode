@@ -3,7 +3,7 @@ stages:
 
 images:
   image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.3.14-ci
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.3.15-ci
     entrypoint: [""]
   stage: build
   before_script:

@@ -17,14 +17,14 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 
 ## Source
 
-Build scripts repo: https://github.com/coinmetrics-io/fullnode
+Build scripts repo: https://github.com/coinmetrics/fullnode
 
 ## Building locally
 
 The following command will build and install into local Docker the exact same images:
 
 ```bash
-sudo $(NIX_PATH=${NIX_PATH} nix-build --no-out-link -QE '(import "$${builtins.fetchGit { url = "https://github.com/coinmetrics-io/fullnode.git"; rev = "${CI_COMMIT_SHA}"; }}/release.nix" {}).installAllImagesScript')
+sudo $(NIX_PATH=${NIX_PATH} nix-build --no-out-link -QE '(import "$${builtins.fetchGit { url = "https://github.com/coinmetrics/fullnode.git"; rev = "${CI_COMMIT_SHA}"; }}/release.nix" {}).installAllImagesScript')
 ```
 
 ### Tags

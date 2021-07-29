@@ -1,6 +1,6 @@
 { nixpkgs ? import <nixpkgs> {}
 , imageBaseName ? "coinmetrics/fullnode"
-, githubRepoBaseName ? "docker.pkg.github.com/coinmetrics-io/fullnode/"
+, githubRepoBaseName ? "docker.pkg.github.com/coinmetrics/fullnode/"
 }:
 let
   funcs = import ./default.nix {

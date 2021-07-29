@@ -2,7 +2,7 @@
 
 Docker Hub: [coinmetrics/fullnode](https://hub.docker.com/r/coinmetrics/fullnode)
 
-Github Docker packages: [coinmetrics-io/fullnode](https://github.com/coinmetrics-io/fullnode/packages)
+Github Docker packages: [coinmetrics/fullnode](https://github.com/coinmetrics/fullnode/packages)
 
 This repo contains scripts to build fullnode images of various blockchains by Coin Metrics.
 

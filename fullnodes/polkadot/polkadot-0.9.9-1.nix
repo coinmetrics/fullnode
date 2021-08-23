@@ -13,7 +13,7 @@ rustPlatform.buildRustPackage rec {
     owner = "paritytech";
     repo = "polkadot";
     rev = "v${version}";
-    sha256 = "sha256-5PNogoahAZUjIlQsVXwm7j5OmP3/uEEdV0vrIDXXBx8=";
+    sha256 = "1ipcsc2ghagv8q1qds892i2qbin8ybfxy1lh27lxhvq72g0fns8j";
   };
 
   cargoSha256 = "005fsqf7pldlp2vg9016hfvv8jyy151k9bj416gd1maa1pf8xrvp";

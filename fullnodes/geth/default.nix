@@ -12,6 +12,7 @@ rec {
       "1.10.6" = "1nf2gamamlgr2sl5ibib5wai1pipj66xhbhnb4s4480j5pbv9a76";
       "1.10.7" = "1cvsgrr1cwfm6lrmj14h9q0mj2r8rn7pxlbhcsppdzsvh3kfsn77";
       "1.10.8" = "1g6arc87crlgdn2gx8s6zpjf6ff7h51qwrcprq0zs4a4qm08mikv";
+      "1.10.9" = "1ppwbz3yc7n870s5ndlyg8vrnl5c17n3j00cn8xzxdym01liqnln";
     }.${version} or (builtins.trace "Geth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

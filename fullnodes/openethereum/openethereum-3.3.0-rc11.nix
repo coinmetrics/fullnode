@@ -12,7 +12,7 @@
 
 rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
   pname = "openethereum";
-  version = "3.3.0-rc.4";
+  version = "3.3.0-rc.11";
 
   src = fetchFromGitHub {
     owner = "openethereum";

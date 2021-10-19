@@ -26,7 +26,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     ./patches/001-logos.patch
   ];
 
-  cargoSha256 = "0000000000000000000000000000000000000000000000000000";
+  cargoSha256 = "1iiqli14r5z0d0pwh8i845vm1mwrxlwf3w70c8rsvkbmdv1vxn4a";
 
   nativeBuildInputs = [ cmake pkg-config ];
 

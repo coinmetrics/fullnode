@@ -13,10 +13,10 @@ rustPlatform.buildRustPackage rec {
     owner = "paritytech";
     repo = "polkadot";
     rev = "v${version}";
-    sha256 = "00000000000000000000000000000000000000000000";
+    sha256 = "vxZtOJwotns2yRdGBBgOpTcHd4o0JtW2I02jTyvsqqE=";
   };
 
-  cargoSha256 = "00000000000000000000000000000000000000000000";
+  cargoSha256 = "0000000000000000000000000000000000000000000=";
 
   nativeBuildInputs = [ clang ];
 

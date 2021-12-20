@@ -9,6 +9,7 @@ rec {
       "1.11.22" = "0ickqy2hlgqmjy0b8ghpw1fk7szxzgmd00hqpj1m02bknmmxss57";
       "1.12.0"  = "0fp3kv0xfh0x7sl66w6fwvmd8vs4c8ks7l72gyphv80why1l4xq7";
       "1.12.1"  = "0fp3kv0xfh0x7sl66w6fwvmd8vs4c8ks7l72gyphv80why1l4xq7";
+      "1.12.3"  = "eGgJp/rRUPAxJ0DB4TDUY17B/EZDLzkFGtghWHYV1GY=";
     }.${version} or (builtins.trace "CoreGeth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

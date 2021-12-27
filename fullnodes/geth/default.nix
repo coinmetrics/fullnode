@@ -15,6 +15,7 @@ rec {
       "1.10.9" = "1ppwbz3yc7n870s5ndlyg8vrnl5c17n3j00cn8xzxdym01liqnln";
       "1.10.10" = "09ax84lp1q2bivnqs1imn3h13rjaj84a71b6766pb0v7vl04wqcb";
       "1.10.13" = "i2FOAN1ng3WNOWaFowiSSuYR4LA1Bo3tjkvgcClBXSU=";
+      "1.10.14" = "i2FOAN1ng3WNOWaFowiSSuYR4LA1Bo3tjkvgcClBXSU=";
     }.${version} or (builtins.trace "Geth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

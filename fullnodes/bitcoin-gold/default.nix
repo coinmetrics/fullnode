@@ -21,7 +21,9 @@ rec {
       "--disable-tests"
     ];
 
-    patches =
+    patches = [
+      ./build-fix.patch
+    ] ++
       # https://github.com/BTCGPU/BTCGPU/commit/ac59db66c0c7631fedd1150c2b61bd1c2878f8c9
       nixpkgs.lib.optional (builtins.compareVersions version "0.17.3" < 0) (nixpkgs.fetchpatch {
         url = "https://github.com/BTCGPU/BTCGPU/commit/ac59db66c0c7631fedd1150c2b61bd1c2878f8c9.diff";

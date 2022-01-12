@@ -20,6 +20,6 @@ rustPlatform.buildRustPackage rec {
   # and https://gitlab.w3f.tech/florian/w3fpkgs/-/blob/master/pkgs/parity-polkadot/default.nix
   SKIP_WASM_BUILD = 1;
 
-  runVend = true;
+  proxyVendor = true;
   doCheck = false;
 }

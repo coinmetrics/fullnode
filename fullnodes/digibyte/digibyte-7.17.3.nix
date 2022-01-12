@@ -18,6 +18,10 @@ stdenv.mkDerivation rec {
     sha256 = "0hzsjf70ksbh3f9gp1fpg7b98liymiyf51n6sv0cgnwxd85jgz6c";
   };
 
+  patches = [
+    ./build-fix.patch
+  ];
+
   nativeBuildInputs = [
     autoreconfHook
     pkg-config

@@ -13,6 +13,10 @@ rec {
 
     buildInputs = [ boost libevent openssl gmp db48 libsodium ];
 
+    patches = [
+      ./build-fix.patch
+    ];
+
     preAutoreconf = "sed -ie 's/: cargo-build/:/' src/Makefile.am";
 
     configureFlags = [
@@ -47,7 +51,7 @@ rec {
       "5.2.0.1" = "1xx5qk3hjvygirkbh3zdj378v9bd88cwk8xmdjpmwrz9xkc6n5r8";
     }.${version} or (builtins.trace "PIVX librustzcash: using dummy cargo SHA256" "0000000000000000000000000000000000000000000000000000");
 
-    runVend = true;
+    proxyVendor = true;
     doCheck = false;
   };
 }

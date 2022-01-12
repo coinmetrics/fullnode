@@ -9,9 +9,6 @@ rec {
       rev = "refs/tags/v${version}";
       fetchSubmodules = true;
       sha256 = {
-        "0.17.1.7" = "1fdw4i4rw87yz3hz4yc1gdw0gr2mmf9038xaw2l4rrk5y50phjp4";
-        "0.17.1.8" = "10blazbk1602slx3wrmw4jfgkdry55iclrhm5drdficc5v3h735g";
-        "0.17.1.9" = "0jqss4csvkcrhrmaa3vrnyv6yiwqpbfw7037clx9xcfm4qrrfiwy";
         "0.17.2.3" = "0nax991fshfh51grhh2ryfrwwws35k16gzl1l3niva28zff2xmq6";
         "0.17.3.0" = "1spsf7m3x4psp9s7mivr6x4886jnbq4i8ll2dl8bv5bsdhcd3pjm";
       }.${version} or (builtins.trace "Monero fullnode: using dummy SHA256" "0000000000000000000000000000000000000000000000000000");

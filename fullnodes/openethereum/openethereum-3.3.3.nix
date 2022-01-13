@@ -26,7 +26,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     ./patches/001-logos-3.3.2.patch
   ];
 
-  cargoHash = "sha256-0i/gdEBp2TvdcIf81vFVZanDv6Gk9tCOWzpilZ42Bsw=";
+  cargoHash = "sha256-XJRTV+NUiEtHfLatMc7Ikf2J9LmzyoOQA48ZF62N8II=";
   #cargoHash = lib.fakeHash;  # only for getting the right value
 
   nativeBuildInputs = [ cmake pkg-config ];

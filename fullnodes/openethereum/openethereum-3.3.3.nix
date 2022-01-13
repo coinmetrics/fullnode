@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     owner = "openethereum";
     repo = "openethereum";
     rev = "v${version}";
-    #sha256 = "sha256-GPlUbfFqsmi4J3f3bE/FW9Go/P6C8vfFmQKWeWkGaD0=";
+    hash = "sha256-0i/gdEBp2TvdcIf81vFVZanDv6Gk9tCOWzpilZ42Bsw=";
   };
 
   cargoPatches = [

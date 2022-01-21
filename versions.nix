@@ -27,6 +27,7 @@ rec {
   coregeth = [
     "1.12.3"
     "1.12.4"
+    "1.12.6"
   ];
   cosmos-rosetta = [
     "0.1.1"

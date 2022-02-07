@@ -13,11 +13,11 @@ rustPlatform.buildRustPackage rec {
     owner = "paritytech";
     repo = "polkadot";
     rev = "v${version}";
-    #hash = "sha256-Jf6F1U6iJalE8K/hnrTQvkJ6hTIokrtQxx40UY3EbGk=";
+    hash = "sha256-TgpQ+nRKkbyQcCwecnhgF70FI+rlDuTy7XHUNhvYy64=";
   };
 
-  cargoHash = lib.fakeHash;  # only for getting the right value
-  #cargoHash = "sha256-czT3c+3cBa3aI/+NwcAXQ1X8sybI+QRjnBr3G4QSgOg=";
+  #cargoHash = lib.fakeHash;  # only for getting the right value
+  cargoHash = "sha256-PIORMTzQbMdlrKwuF4MiGrLlg2nQpgLRsaHHeiCbqrg=";
 
   nativeBuildInputs = [ clang ];
 

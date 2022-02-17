@@ -14,6 +14,7 @@ images:
     - /after_script.sh
   tags:
     - kubernetes
+    - ny5
   only:
     - master
     - schedules
@@ -31,5 +32,6 @@ images-mr:
     - /after_script.sh
   tags:
     - kubernetes
+    - ny5
   only:
     - merge_requests

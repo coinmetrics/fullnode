@@ -15,6 +15,10 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     sha256 = "sha256-yF+/QepSiZwsdZydWjvxDIFeFyJbJyqZmCdMyQHmrzI=";
   };
 
+  patches = [
+    ./patches/000-fix-cargo-sources.patch
+  ];
+
   cargoSha256 = "sha256-8bSQw8QD/Te6ncbOwmQ6cJMS+2Xkhj8OxG3/6cJwfl4=";
 
   nativeBuildInputs = [ autoreconfHook cargo hexdump makeWrapper pkg-config ];

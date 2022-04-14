@@ -16,6 +16,7 @@ images:
     - cp -r /nix/var/log/nix/drvs artifacts
   artifacts:
     expire_in: "1 week"
+    when: always
     paths:
       - artifacts
   tags:
@@ -40,6 +41,7 @@ images-mr:
     - cp -r /nix/var/log/nix/drvs artifacts
   artifacts:
     expire_in: "1 week"
+    when: always
     paths:
       - artifacts
   tags:

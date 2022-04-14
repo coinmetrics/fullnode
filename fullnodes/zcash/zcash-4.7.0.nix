@@ -15,6 +15,12 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     sha256 = "sha256-yF+/QepSiZwsdZydWjvxDIFeFyJbJyqZmCdMyQHmrzI=";
   };
 
+  prePatch = lib.optionalString stdenv.isAarch64 ''
+    substituteInPlace .cargo/config.offline \
+      --replace "[target.aarch64-unknown-linux-gnu]" "" \
+      --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
+  '';
+
   cargoPatches = [
     (fetchpatch {
       url = "https://github.com/zcash/zcash/commit/61cd19a52d41d60c1987ecf269f7aa8e4d527310.diff";
@@ -65,8 +71,8 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
   meta = with lib; {
     description = "Peer-to-peer, anonymous electronic cash system";
     homepage = "https://z.cash/";
-    maintainers = with maintainers; [ rht tkerber ];
+    maintainers = with maintainers; [ rht tkerber centromere ];
     license = licenses.mit;
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
   };
 }

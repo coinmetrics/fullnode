@@ -1,6 +1,6 @@
-{ rust, rustPlatform, stdenv, lib, fetchFromGitHub, autoreconfHook, makeWrapper
-, cargo, pkg-config, curl, coreutils, boost178, db62, hexdump, libsodium
-, libevent, utf8cpp, util-linux, withDaemon ? true, withMining ? true
+{ rust, rustPlatform, stdenv, lib, fetchFromGitHub, fetchpatch, autoreconfHook
+, makeWrapper, cargo, pkg-config, curl, coreutils, boost178, db62, hexdump
+, libsodium, libevent, utf8cpp, util-linux, withDaemon ? true, withMining ? true
 , withUtils ? true, withWallet ? true, withZmq ? true, zeromq
 }:
 
@@ -15,11 +15,14 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     sha256 = "sha256-yF+/QepSiZwsdZydWjvxDIFeFyJbJyqZmCdMyQHmrzI=";
   };
 
-  patches = [
-    ./patches/000-fix-cargo-sources.patch
+  cargoPatches = [
+    (fetchpatch {
+      url = "https://github.com/zcash/zcash/commit/61cd19a52d41d60c1987ecf269f7aa8e4d527310.diff";
+      sha256 = "sha256-/7T2yCSVlRN7qfFjrZlfBNMlbVHb/KRjtUBY2xFr0mo=";
+    })
   ];
 
-  cargoSha256 = "sha256-8bSQw8QD/Te6ncbOwmQ6cJMS+2Xkhj8OxG3/6cJwfl4=";
+  cargoSha256 = "sha256-+BLfO5OnCBqQTIqMXKJdoPCRgtENa+m0WOHKG9gkdMk=";
 
   nativeBuildInputs = [ autoreconfHook cargo hexdump makeWrapper pkg-config ];
   buildInputs = [ boost178 libevent libsodium utf8cpp ]

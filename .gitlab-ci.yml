@@ -12,6 +12,12 @@ images:
     - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
   after_script:
     - /after_script.sh
+    - mkdir -p artifacts
+    - cp -r /nix/var/log/nix/drvs artifacts
+  artifacts:
+    expire_in: "1 week"
+    paths:
+      - artifacts
   tags:
     - kubernetes
     - ny5
@@ -30,6 +36,12 @@ images-mr:
     - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
   after_script:
     - /after_script.sh
+    - mkdir -p artifacts
+    - cp -r /nix/var/log/nix/drvs artifacts
+  artifacts:
+    expire_in: "1 week"
+    paths:
+      - artifacts
   tags:
     - kubernetes
     - ny5

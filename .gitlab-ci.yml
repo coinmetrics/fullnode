@@ -3,7 +3,7 @@ stages:
 
 images:
   image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.7.0-ci
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.8.0-ci
     entrypoint: [""]
   stage: build
   before_script:
@@ -28,7 +28,7 @@ images:
 
 images-mr:
   image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.7.0-ci
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.8.0-ci
     entrypoint: [""]
   stage: build
   before_script:

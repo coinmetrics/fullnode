@@ -1,9 +1,9 @@
 { nixpkgs, version }:
 rec {
   package = nixpkgs.callPackage (./. + "/zcash-${version}.nix") {
-    stdenv = nixpkgs.llvmPackages_11.stdenv;
+    stdenv = nixpkgs.llvmPackages_13.stdenv;
     withMining = false;
-    withWallet = true; # Build fails without this :(
+    withWallet = true; # The build fails without this. >:(
   };
 
   imageConfig = {

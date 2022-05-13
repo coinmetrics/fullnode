@@ -1,5 +1,5 @@
 { stdenv, fetchFromGitLab, cmake, python3, openssl, boost, libevent, zeromq
-, pkgconfig, help2man }:
+, pkgconfig, help2man, ninja }:
 
 stdenv.mkDerivation rec {
   name = "bitcoin-cash-node";
@@ -12,7 +12,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-5n7hqyyclj3fSaF3RBW1EQ3fO42n5biFSTvBRr3GN5c=";
   };
 
-  nativeBuildInputs = [ cmake python3 pkgconfig help2man ];
+  nativeBuildInputs = [ cmake python3 pkgconfig help2man ninja ];
 
   buildInputs = [ openssl boost libevent zeromq ];
 
@@ -26,6 +26,7 @@ stdenv.mkDerivation rec {
   # many of the generated scripts lack execute permissions
   postConfigure = ''
     find ./. -type f -iname "*.sh" -exec chmod +x {} \;
+    patchShebangs $TMPDIR/$sourceRoot/cmake/utils/gen-ninja-deps.py
     patchShebangs ./doc/man/gen-doc-man.sh
     patchShebangs ./doc/man/gen-doc-man-footer.sh
   '';

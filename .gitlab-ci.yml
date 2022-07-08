@@ -20,7 +20,7 @@ images:
     paths:
       - artifacts
   tags:
-    - kube-hel1-large
+    - kube-any-large
   only:
     - master
     - schedules
@@ -44,6 +44,6 @@ images-mr:
     paths:
       - artifacts
   tags:
-    - kube-hel1-large
+    - kube-any-large
   only:
     - merge_requests

@@ -1,14 +1,14 @@
 diff --git a/PATCH.md b/PATCH.md
 new file mode 100644
-index 000000000..7fdef33d7
+index 000000000..8cfda9846
 --- /dev/null
 +++ b/PATCH.md
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,207 @@
 +# Patch: Mempool and Chain event publishers for ZMQ
 +
 +This is a patch-set to Bitcoin Core that adds more functionality to the ZMQ interface.
-+While the patches does not touch consensus or wallet code, it's not recommended to use this node in a consensus critical environment where user
-+funds are at risk.
++While the patches does not touch consensus or wallet code, it's not recommended to use
++this node in a consensus critical environment where user funds are at risk.
 +
 +## Changes:
 +
@@ -23,10 +23,13 @@ index 000000000..7fdef33d7
 +After:  | topic | timestamp | payload_0 | payload_1 | ... | payload_n | sequence |
 +```
 +
-+This change is backward compatible to the format of the existing ZMQ publishers.
-+The topic is the first part of the message, a timestamp the second, and the sequence is the last part of the message.
++### change: increase default ZMQ high water mark
 +
-+### add: Mempool and Chain events
++The previous default of 1_000 did (correctly) drop messages when publishing
++many ZMQ messages at the same time. The default high water mark is increased to
++100_000.
++
++### add: mempooladded ZMQ publisher
 +
 +A new ZMQ publisher with the topic `mempooladded` is added. The command line
 +option `-zmqpubmempooladded=<address>` sets the address for the publisher and
@@ -161,29 +164,6 @@ index 000000000..7fdef33d7
 +- `header` is the 80-byte serialized block header
 +- `sequence` is an `uint32` in Little Endian
 +
-+#### Chain-headeradded event with height and header
-+
-+A new ZMQ publisher with the topic `chainheaderadded` is added. The command-line
-+option `-zmqpubchainheaderadded=<address>` sets the address for the publisher
-+and `-zmqpubchainheaderaddedhwm=<n>` sets a custom outbound message high water
-+mark. The publisher notifies when a header is connected to a branch on a chain.
-+Note: This header addition does not need to be on the the most-work chain.
-+
-+The functional tests for this ZMQ publisher can be run with `python3
-+test/functional/test_runner.py interface_zmq_chainheaderadded.py`.
-+
-+```
-+ZMQ multipart message structure
-+| topic | timestamp | hash | height | header | sequence |
-+```
-+
-+- `topic` equals `chainheaderadded`
-+- `timestamp` are the milliseconds since 01/01/1970 as int64 in Little Endian
-+- `hash` is the block hash
-+- `height` is the block height as `int32` in Little Endian
-+- `header` is the 80-byte serialized block header
-+- `sequence` is an `uint32` in Little Endian
-+
 +#### Chain-connected event with raw block
 +
 +A new ZMQ publisher with the topic `chainconnected` is added. The command-line
@@ -208,18 +188,34 @@ index 000000000..7fdef33d7
 +- `block` is a serialized Bitcoin block
 +- `sequence` is an `uint32` in Little Endian
 +
-+### change: increase default ZMQ high water mark
++#### Chain-headeradded event with height and header
 +
-+The previous default of 1.000 did (correctly) drop messages when, for
-+example, broadcasting many mempoolconfirmed or mempoolremoved messages.
++A new ZMQ publisher with the topic `chainheaderadded` is added. The command-line
++option `-zmqpubchainheaderadded=<address>` sets the address for the publisher
++and `-zmqpubchainheaderaddedhwm=<n>` sets a custom outbound message high water
++mark. The publisher notifies when a header is connected to a branch on a chain.
++Note: This header addition does not need to be on the the most-work chain.
 +
-+The high water mark is increased to 100.000. No more messages should
-+be dropped.
++The functional tests for this ZMQ publisher can be run with `python3
++test/functional/test_runner.py interface_zmq_chainheaderadded.py`.
++
++```
++ZMQ multipart message structure
++| topic | timestamp | hash | height | header | sequence |
++```
++
++- `topic` equals `chainheaderadded`
++- `timestamp` are the milliseconds since 01/01/1970 as int64 in Little Endian
++- `hash` is the block hash
++- `height` is the block height as `int32` in Little Endian
++- `header` is the 80-byte serialized block header
++- `sequence` is an `uint32` in Little Endian
++
 diff --git a/src/init.cpp b/src/init.cpp
-index 6380da4f7..efb70b99e 100644
+index af39e8078..35da30521 100644
 --- a/src/init.cpp
 +++ b/src/init.cpp
-@@ -500,6 +500,22 @@ void SetupServerArgs(NodeContext& node)
+@@ -512,6 +512,21 @@ void SetupServerArgs(ArgsManager& argsman)
      argsman.AddArg("-zmqpubrawblockhwm=<n>", strprintf("Set publish raw block outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
      argsman.AddArg("-zmqpubrawtxhwm=<n>", strprintf("Set publish raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
      argsman.AddArg("-zmqpubsequencehwm=<n>", strprintf("Set publish hash sequence message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
@@ -228,21 +224,20 @@ index 6380da4f7..efb70b99e 100644
 +    argsman.AddArg("-zmqpubmempooladdedhwm=<n>", strprintf("Set publish raw transaction with fee outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubmempoolremoved=<address>", "Enable publish removed raw transaction with reason in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubmempoolremovedhwm=<n>", strprintf("Set publish removed raw transaction with reason outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+
-+    argsman.AddArg("-zmqpubchainconnected=<address>", "Enable publish raw block connected in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+    argsman.AddArg("-zmqpubchainconnectedhwm=<n>", strprintf("Set publish raw block connected outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+    argsman.AddArg("-zmqpubmempoolreplaced=<address>", "Enable publish replaced raw transaction in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+    argsman.AddArg("-zmqpubmempoolreplacedhwm=<n>", strprintf("Set publish replaced raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+    argsman.AddArg("-zmqpubmempoolconfirmed=<address>", "Enable publish confirmed raw transaction in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
-+    argsman.AddArg("-zmqpubmempoolconfirmedhwm=<n>", strprintf("Set publish confirmed raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubmempoolreplaced=<address>", "Enable publish of replaced and replacement raw transaction with their fees in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubmempoolreplacedhwm=<n>", strprintf("Set publish of replaced and replacement raw transaction with their fees outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubmempoolconfirmed=<address>", "Enable publish of confirmed transactions with the height and block header in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubmempoolconfirmedhwm=<n>", strprintf("Set outbound message high water mark for confirmed transactions (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubchaintipchanged=<address>", "Enable publish tip changed events in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubchaintipchangedhwm=<n>", strprintf("Set tip changed outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubchainconnected=<address>", "Enable publish raw block connected in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
++    argsman.AddArg("-zmqpubchainconnectedhwm=<n>", strprintf("Set publish raw block connected outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubchainheaderadded=<address>", "Enable publish header added events in <address>", ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
 +    argsman.AddArg("-zmqpubchainheaderaddedhwm=<n>", strprintf("Set header added outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
  #else
      hidden_args.emplace_back("-zmqpubhashblock=<address>");
      hidden_args.emplace_back("-zmqpubhashtx=<address>");
-@@ -511,6 +527,21 @@ void SetupServerArgs(NodeContext& node)
+@@ -523,6 +538,21 @@ void SetupServerArgs(ArgsManager& argsman)
      hidden_args.emplace_back("-zmqpubrawblockhwm=<n>");
      hidden_args.emplace_back("-zmqpubrawtxhwm=<n>");
      hidden_args.emplace_back("-zmqpubsequencehwm=<n>");
@@ -251,190 +246,117 @@ index 6380da4f7..efb70b99e 100644
 +    hidden_args.emplace_back("-zmqpubmempooladdedhwm=<n>");
 +    hidden_args.emplace_back("-zmqpubmempoolremoved=<address>");
 +    hidden_args.emplace_back("-zmqpubmempoolremovedhwm=<address>");
-+    hidden_args.emplace_back("-zmqpubchainconnected=<address>");
-+    hidden_args.emplace_back("-zmqpubchainconnectedhwm=<address>");
 +    hidden_args.emplace_back("-zmqpubmempoolreplaced=<address>");
 +    hidden_args.emplace_back("-zmqpubmempoolreplacedhwm=<address>");
 +    hidden_args.emplace_back("-zmqpubmempoolconfirmed=<address>");
-+    hidden_args.emplace_back("-zmqpubmempoolconfirmedhwm=<address>");
++    hidden_args.emplace_back("-zmqpubmempoolconfirmedhwm=<n>");
 +    hidden_args.emplace_back("-zmqpubchaintipchanged=<address>");
 +    hidden_args.emplace_back("-zmqpubchaintipchangedhwm=<address>");
++    hidden_args.emplace_back("-zmqpubchainconnected=<address>");
++    hidden_args.emplace_back("-zmqpubchainconnectedhwm=<address>");
 +    hidden_args.emplace_back("-zmqpubchainheaderadded=<address>");
 +    hidden_args.emplace_back("-zmqpubchainheaderaddedhwm=<address>");
  #endif
  
      argsman.AddArg("-checkblocks=<n>", strprintf("How many blocks to check at startup (default: %u, 0 = all)", DEFAULT_CHECKBLOCKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
-diff --git a/src/interfaces/chain.cpp b/src/interfaces/chain.cpp
-index 4c5ebe66f..f591ba856 100644
---- a/src/interfaces/chain.cpp
-+++ b/src/interfaces/chain.cpp
-@@ -80,6 +80,24 @@ public:
-         m_notifications->updatedBlockTip();
-     }
-     void ChainStateFlushed(const CBlockLocator& locator) override { m_notifications->chainStateFlushed(locator); }
-+
-+    // ZMCE patch:
-+    void TransactionAddedToMempoolWithFee(const CTransactionRef& tx, const CAmount fee) override
-+    {
-+        m_notifications->transactionAddedToMempoolWithFee(tx, fee);
-+    }
-+    void TransactionRemovedFromMempoolWithReason(const CTransactionRef& tx, const MemPoolRemovalReason reason) override
-+    {
-+        m_notifications->transactionRemovedFromMempoolWithReason(tx, reason);
-+    }
-+    void TransactionReplacedInMempool(const CTransactionRef& replaced, const CAmount replaced_tx_fee, const CTransactionRef& replacment, const CAmount replacment_tx_fee) override
-+    {
-+        m_notifications->transactionReplacedInMempool(replaced, replaced_tx_fee, replacment, replacment_tx_fee);
-+    }
-+    void HeaderAddedToChain(const CBlockIndex* index) override
-+    {
-+        m_notifications->headerAddedToChain();
-+    }
-     std::shared_ptr<Chain::Notifications> m_notifications;
- };
- 
 diff --git a/src/interfaces/chain.h b/src/interfaces/chain.h
-index 85d09be0f..ed3ffbefa 100644
+index ddfb4bda9..3b4d83ffb 100644
 --- a/src/interfaces/chain.h
 +++ b/src/interfaces/chain.h
-@@ -21,6 +21,8 @@ class CBlock;
- class CFeeRate;
- class CRPCCommand;
- class CScheduler;
-+class CValidationState;
-+class CBlockIndex;
- class Coin;
- class uint256;
- enum class MemPoolRemovalReason;
-@@ -30,6 +32,8 @@ struct CBlockLocator;
- struct FeeCalculation;
- struct NodeContext;
- 
-+enum class MemPoolRemovalReason;
-+
- namespace interfaces {
- 
- class Handler;
-@@ -248,6 +252,12 @@ public:
+@@ -234,6 +234,8 @@ public:
+     public:
+         virtual ~Notifications() {}
+         virtual void transactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) {}
++        virtual void transactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) {}
++        virtual void transactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) {}
+         virtual void transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) {}
+         virtual void blockConnected(const CBlock& block, int height) {}
          virtual void blockDisconnected(const CBlock& block, int height) {}
-         virtual void updatedBlockTip() {}
-         virtual void chainStateFlushed(const CBlockLocator& locator) {}
-+
-+        // ZMCE patch:
-+        virtual void transactionAddedToMempoolWithFee(const CTransactionRef& tx, const CAmount fee) {}
-+        virtual void transactionRemovedFromMempoolWithReason(const CTransactionRef& ptx, const MemPoolRemovalReason reason) {}
-+        virtual void transactionReplacedInMempool(const CTransactionRef& replaced, const CAmount replaced_tx_fee, const CTransactionRef& replacment, const CAmount replacment_tx_fee) {}
-+        virtual void headerAddedToChain() {}
-     };
- 
-     //! Register handler for notifications.
-diff --git a/src/test/policyestimator_tests.cpp b/src/test/policyestimator_tests.cpp
-index 06877898a..ef18224bf 100644
---- a/src/test/policyestimator_tests.cpp
-+++ b/src/test/policyestimator_tests.cpp
-@@ -12,7 +12,7 @@
- 
- #include <boost/test/unit_test.hpp>
- 
--BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, BasicTestingSetup)
-+BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, TestingSetup)
- 
- BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
- {
-diff --git a/src/txmempool.cpp b/src/txmempool.cpp
-index 0c2b73196..3b16da714 100644
---- a/src/txmempool.cpp
-+++ b/src/txmempool.cpp
-@@ -19,6 +19,8 @@
- #include <util/time.h>
- #include <validationinterface.h>
- 
-+#include <validationinterface.h>
-+
- CTxMemPoolEntry::CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
-                                  int64_t _nTime, unsigned int _entryHeight,
-                                  bool _spendsCoinbase, int64_t _sigOpsCost, LockPoints lp)
-@@ -421,6 +423,10 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
-         GetMainSignals().TransactionRemovedFromMempool(it->GetSharedTx(), reason, mempool_sequence);
+diff --git a/src/node/interfaces.cpp b/src/node/interfaces.cpp
+index cb063ae9f..3f700b8b9 100644
+--- a/src/node/interfaces.cpp
++++ b/src/node/interfaces.cpp
+@@ -371,10 +371,18 @@ public:
+     {
+         m_notifications->transactionAddedToMempool(tx, mempool_sequence);
      }
- 
-+    // ZMCE patch:
-+    // Notify on all transactions removed from the mempool with the removal reason.
-+    GetMainSignals().TransactionRemovedFromMempoolWithReason(it->GetSharedTx(), reason);
-+
-     const uint256 hash = it->GetTx().GetHash();
-     for (const CTxIn& txin : it->GetTx().vin)
-         mapNextTx.erase(txin.prevout);
++    void TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) override
++    {
++        m_notifications->transactionAddedToMempoolFee(tx, fee);
++    }
+     void TransactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) override
+     {
+         m_notifications->transactionRemovedFromMempool(tx, reason, mempool_sequence);
+     }
++    void TransactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) override
++    {
++        m_notifications->transactionReplacedInMempool(tx_replaced, fee_replaced, tx_replacement, fee_replacement);
++    }
+     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
+     {
+         m_notifications->blockConnected(*block, index->nHeight);
 diff --git a/src/validation.cpp b/src/validation.cpp
-index feb7502a0..f66857acf 100644
+index 214112e2b..c81d5f164 100644
 --- a/src/validation.cpp
 +++ b/src/validation.cpp
-@@ -1003,6 +1003,9 @@ bool MemPoolAccept::Finalize(ATMPArgs& args, Workspace& ws)
+@@ -1051,6 +1051,7 @@ bool MemPoolAccept::Finalize(const ATMPArgs& args, Workspace& ws)
                  hash.ToString(),
-                 FormatMoney(nModifiedFees - nConflictingFees),
-                 (int)entry->GetTxSize() - (int)nConflictingSize);
-+
-+        GetMainSignals().TransactionReplacedInMempool(it->GetSharedTx(), nConflictingFees, ws.m_ptx, ws.m_modified_fees);
-+
-         if (args.m_replaced_transactions)
-             args.m_replaced_transactions->push_back(it->GetSharedTx());
+                 FormatMoney(ws.m_modified_fees - ws.m_conflicting_fees),
+                 (int)entry->GetTxSize() - (int)ws.m_conflicting_size);
++        GetMainSignals().TransactionReplacedInMempool(it->GetSharedTx(), ws.m_conflicting_fees, ws.m_ptx, ws.m_modified_fees);
+         ws.m_replaced_transactions.push_back(it->GetSharedTx());
      }
-@@ -1053,6 +1056,9 @@ bool MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs
+     m_pool.RemoveStaged(ws.m_all_conflicting, false, MemPoolRemovalReason::REPLACED);
+@@ -1178,6 +1179,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
+     if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
  
      GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
++    GetMainSignals().TransactionAddedToMempoolFee(ptx, ws.m_entry->GetFee());
  
-+    if (m_pool.IsLoaded())
-+        GetMainSignals().TransactionAddedToMempoolWithFee(ptx, workspace.m_entry->GetFee());
-+
-     return true;
+     return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees);
  }
- 
-@@ -3212,6 +3218,10 @@ CBlockIndex* BlockManager::AddToBlockIndex(const CBlockHeader& block)
- 
-     setDirtyBlockIndex.insert(pindexNew);
+@@ -3573,6 +3575,10 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
+     }
+     CBlockIndex* pindex{m_blockman.AddToBlockIndex(block)};
  
 +    if (!fImporting && !fReindex) {
-+        GetMainSignals().HeaderAddedToChain(pindexNew);
++        GetMainSignals().HeaderAddedToChain(pindex);
 +    }
 +
-     return pindexNew;
- }
+     if (ppindex)
+         *ppindex = pindex;
  
 diff --git a/src/validationinterface.cpp b/src/validationinterface.cpp
-index 1e07ff23a..5032125f1 100644
+index 1e07ff23a..c900f7fe6 100644
 --- a/src/validationinterface.cpp
 +++ b/src/validationinterface.cpp
-@@ -254,3 +254,40 @@ void CMainSignals::NewPoWValidBlock(const CBlockIndex *pindex, const std::shared
-     LOG_EVENT("%s: block hash=%s", __func__, block->GetHash().ToString());
-     m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.NewPoWValidBlock(pindex, block); });
+@@ -208,6 +208,15 @@ void CMainSignals::TransactionAddedToMempool(const CTransactionRef& tx, uint64_t
+                           tx->GetWitnessHash().ToString());
  }
-+
-+
-+void CMainSignals::TransactionAddedToMempoolWithFee(const CTransactionRef &ptx, const CAmount fee) {
-+    auto event = [ptx, fee, this] {
-+        m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionAddedToMempoolWithFee(ptx, fee); });
+ 
++void CMainSignals::TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) {
++    auto event = [tx, fee, this] {
++        m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionAddedToMempoolFee(tx, fee); });
 +    };
 +    ENQUEUE_AND_LOG_EVENT(event, "%s: txid=%s wtxid=%s", __func__,
-+                          ptx->GetHash().ToString(),
-+                          ptx->GetWitnessHash().ToString());
++                          tx->GetHash().ToString(),
++                          tx->GetWitnessHash().ToString());
 +}
 +
-+void CMainSignals::TransactionRemovedFromMempoolWithReason(const CTransactionRef &ptx, const MemPoolRemovalReason reason) {
-+    auto event = [ptx, reason, this] {
-+        m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionRemovedFromMempoolWithReason(ptx, reason); });
+ void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) {
+     auto event = [tx, reason, mempool_sequence, this] {
+         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionRemovedFromMempool(tx, reason, mempool_sequence); });
+@@ -217,6 +226,24 @@ void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& tx, MemP
+                           tx->GetWitnessHash().ToString());
+ }
+ 
++void CMainSignals::TransactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) {
++    auto event = [tx_replaced, fee_replaced, tx_replacement, fee_replacement, this] {
++        m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionReplacedInMempool(tx_replaced, fee_replaced, tx_replacement, fee_replacement); });
 +    };
-+    ENQUEUE_AND_LOG_EVENT(event, "%s: txid=%s wtxid=%s", __func__,
-+                          ptx->GetHash().ToString(),
-+                          ptx->GetWitnessHash().ToString());
-+}
-+
-+void CMainSignals::TransactionReplacedInMempool(const CTransactionRef &replaced, const CAmount replaced_tx_fee, const CTransactionRef &replacement, const CAmount replacement_tx_fee) {
-+    auto event = [replaced, replaced_tx_fee, replacement, replacement_tx_fee, this] {
-+        m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionReplacedInMempool(replaced, replaced_tx_fee, replacement, replacement_tx_fee); });
-+    };
-+    ENQUEUE_AND_LOG_EVENT(event, "%s: replaced_txid=%s replaced_wtxid=%s", __func__,
-+                          replaced->GetHash().ToString(),
-+                          replaced->GetWitnessHash().ToString());
++    ENQUEUE_AND_LOG_EVENT(event, "%s: txid_replaced=%s txid_replacement=%s", __func__,
++                          tx_replaced->GetHash().ToString(),
++                          tx_replacement->GetHash().ToString());
 +}
 +
 +void CMainSignals::HeaderAddedToChain(const CBlockIndex *pindexHeader) {
@@ -445,102 +367,86 @@ index 1e07ff23a..5032125f1 100644
 +                        pindexHeader->GetBlockHash().ToString(),
 +                        pindexHeader->nHeight);
 +}
-\ No newline at end of file
++
+ void CMainSignals::BlockConnected(const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex) {
+     auto event = [pblock, pindex, this] {
+         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.BlockConnected(pblock, pindex); });
 diff --git a/src/validationinterface.h b/src/validationinterface.h
-index 7c3ce00fb..ab7297fde 100644
+index 7c3ce00fb..ce5448a39 100644
 --- a/src/validationinterface.h
 +++ b/src/validationinterface.h
-@@ -9,6 +9,9 @@
- #include <primitives/transaction.h> // CTransaction(Ref)
- #include <sync.h>
- 
-+// ZMCE patch
-+#include <txmempool.h>
-+
- #include <functional>
- #include <memory>
- 
-@@ -173,6 +176,34 @@ protected:
-      * Notifies listeners that a block which builds directly on our current tip
-      * has been received and connected to the headers tree, though not validated yet */
-     virtual void NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_ptr<const CBlock>& block) {};
-+
-+    // ZMCE patch:
+@@ -98,7 +98,18 @@ protected:
+      * Called on a background thread.
+      */
+     virtual void TransactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) {}
+-
 +    /**
-+     * Notifies listeners of a transaction having been added to mempool and passed the transaction fee.
++     * Notifies listeners of a transaction having been added to mempool. Includes the transaction fee.
 +     *
 +     * Called on a background thread.
 +     */
-+    virtual void TransactionAddedToMempoolWithFee(const CTransactionRef&, const CAmount) {}
++    virtual void TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) {}
 +    /**
-+     * Notifies listeners of a transaction leaving mempool and passes the reason.
++     * Notifies listeners of a transaction having been replaced in the mempool. Includes the transaction fees.
 +     *
 +     * Called on a background thread.
 +     */
-+    virtual void TransactionRemovedFromMempoolWithReason(const CTransactionRef&, const MemPoolRemovalReason) {}
-+    /**
-+     * Notifies listeners of a transaction being replaced in the mempool and passes
-+     * the replaced and replacment transaction as well as their fees paid.
-+     *
-+     * Called on a background thread.
-+     */
-+    virtual void TransactionReplacedInMempool(const CTransactionRef&, const CAmount, const CTransactionRef&, const CAmount) {}
++    virtual void TransactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) {}
+     /**
+      * Notifies listeners of a transaction leaving mempool.
+      *
+@@ -139,6 +150,12 @@ protected:
+      * Called on a background thread.
+      */
+     virtual void BlockConnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex *pindex) {}
 +    /**
 +     * Notifies listeners when a new header is added to one of the branches of the chain.
 +     *
 +     * Called on a background thread.
 +     */
 +    virtual void HeaderAddedToChain(const CBlockIndex *pindexHeader) {}
-+
-     friend class CMainSignals;
- };
+     /**
+      * Notifies listeners of a block being disconnected
+      *
+@@ -199,8 +216,11 @@ public:
  
-@@ -205,6 +236,11 @@ public:
+     void UpdatedBlockTip(const CBlockIndex *, const CBlockIndex *, bool fInitialDownload);
+     void TransactionAddedToMempool(const CTransactionRef&, uint64_t mempool_sequence);
++    void TransactionAddedToMempoolFee(const CTransactionRef&, const CAmount fee);
+     void TransactionRemovedFromMempool(const CTransactionRef&, MemPoolRemovalReason, uint64_t mempool_sequence);
++    void TransactionReplacedInMempool(const CTransactionRef&, const CAmount, const CTransactionRef&, const CAmount);
+     void BlockConnected(const std::shared_ptr<const CBlock> &, const CBlockIndex *pindex);
++    void HeaderAddedToChain(const CBlockIndex *);
+     void BlockDisconnected(const std::shared_ptr<const CBlock> &, const CBlockIndex* pindex);
      void ChainStateFlushed(const CBlockLocator &);
      void BlockChecked(const CBlock&, const BlockValidationState&);
-     void NewPoWValidBlock(const CBlockIndex *, const std::shared_ptr<const CBlock>&);
-+
-+    void TransactionAddedToMempoolWithFee(const CTransactionRef &, const CAmount);
-+    void TransactionRemovedFromMempoolWithReason(const CTransactionRef &, const MemPoolRemovalReason);
-+    void TransactionReplacedInMempool(const CTransactionRef &, const CAmount, const CTransactionRef &, const CAmount);
-+    void HeaderAddedToChain(const CBlockIndex *);
- };
- 
- CMainSignals& GetMainSignals();
 diff --git a/src/zmq/zmqabstractnotifier.cpp b/src/zmq/zmqabstractnotifier.cpp
-index 3938f6fd2..3f75dc82e 100644
+index 90aefb001..fb970c955 100644
 --- a/src/zmq/zmqabstractnotifier.cpp
 +++ b/src/zmq/zmqabstractnotifier.cpp
-@@ -6,6 +6,8 @@
+@@ -23,6 +23,11 @@ bool CZMQAbstractNotifier::NotifyTransaction(const CTransaction &/*transaction*/
+     return true;
+ }
  
- #include <cassert>
- 
-+#include <txmempool.h>
++bool CZMQAbstractNotifier::NotifyTransactionFee(const CTransaction &/*transaction*/, const CAmount fee)
++{
++    return true;
++}
 +
- const int CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM;
- 
- CZMQAbstractNotifier::~CZMQAbstractNotifier()
-@@ -42,3 +44,38 @@ bool CZMQAbstractNotifier::NotifyTransactionRemoval(const CTransaction &/*transa
+ bool CZMQAbstractNotifier::NotifyBlockConnect(const CBlockIndex * /*CBlockIndex*/)
+ {
+     return true;
+@@ -42,3 +47,33 @@ bool CZMQAbstractNotifier::NotifyTransactionRemoval(const CTransaction &/*transa
  {
      return true;
  }
 +
-+bool CZMQAbstractNotifier::NotifyMempoolTransactionAdded(const CTransaction &/*transaction*/, const CAmount/*fee*/)
++bool CZMQAbstractNotifier::NotifyTransactionRemovalReason(const CTransaction &/*transaction*/, const MemPoolRemovalReason reason)
 +{
 +    return true;
 +}
 +
-+bool CZMQAbstractNotifier::NotifyMempoolTransactionRemoved(const CTransaction &/*transaction*/, const MemPoolRemovalReason /*reason*/)
-+{
-+    return true;
-+}
-+
-+bool CZMQAbstractNotifier::NotifyChainBlockConnected(const CBlockIndex * /*CBlockIndex*/)
-+{
-+    return true;
-+}
-+
-+bool CZMQAbstractNotifier::NotifyMempoolTransactionReplaced(const CTransaction &/*replaced*/, const CAmount/*replaced tx fee*/, const CTransaction &/*replacment*/, const CAmount/*replacement tx fee*/)
++bool CZMQAbstractNotifier::NotifyTransactionReplaced(const CTransaction &/* replaced tx */, const CAmount/*replaced fee*/, const CTransaction&/*replacement tx*/, const CAmount/*replacement fee*/)
 +{
 +    return true;
 +}
@@ -555,25 +461,28 @@ index 3938f6fd2..3f75dc82e 100644
 +    return true;
 +}
 +
++bool CZMQAbstractNotifier::NotifyChainBlockConnected(const CBlockIndex *)
++{
++    return true;
++}
++
 +bool CZMQAbstractNotifier::NotifyChainHeaderAdded(const CBlockIndex *)
 +{
 +    return true;
 +}
-\ No newline at end of file
 diff --git a/src/zmq/zmqabstractnotifier.h b/src/zmq/zmqabstractnotifier.h
-index dddba8d6b..6351e979f 100644
+index fa3944e32..d9262db89 100644
 --- a/src/zmq/zmqabstractnotifier.h
 +++ b/src/zmq/zmqabstractnotifier.h
-@@ -10,6 +10,8 @@
- #include <memory>
- #include <string>
- 
-+#include <txmempool.h>
-+
+@@ -12,13 +12,15 @@
  class CBlockIndex;
  class CTransaction;
  class CZMQAbstractNotifier;
-@@ -19,7 +21,7 @@ using CZMQNotifierFactory = std::unique_ptr<CZMQAbstractNotifier> (*)();
++typedef int64_t CAmount;
++enum class MemPoolRemovalReason;
+ 
+ using CZMQNotifierFactory = std::unique_ptr<CZMQAbstractNotifier> (*)();
+ 
  class CZMQAbstractNotifier
  {
  public:
@@ -582,23 +491,32 @@ index dddba8d6b..6351e979f 100644
  
      CZMQAbstractNotifier() : psocket(nullptr), outbound_message_high_water_mark(DEFAULT_ZMQ_SNDHWM) { }
      virtual ~CZMQAbstractNotifier();
-@@ -57,6 +59,14 @@ public:
+@@ -53,9 +55,22 @@ public:
+     virtual bool NotifyTransactionAcceptance(const CTransaction &transaction, uint64_t mempool_sequence);
+     // Notifies of every mempool removal, except inclusion in blocks
+     virtual bool NotifyTransactionRemoval(const CTransaction &transaction, uint64_t mempool_sequence);
++    // Notifies of every mempool removal, including inclusion in blocks. Includes the removal reason.
++    virtual bool NotifyTransactionRemovalReason(const CTransaction &transaction, const MemPoolRemovalReason reason);
      // Notifies of transactions added to mempool or appearing in blocks
      virtual bool NotifyTransaction(const CTransaction &transaction);
- 
-+    virtual bool NotifyMempoolTransactionAdded(const CTransaction &transaction, const CAmount fee);
-+    virtual bool NotifyMempoolTransactionRemoved(const CTransaction &transaction, const MemPoolRemovalReason reason);
-+
-+    virtual bool NotifyChainBlockConnected(const CBlockIndex *pindex);
-+    virtual bool NotifyMempoolTransactionReplaced(const CTransaction &replaced, const CAmount replaced_tx_fee, const CTransaction &replacement, const CAmount replacement_tx_fee);
+-
++    // Notifies of transactions added to mempool (only!) with the transaction fee.
++    virtual bool NotifyTransactionFee(const CTransaction &transaction, const CAmount fee);
++    // Notifies of transactions replaced in the mempool.
++    virtual bool NotifyTransactionReplaced(const CTransaction &tx_replaced, const CAmount fee_replaced, const CTransaction &tx_replacement, const CAmount fee_replacement);
++    // Notifies of transactions confirmed with information about the block.
 +    virtual bool NotifyMempoolTransactionConfirmed(const CTransaction &transaction, const CBlockIndex *pindex);
++    // Notifies of changed chain tips.
 +    virtual bool NotifyChainTipChanged(const CBlockIndex *pindex);
++    // Notifies of a block connection to the chain.
++    virtual bool NotifyChainBlockConnected(const CBlockIndex *pindex);
++    // Notifies of a header connection to the chian.
 +    virtual bool NotifyChainHeaderAdded(const CBlockIndex *pindex);
  protected:
      void *psocket;
      std::string type;
 diff --git a/src/zmq/zmqnotificationinterface.cpp b/src/zmq/zmqnotificationinterface.cpp
-index a2f994d7d..1bb48556b 100644
+index a53de34db..417936d5c 100644
 --- a/src/zmq/zmqnotificationinterface.cpp
 +++ b/src/zmq/zmqnotificationinterface.cpp
 @@ -38,6 +38,14 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
@@ -607,10 +525,10 @@ index a2f994d7d..1bb48556b 100644
  
 +    factories["pubmempooladded"] = CZMQAbstractNotifier::Create<CZMQPublishMempolAddedNotifier>;
 +    factories["pubmempoolremoved"] = CZMQAbstractNotifier::Create<CZMQPublishMempoolRemovedNotifier>;
-+    factories["pubchainconnected"] = CZMQAbstractNotifier::Create<CZMQPublishChainConnectedNotifier>;
-+    factories["pubmempoolreplaced"] = CZMQAbstractNotifier::Create<CZMQPublishMempolReplacedNotifier>;
++    factories["pubmempoolreplaced"] = CZMQAbstractNotifier::Create<CZMQPublishMempoolReplacedNotifier>;
 +    factories["pubmempoolconfirmed"] = CZMQAbstractNotifier::Create<CZMQPublishMempoolConfirmedNotifier>;
 +    factories["pubchaintipchanged"] = CZMQAbstractNotifier::Create<CZMQPublishChainTipChangedNotifier>;
++    factories["pubchainconnected"] = CZMQAbstractNotifier::Create<CZMQPublishChainConnectedNotifier>;
 +    factories["pubchainheaderadded"] = CZMQAbstractNotifier::Create<CZMQPublishChainHeaderAddedNotifier>;
 +
      std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
@@ -627,63 +545,74 @@ index a2f994d7d..1bb48556b 100644
  }
  
  void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx, uint64_t mempool_sequence)
-@@ -148,6 +160,24 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef&
+@@ -148,6 +160,15 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef&
      });
  }
  
-+void CZMQNotificationInterface::TransactionAddedToMempoolWithFee(const CTransactionRef& ptx, const CAmount fee)
++void CZMQNotificationInterface::TransactionAddedToMempoolFee(const CTransactionRef& ptx, const CAmount fee)
 +{
 +    const CTransaction& tx = *ptx;
 +
 +    TryForEachAndRemoveFailed(notifiers, [&tx, fee](CZMQAbstractNotifier* notifier) {
-+        return notifier->NotifyMempoolTransactionAdded(tx, fee);
-+    });
-+}
-+
-+void CZMQNotificationInterface::TransactionRemovedFromMempoolWithReason(const CTransactionRef& ptx, const MemPoolRemovalReason reason)
-+{
-+    const CTransaction& tx = *ptx;
-+
-+    TryForEachAndRemoveFailed(notifiers, [&tx, reason](CZMQAbstractNotifier* notifier) {
-+        return notifier->NotifyMempoolTransactionRemoved(tx, reason);
++        return notifier->NotifyTransactionFee(tx, fee);
 +    });
 +}
 +
  void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransactionRef& ptx, MemPoolRemovalReason reason, uint64_t mempool_sequence)
  {
      // Called for all non-block inclusion reasons
-@@ -162,9 +192,17 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
- {
-     for (const CTransactionRef& ptx : pblock->vtx) {
-         const CTransaction& tx = *ptx;
+@@ -156,6 +177,20 @@ void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransaction
+     TryForEachAndRemoveFailed(notifiers, [&tx, mempool_sequence](CZMQAbstractNotifier* notifier) {
+         return notifier->NotifyTransactionRemoval(tx, mempool_sequence);
+     });
 +
++    TryForEachAndRemoveFailed(notifiers, [&tx, reason](CZMQAbstractNotifier* notifier) {
++        return notifier->NotifyTransactionRemovalReason(tx, reason);
++    });
++}
++
++void CZMQNotificationInterface::TransactionReplacedInMempool(const CTransactionRef& txref_replaced, const CAmount fee_replaced, const CTransactionRef& txref_replacement, const CAmount fee_replacement)
++{
++    const CTransaction& tx_replaced = *txref_replaced;
++    const CTransaction& tx_replacement = *txref_replacement;
++
++    TryForEachAndRemoveFailed(notifiers, [&tx_replaced, fee_replaced, &tx_replacement, fee_replacement](CZMQAbstractNotifier* notifier) {
++        return notifier->NotifyTransactionReplaced(tx_replaced, fee_replaced, tx_replacement, fee_replacement);
++    });
+ }
+ 
+ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected)
+@@ -165,12 +200,26 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
          TryForEachAndRemoveFailed(notifiers, [&tx](CZMQAbstractNotifier* notifier) {
              return notifier->NotifyTransaction(tx);
          });
 +
 +        // do not notify on coinbase tx
 +        if (tx.IsCoinBase()) continue;
-+
++        TryForEachAndRemoveFailed(notifiers, [&tx](CZMQAbstractNotifier* notifier) {
++          return notifier->NotifyTransactionRemovalReason(tx, MemPoolRemovalReason::BLOCK);
++        });
 +        TryForEachAndRemoveFailed(notifiers, [&tx, pindexConnected](CZMQAbstractNotifier* notifier) {
-+            return notifier->NotifyMempoolTransactionConfirmed(tx, pindexConnected);
++          return notifier->NotifyMempoolTransactionConfirmed(tx, pindexConnected);
 +        });
      }
  
      // Next we notify BlockConnect listeners for *all* blocks
-@@ -188,4 +226,21 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
+     TryForEachAndRemoveFailed(notifiers, [pindexConnected](CZMQAbstractNotifier* notifier) {
+         return notifier->NotifyBlockConnect(pindexConnected);
+     });
++
++    TryForEachAndRemoveFailed(notifiers, [pindexConnected](CZMQAbstractNotifier* notifier) {
++        return notifier->NotifyChainBlockConnected(pindexConnected);
++    });
++
+ }
+ 
+ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected)
+@@ -188,4 +237,11 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
      });
  }
  
-+void CZMQNotificationInterface::TransactionReplacedInMempool(const CTransactionRef& replaced, const CAmount replaced_tx_fee, const CTransactionRef& replacement, const CAmount replacement_tx_fee)
-+{
-+    const CTransaction& replaced_tx = *replaced;
-+    const CTransaction& replacement_tx = *replacement;
-+
-+    TryForEachAndRemoveFailed(notifiers, [replaced_tx, replaced_tx_fee, replacement_tx, replacement_tx_fee](CZMQAbstractNotifier* notifier) {
-+        return notifier->NotifyMempoolTransactionReplaced(replaced_tx, replaced_tx_fee, replacement_tx, replacement_tx_fee);
-+    });
-+}
-+
 +void CZMQNotificationInterface::HeaderAddedToChain(const CBlockIndex *pindexHeader)
 +{
 +    TryForEachAndRemoveFailed(notifiers, [pindexHeader](CZMQAbstractNotifier* notifier) {
@@ -693,42 +622,40 @@ index a2f994d7d..1bb48556b 100644
 +
  CZMQNotificationInterface* g_zmq_notification_interface = nullptr;
 diff --git a/src/zmq/zmqnotificationinterface.h b/src/zmq/zmqnotificationinterface.h
-index 788a38351..fbd5b1a16 100644
+index 8f81bfd63..7ab845334 100644
 --- a/src/zmq/zmqnotificationinterface.h
 +++ b/src/zmq/zmqnotificationinterface.h
-@@ -32,6 +32,11 @@ protected:
+@@ -32,6 +32,9 @@ protected:
      void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected) override;
      void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;
  
-+    void TransactionAddedToMempoolWithFee(const CTransactionRef& tx, const CAmount fee) override;
-+    void TransactionRemovedFromMempoolWithReason(const CTransactionRef& ptx, const MemPoolRemovalReason reason) override;
-+
-+    void TransactionReplacedInMempool(const CTransactionRef& replaced, const CAmount replaced_tx_fee, const CTransactionRef& replacement, const CAmount replacement_tx_fee) override;
++    void TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) override;
++    void TransactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) override;
 +    void HeaderAddedToChain(const CBlockIndex *pindexHeader) override;
  private:
      CZMQNotificationInterface();
  
 diff --git a/src/zmq/zmqpublishnotifier.cpp b/src/zmq/zmqpublishnotifier.cpp
-index c0207f9dd..002937d85 100644
+index 2c6f24a23..af5112510 100644
 --- a/src/zmq/zmqpublishnotifier.cpp
 +++ b/src/zmq/zmqpublishnotifier.cpp
-@@ -28,6 +28,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
+@@ -33,6 +33,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
  static const char *MSG_RAWTX     = "rawtx";
  static const char *MSG_SEQUENCE  = "sequence";
  
 +static const char *MSG_MEMPOOLADDED = "mempooladded";
 +static const char *MSG_MEMPOOLREMOVED = "mempoolremoved";
-+static const char *MSG_CHAINCONNECTED = "chainconnected";
 +static const char *MSG_MEMPOOLREPLACED = "mempoolreplaced";
 +static const char *MSG_MEMPOOLCONFIRMED = "mempoolconfirmed";
 +static const char *MSG_CHAINTIPCHANGED = "chaintipchanged";
++static const char *MSG_CHAINCONNECTED = "chainconnected";
 +static const char *MSG_CHAINHEADERADDED = "chainheaderadded";
 +
  // Internal function to send multipart message
  static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
  {
-@@ -71,6 +79,78 @@ static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
-     return 0;
+@@ -90,6 +98,82 @@ static bool IsZMQAddressIPV6(const std::string &zmq_address)
+     return false;
  }
  
 +static int zmq_send_multipart(void *sock, const zmq_message& message)
@@ -764,31 +691,26 @@ index c0207f9dd..002937d85 100644
 +static zmq_message_part hashToZMQMessagePart(const uint256 hash) {
 +    zmq_message_part part_hash;
 +    for (int i = 31; i >= 0; i--)
-+        part_hash.push_back(hash.begin()[i]);
++        part_hash.push_back((std::byte)hash.begin()[i]);
 +    return part_hash;
 +}
 +
 +// converts a CTransaction into a zmq_message_part (by serializing it)
 +static zmq_message_part transactionToZMQMessagePart(const CTransaction& transaction) {
-+    CDataStream ss_replaced(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-+    ss_replaced << transaction;
-+    return zmq_message_part(ss_replaced.begin() , ss_replaced.end());
++    zmq_message_part part_transaction;
++    CDataStream ss_transaction(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
++    ss_transaction << transaction;
++    part_transaction.assign(ss_transaction.begin(), ss_transaction.end());
++    return part_transaction;
 +}
 +
 +// converts an int64_t into a zmq_message_part
-+static zmq_message_part int64ToZMQMessagePart(const int64_t val) {
-+    const size_t size = sizeof(int64_t);
-+    unsigned char value[size];
-+    std::memcpy(value, &val, size);
-+    return zmq_message_part(value, value + size);
-+}
-+
-+// converts an int32_t into a zmq_message_part
-+static zmq_message_part int32ToZMQMessagePart(const int32_t val) {
-+    const size_t size = sizeof(int32_t);
-+    unsigned char value[size];
-+    std::memcpy(value, &val, size);
-+    return zmq_message_part(value, value + size);
++static zmq_message_part int64ToZMQMessagePart(const int64_t value) {
++    zmq_message_part part;
++    for (size_t i = 0; i < sizeof(int64_t); i++) {
++      part.push_back((std::byte) (value >> i*8));
++    }
++    return part;
 +}
 +
 +// returns the current time in milliseconds as zmq_message_part
@@ -803,42 +725,38 @@ index c0207f9dd..002937d85 100644
 +    return zmq_message_part(ss_header.begin() , ss_header.end());
 +}
 +
++// converts an int32_t into a zmq_message_part
++static zmq_message_part int32ToZMQMessagePart(const int32_t value) {
++    zmq_message_part part(0);
++    for (size_t i = 0; i < sizeof(int32_t); i++) {
++      part.push_back((std::byte) (value >> i*8));
++    }
++    return part;
++}
++
  bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
  {
      assert(!psocket);
-@@ -177,6 +257,46 @@ bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const void
+@@ -205,6 +289,33 @@ bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const void
      return true;
  }
  
-+
-+bool CZMQAbstractPublishNotifier::SendMessage(const char *command, const std::vector<zmq_message_part>& payload)
++bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const std::vector<zmq_message_part>& payload)
 +{
 +    assert(psocket);
 +
-+    /*
-+      create message from multiple parts:
-+       - first part is the command (or topic)
-+       - second part is the current timestamp
-+       - followed by one or multiple payload parts
-+       - ended by a LE 4 byte sequence number
-+    */
-+    std::vector<zmq_message_part> message = {};
++    std::string commandStr(command);
++    zmq_message_part part_command(strlen(command));
++    std::transform(commandStr.begin(), commandStr.end(), part_command.begin(), [] (char c) { return std::byte(c); });
++    zmq_message_part part_sequence = int32ToZMQMessagePart(nSequence);
 +
-+    // push topic
-+    message.push_back(zmq_message_part(command, command + strlen(command)));
-+
-+    // current timestamp
++    zmq_message message = {};
++    message.push_back(part_command);
 +    message.push_back(getCurrentTimeMillis());
-+
-+    // push payload
-+    for (size_t i = 0; i < payload.size(); i++)
++    for (size_t i = 0; i < payload.size(); i++) {
 +        message.push_back(payload[i]);
-+
-+    // push little endian sequence number
-+    unsigned char sequenceLE[sizeof(uint32_t)];
-+    WriteLE32(&sequenceLE[0], nSequence);
-+    message.push_back(zmq_message_part(sequenceLE, sequenceLE + sizeof(uint32_t)));
-+
++    }
++    message.push_back(part_sequence);
 +
 +    int rc = zmq_send_multipart(psocket, message);
 +    if (rc == -1)
@@ -853,49 +771,52 @@ index c0207f9dd..002937d85 100644
  bool CZMQPublishHashBlockNotifier::NotifyBlock(const CBlockIndex *pindex)
  {
      uint256 hash = pindex->GetBlockHash();
-@@ -274,3 +394,167 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
-     WriteLE64(data+sizeof(uint256)+1, mempool_sequence);
-     return SendZmqMessage(MSG_SEQUENCE, data, sizeof(data));
+@@ -297,3 +408,115 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
+     LogPrint(BCLog::ZMQ, "zmq: Publish hashtx mempool removal %s to %s\n", hash.GetHex(), this->address);
+     return SendSequenceMsg(*this, hash, /* Mempool (R)emoval */ 'R', mempool_sequence);
  }
 +
-+bool CZMQPublishMempolAddedNotifier::NotifyMempoolTransactionAdded(const CTransaction &transaction, const CAmount fee)
++bool CZMQPublishMempolAddedNotifier::NotifyTransactionFee(const CTransaction &transaction, const CAmount fee)
 +{
 +    uint256 txid = transaction.GetHash();
 +    LogPrint(BCLog::ZMQ, "zmq: Publish mempooladded %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
-+
-+    // txid
 +    payload.push_back(hashToZMQMessagePart(txid));
-+
-+    // raw tx
 +    payload.push_back(transactionToZMQMessagePart(transaction));
-+
-+    // fee (as int64_t)
 +    payload.push_back(int64ToZMQMessagePart(fee));
 +
-+    return SendMessage(MSG_MEMPOOLADDED, payload);
++    return SendZmqMessage(MSG_MEMPOOLADDED, payload);
 +}
 +
-+bool CZMQPublishMempoolRemovedNotifier::NotifyMempoolTransactionRemoved(const CTransaction &transaction, const MemPoolRemovalReason reason)
++bool CZMQPublishMempoolRemovedNotifier::NotifyTransactionRemovalReason(const CTransaction &transaction, const MemPoolRemovalReason reason)
 +{
 +    uint256 txid = transaction.GetHash();
 +    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolremoved %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
-+
-+    // txid
 +    payload.push_back(hashToZMQMessagePart(txid));
-+
-+    // raw tx
 +    payload.push_back(transactionToZMQMessagePart(transaction));
++    payload.push_back(int32ToZMQMessagePart(static_cast<int32_t>(reason)));
 +
-+    // reason
-+    unsigned char value[sizeof(reason)];
-+    std::memcpy(value, &reason, sizeof(value));
-+    payload.push_back(zmq_message_part(value, value + sizeof(value)));
++    return SendZmqMessage(MSG_MEMPOOLREMOVED, payload);
++}
 +
-+    return SendMessage(MSG_MEMPOOLREMOVED, payload);
++bool CZMQPublishMempoolReplacedNotifier::NotifyTransactionReplaced(const CTransaction &tx_replaced, const CAmount fee_replaced, const CTransaction &tx_replacement, const CAmount fee_replacement)
++{
++    uint256 hash_replaced = tx_replaced.GetHash();
++    uint256 hash_replacement = tx_replacement.GetHash();
++    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolreplaced %s by %s\n", hash_replaced.GetHex(), hash_replacement.GetHex());
++
++    std::vector<zmq_message_part> payload = {};
++    payload.push_back(hashToZMQMessagePart(hash_replaced));
++    payload.push_back(transactionToZMQMessagePart(tx_replaced));
++    payload.push_back(int64ToZMQMessagePart(fee_replaced));
++    payload.push_back(hashToZMQMessagePart(hash_replacement));
++    payload.push_back(transactionToZMQMessagePart(tx_replacement));
++    payload.push_back(int64ToZMQMessagePart(fee_replacement));
++
++    return SendZmqMessage(MSG_MEMPOOLREPLACED, payload);
 +}
 +
 +bool CZMQPublishMempoolConfirmedNotifier::NotifyMempoolTransactionConfirmed(const CTransaction &transaction, const CBlockIndex *pindex)
@@ -904,39 +825,32 @@ index c0207f9dd..002937d85 100644
 +    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolconfirmed %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
-+
-+    // txid
 +    payload.push_back(hashToZMQMessagePart(txid));
-+
-+    // raw tx
 +    payload.push_back(transactionToZMQMessagePart(transaction));
-+
-+    // block height (as int32_t)
 +    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
-+
-+    // block hash
 +    payload.push_back(hashToZMQMessagePart(pindex->GetBlockHash()));
-+
-+    // serialized block header
 +    payload.push_back(headerToZMQMessagePart(pindex->GetBlockHeader()));
 +
-+    return SendMessage(MSG_MEMPOOLCONFIRMED, payload);
++    return SendZmqMessage(MSG_MEMPOOLCONFIRMED, payload);
++}
++
++bool CZMQPublishChainTipChangedNotifier::NotifyChainTipChanged(const CBlockIndex *pindex)
++{
++    uint256 hash = pindex->GetBlockHash();
++    LogPrint(BCLog::ZMQ, "zmq: Publish chaintipchanged %s\n", hash.GetHex());
++
++    std::vector<zmq_message_part> payload = {};
++    payload.push_back(hashToZMQMessagePart(hash));
++    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
++    payload.push_back(headerToZMQMessagePart(pindex->GetBlockHeader()));
++
++    return SendZmqMessage(MSG_CHAINTIPCHANGED, payload);
 +}
 +
 +bool CZMQPublishChainConnectedNotifier::NotifyChainBlockConnected(const CBlockIndex *pindex)
 +{
 +    uint256 hash = pindex->GetBlockHash();
 +    LogPrint(BCLog::ZMQ, "zmq: Publish chainconnected %s\n", hash.GetHex());
-+    std::vector<zmq_message_part> payload = {};
-+
-+    // hash
-+    payload.push_back(hashToZMQMessagePart(hash));
-+
-+    // height (as int32_t)
-+    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
-+
-+    // prev hash
-+    payload.push_back(hashToZMQMessagePart(pindex->GetBlockHeader().hashPrevBlock));
 +
 +    const Consensus::Params& consensusParams = Params().GetConsensus();
 +    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
@@ -948,133 +862,84 @@ index c0207f9dd..002937d85 100644
 +            zmqError("Can't read block from disk");
 +            return false;
 +        }
-+
 +        ss << block;
 +    }
-+    payload.push_back(zmq_message_part(ss.begin() , ss.end()));
-+
-+    return SendMessage(MSG_CHAINCONNECTED, payload);
-+}
-+
-+
-+bool CZMQPublishMempolReplacedNotifier::NotifyMempoolTransactionReplaced(const CTransaction &replaced, const CAmount replaced_tx_fee, const CTransaction &replacement, const CAmount replacement_tx_fee)
-+{
-+    uint256 replaced_hash = replaced.GetHash();
-+    uint256 replacement_hash = replacement.GetHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolreplaced %s by %s\n", replaced_hash.GetHex(), replacement_hash.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
-+
-+    // replaced txid
-+    payload.push_back(hashToZMQMessagePart(replaced_hash));
-+
-+    // replaced raw tx
-+    payload.push_back(transactionToZMQMessagePart(replaced));
-+
-+    // fee delta as int64_t
-+    payload.push_back(int64ToZMQMessagePart(replaced_tx_fee));
-+
-+    // replacement txid
-+    payload.push_back(hashToZMQMessagePart(replacement_hash));
-+
-+    // replacement raw tx
-+    payload.push_back(transactionToZMQMessagePart(replacement));
-+
-+    // fee delta as int64_t
-+    payload.push_back(int64ToZMQMessagePart(replacement_tx_fee));
-+
-+    return SendMessage(MSG_MEMPOOLREPLACED, payload);
-+}
-+
-+bool CZMQPublishChainTipChangedNotifier::NotifyChainTipChanged(const CBlockIndex *pindex)
-+{
-+    uint256 hash = pindex->GetBlockHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish chaintipchanged %s\n", hash.GetHex());
-+    std::vector<zmq_message_part> payload = {};
-+
-+    // hash
 +    payload.push_back(hashToZMQMessagePart(hash));
-+
-+    // height (as int32_t)
 +    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
++    payload.push_back(hashToZMQMessagePart(pindex->GetBlockHeader().hashPrevBlock));
++    payload.push_back(zmq_message_part(ss.begin(), ss.end()));
 +
-+    // serialized block header
-+    payload.push_back(headerToZMQMessagePart(pindex->GetBlockHeader()));
-+
-+    return SendMessage(MSG_CHAINTIPCHANGED, payload);
++    return SendZmqMessage(MSG_CHAINCONNECTED, payload);
 +}
 +
 +bool CZMQPublishChainHeaderAddedNotifier::NotifyChainHeaderAdded(const CBlockIndex *pindex)
 +{
 +    uint256 hash = pindex->GetBlockHash();
 +    LogPrint(BCLog::ZMQ, "zmq: Publish chainheaderadded %s\n", hash.GetHex());
++
 +    std::vector<zmq_message_part> payload = {};
-+
-+    // hash
 +    payload.push_back(hashToZMQMessagePart(hash));
-+
-+    // height (as int32_t)
 +    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
-+
-+    // serialized block header
 +    payload.push_back(headerToZMQMessagePart(pindex->GetBlockHeader()));
 +
-+    return SendMessage(MSG_CHAINHEADERADDED, payload);
++    return SendZmqMessage(MSG_CHAINHEADERADDED, payload);
 +}
++
 diff --git a/src/zmq/zmqpublishnotifier.h b/src/zmq/zmqpublishnotifier.h
-index f13ed6f53..66a0a0b8f 100644
+index c1d66bddb..86b3095d8 100644
 --- a/src/zmq/zmqpublishnotifier.h
 +++ b/src/zmq/zmqpublishnotifier.h
-@@ -7,6 +7,9 @@
+@@ -7,8 +7,13 @@
  
  #include <zmq/zmqabstractnotifier.h>
  
-+typedef std::vector<unsigned char> zmq_message_part;
-+typedef std::vector<zmq_message_part> zmq_message;
++#include <vector>
 +
  class CBlockIndex;
  
++typedef std::vector<std::byte> zmq_message_part;
++typedef std::vector<zmq_message_part> zmq_message;
++
  class CZMQAbstractPublishNotifier : public CZMQAbstractNotifier
-@@ -24,6 +27,13 @@ public:
+ {
+ private:
+@@ -24,6 +29,14 @@ public:
      */
      bool SendZmqMessage(const char *command, const void* data, size_t size);
  
 +    /* sends a zmq multipart message with the following parts:
 +        * command (aka ZMQ topic)
++        * timestamp
 +        * payload (zero, one or multiple payload parts)
 +        * message sequence number
 +    */
-+    bool SendMessage(const char *command, const std::vector<zmq_message_part>& payload);
++    bool SendZmqMessage(const char *command, const std::vector<zmq_message_part>& payload);
 +
      bool Initialize(void *pcontext) override;
      void Shutdown() override;
  };
-@@ -61,4 +71,46 @@ public:
-     bool NotifyTransactionRemoval(const CTransaction &transaction, uint64_t mempool_sequence) override;
+@@ -52,6 +65,48 @@ public:
+     bool NotifyTransaction(const CTransaction &transaction) override;
  };
  
 +class CZMQPublishMempolAddedNotifier : public CZMQAbstractPublishNotifier
 +{
 +public:
-+    bool NotifyMempoolTransactionAdded(const CTransaction &transaction, const CAmount fee) override;
++    bool NotifyTransactionFee(const CTransaction &transaction, const CAmount fee) override;
 +};
 +
 +class CZMQPublishMempoolRemovedNotifier : public CZMQAbstractPublishNotifier
 +{
 +public:
-+    bool NotifyMempoolTransactionRemoved(const CTransaction &transaction, const MemPoolRemovalReason reason) override;
++    bool NotifyTransactionRemovalReason(const CTransaction &transaction, const MemPoolRemovalReason reason) override;
 +};
 +
-+class CZMQPublishChainConnectedNotifier : public CZMQAbstractPublishNotifier
++class CZMQPublishMempoolReplacedNotifier : public CZMQAbstractPublishNotifier
 +{
 +public:
-+    bool NotifyChainBlockConnected(const CBlockIndex *pindex) override;
-+};
-+
-+class CZMQPublishMempolReplacedNotifier : public CZMQAbstractPublishNotifier
-+{
-+public:
-+    bool NotifyMempoolTransactionReplaced(const CTransaction& replaced, const CAmount replaced_tx_fee, const CTransaction& replacement, const CAmount replacement_tx_fee) override;
++    bool NotifyTransactionReplaced(const CTransaction &tx_replaced, const CAmount fee_replaced, const CTransaction &tx_replacement, const CAmount fee_replacement) override;
 +};
 +
 +class CZMQPublishMempoolConfirmedNotifier : public CZMQAbstractPublishNotifier
@@ -1089,18 +954,26 @@ index f13ed6f53..66a0a0b8f 100644
 +    bool NotifyChainTipChanged(const CBlockIndex *pindex) override;
 +};
 +
++class CZMQPublishChainConnectedNotifier : public CZMQAbstractPublishNotifier
++{
++public:
++    bool NotifyChainBlockConnected(const CBlockIndex *index) override;
++};
++
 +class CZMQPublishChainHeaderAddedNotifier : public CZMQAbstractPublishNotifier
 +{
 +public:
 +    bool NotifyChainHeaderAdded(const CBlockIndex *pindexHeader) override;
 +};
 +
- #endif // BITCOIN_ZMQ_ZMQPUBLISHNOTIFIER_H
+ class CZMQPublishSequenceNotifier : public CZMQAbstractPublishNotifier
+ {
+ public:
 diff --git a/test/functional/interface_zmq.py b/test/functional/interface_zmq.py
-index d675ae174..60df6a7bc 100755
+index 1ee12c004..62b9ea8c5 100755
 --- a/test/functional/interface_zmq.py
 +++ b/test/functional/interface_zmq.py
-@@ -159,10 +159,10 @@ class ZMQTest (BitcoinTestFramework):
+@@ -234,10 +234,10 @@ class ZMQTest (BitcoinTestFramework):
  
          self.log.info("Test the getzmqnotifications RPC")
          assert_equal(self.nodes[0].getzmqnotifications(), [
@@ -1116,31 +989,33 @@ index d675ae174..60df6a7bc 100755
  
          assert_equal(self.nodes[1].getzmqnotifications(), [])
 diff --git a/test/functional/interface_zmq_chainblockconnected.py b/test/functional/interface_zmq_chainblockconnected.py
-new file mode 100644
-index 000000000..0330b3d1f
+new file mode 100755
+index 000000000..720717f61
 --- /dev/null
 +++ b/test/functional/interface_zmq_chainblockconnected.py
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,121 @@
 +#!/usr/bin/env python3
 +# Copyright (c) 2015-2019 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher chainconnected"""
++"""Test the ZMQ publisher chainconnected to notify about blocks being
++connected to the chain (blocktree)"""
 +import struct
 +import zmq
 +
 +from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.messages import CTransaction, hash256
-+from test_framework.util import assert_equal, connect_nodes, disconnect_nodes
-+from io import BytesIO
++from test_framework.messages import hash256
++from test_framework.util import assert_equal
 +from time import sleep
 +from random import randint
 +
 +from test_framework.util_patched_zmq import ZMQSubscriber
 +
++
 +def hash256_reversed(byte_str):
 +    return hash256(byte_str)[::-1]
++
 +
 +class ZMQTest (BitcoinTestFramework):
 +    def set_test_params(self):
@@ -1162,25 +1037,26 @@ index 000000000..0330b3d1f
 +            self.ctx.destroy(linger=None)
 +
 +    def test_basic(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 60000)
 +        subscriber = ZMQSubscriber(socket, b'chainconnected')
 +
 +        self.log.info("Test patched chainconnected topic")
-+
-+        # chainconnected should notify for every block connected
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
++        self.connect_nodes(0, 1)
 +
 +        lastHeight = self.nodes[0].getblockcount()
 +        lastHash = self.nodes[0].getblockhash(lastHeight)
 +
-+        # Generate 3 block in nodes[0] and receive all notifications
-+        genhashes_node0 = self.nodes[0].generatetoaddress(3, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info(
++            "Generate 3 block in nodes[0] and receive all notifications")
++        genhashes_node0 = self.generatetoaddress(
++            self.nodes[0], 3, ADDRESS_BCRT1_UNSPENDABLE)
 +        for block_hash in genhashes_node0:
 +            hash, height, prevhash, block = subscriber.receive_multi_payload()
 +            assert_equal(struct.unpack("<I", height)[0], lastHeight+1)
@@ -1192,12 +1068,10 @@ index 000000000..0330b3d1f
 +            lastHash = block_hash
 +
 +        # allow both nodes to sync
-+        connect_nodes(self.nodes[0], 1)
 +        sleep(1)
-+        disconnect_nodes(self.nodes[0], 1)
++        self.disconnect_nodes(0, 1)
 +
 +    def test_reorg(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 60000)
@@ -1206,7 +1080,8 @@ index 000000000..0330b3d1f
 +        self.log.info("Reorg testing ZMQ publisher chainconnected")
 +
 +        # chainconnected should notify for every block connected
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
@@ -1214,17 +1089,19 @@ index 000000000..0330b3d1f
 +        preForkHeight = self.nodes[0].getblockcount()
 +        preForkHash = self.nodes[0].getblockhash(preForkHeight)
 +
-+        # Generate 10 blocks in nodes[0]
-+        self.nodes[0].generatetoaddress(10, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info("Generate ten blocks in node 0")
++        self.generatetoaddress(
++            self.nodes[0], 10, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)
 +
-+        # Generate six blocks in nodes[1]
-+        genhashes_node1 = self.nodes[1].generatetoaddress(6, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info("Generate six blocks in node 1")
++        genhashes_node1 = self.generatetoaddress(
++            self.nodes[1], 6, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)
 +
-+        # Connect nodes[0] to nodes[1]
-+        connect_nodes(self.nodes[0], 1)
++        self.log.info("Reconnect both nodes")
++        self.connect_nodes(0, 1)
 +
-+        # nodes[0] should connect all six blocks generated by nodes[1], even if
-+        # nodes[0] has a longer chain
++        self.log.info(
++            "Node 0 should connect all six blocks generate by node 1, even if node 0 has a longer chain.")
 +        for block_hash in genhashes_node1:
 +            hash, height, prevhash, block = subscriber.receive_multi_payload()
 +            assert_equal(struct.unpack("<I", height)[0], preForkHeight+1)
@@ -1235,34 +1112,39 @@ index 000000000..0330b3d1f
 +            preForkHeight += 1
 +            preForkHash = block_hash
 +
++
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_chainheaderadded.py b/test/functional/interface_zmq_chainheaderadded.py
-new file mode 100644
-index 000000000..e232e5425
+new file mode 100755
+index 000000000..1cfbb83f4
 --- /dev/null
 +++ b/test/functional/interface_zmq_chainheaderadded.py
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,123 @@
 +#!/usr/bin/env python3
 +# Copyright (c) 2015-2019 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher chainheaderadded"""
++"""Test the ZMQ publisher chainheaderadded to notify about headers being
++added to the chain (headertree)"""
 +import struct
 +import zmq
 +
-+from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
++from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE, ADDRESS_BCRT1_P2WSH_OP_TRUE
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.messages import CTransaction, hash256
-+from test_framework.util import assert_equal, connect_nodes, disconnect_nodes
-+from io import BytesIO
++from test_framework.messages import hash256
++from test_framework.util import assert_equal
 +from time import sleep
 +from random import randint
 +
 +from test_framework.util_patched_zmq import ZMQSubscriber
 +
++TOPIC = b'chainheaderadded'
++
++
 +def hash256_reversed(byte_str):
 +    return hash256(byte_str)[::-1]
++
 +
 +class ZMQTest (BitcoinTestFramework):
 +    def set_test_params(self):
@@ -1284,105 +1166,112 @@ index 000000000..e232e5425
 +            self.ctx.destroy(linger=None)
 +
 +    def test_basic(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 2000)
-+        subscriber = ZMQSubscriber(socket, b'chainheaderadded')
++        subscriber = ZMQSubscriber(socket, TOPIC)
 +
 +        self.log.info("Test patched chainheaderadded topic")
 +
 +        # chainheaderadded should notify for every block header added
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
++        self.connect_nodes(0, 1)
 +
 +        lastHeight = self.nodes[0].getblockcount()
 +
-+        # Generate 3 block in nodes[0] and receive all notifications
-+        genhashes_node0 = self.nodes[0].generatetoaddress(3, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info("Generate 3 blocks in node 0 and receive notifications")
++        genhashes_node0 = self.generatetoaddress(
++            self.nodes[0], 3, ADDRESS_BCRT1_UNSPENDABLE)
 +        for block_hash in genhashes_node0:
 +            hash, height, header = subscriber.receive_multi_payload()
 +            assert_equal(lastHeight+1, struct.unpack("<I", height)[0])
 +            assert_equal(block_hash, hash.hex())
-+            assert_equal(self.nodes[0].getblockheader(hash.hex(), False), header.hex())
-+            # update last height and hash
++            assert_equal(self.nodes[0].getblockheader(
++                hash.hex(), False), header.hex())
 +            lastHeight += 1
 +
 +        # allow both nodes to sync
-+        connect_nodes(self.nodes[0], 1)
 +        sleep(1)
-+        disconnect_nodes(self.nodes[0], 1)
++        self.disconnect_nodes(0, 1)
 +
 +    def test_reorg(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
-+        socket.set(zmq.RCVTIMEO, 1000)
-+        subscriber = ZMQSubscriber(socket, b'chainheaderadded')
++        socket.set(zmq.RCVTIMEO, 2000)
++        subscriber = ZMQSubscriber(socket, TOPIC)
 +
 +        self.log.info("Reorg testing ZMQ publisher chainheaderadded")
 +
 +        # chainheaderadded should notify for every block header added
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
 +
-+        # make sure nodes are disconnected
-+        disconnect_nodes(self.nodes[0], 1)
++        self.log.info("Disconnect nodes 0 and 1")
++        self.disconnect_nodes(0, 1)
 +
 +        preForkHeight = self.nodes[0].getblockcount()
 +
-+        # Generate 6 blocks in nodes[0]
-+        genhashes_node0 = self.nodes[0].generatetoaddress(6, self.nodes[0].getnewaddress())
++        self.log.info("Generate 6 blocks in node 0")
++        genhashes_node0 = self.generatetoaddress(
++            self.nodes[0], 6, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)
 +        for _ in genhashes_node0:
 +            _ = subscriber.receive_multi_payload()
 +
-+        # Generate 3 block in nodes[1]
-+        genhashes_node1 = self.nodes[1].generatetoaddress(3, self.nodes[1].getnewaddress())
++        self.log.info("Generate 3 different blocks in node 1")
++        genhashes_node1 = self.generatetoaddress(self.nodes[1],
++                                                 3, ADDRESS_BCRT1_P2WSH_OP_TRUE, sync_fun=self.no_op)
 +
-+        # Connect nodes[0] to nodes[1]
-+        connect_nodes(self.nodes[0], 1)
++        self.log.info("Connect node 0 and node 1")
++        self.connect_nodes(0, 1)
 +
-+        # Receive header notifications about headers in node0 even if it has a longer chain
++        self.log.info(
++            "Receive notifications about headers in node 0 even if it has a longer chain")
 +        for block_hash in genhashes_node1:
 +            hash, height, header = subscriber.receive_multi_payload()
 +            assert_equal(preForkHeight+1, struct.unpack("<I", height)[0])
 +            assert_equal(block_hash, hash.hex())
-+            assert_equal(self.nodes[0].getblockheader(hash.hex(), False), header.hex())
-+            # update last height and hash
++            assert_equal(self.nodes[0].getblockheader(
++                hash.hex(), False), header.hex())
 +            preForkHeight += 1
++
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_chaintipchanged.py b/test/functional/interface_zmq_chaintipchanged.py
-new file mode 100644
-index 000000000..d5182f4cd
+new file mode 100755
+index 000000000..16c557fdb
 --- /dev/null
 +++ b/test/functional/interface_zmq_chaintipchanged.py
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,110 @@
 +#!/usr/bin/env python3
 +# Copyright (c) 2015-2019 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher chaintipchaged"""
++"""Test the ZMQ publisher chaintipchanged to notify about a changed
++chain tip"""
 +import struct
 +import zmq
 +
 +from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.messages import CTransaction, hash256
-+from test_framework.util import assert_equal, connect_nodes, disconnect_nodes
-+from io import BytesIO
++from test_framework.messages import hash256
++from test_framework.util import assert_equal
 +from time import sleep
 +from random import randint
 +
 +from test_framework.util_patched_zmq import ZMQSubscriber
 +
++
 +def hash256_reversed(byte_str):
 +    return hash256(byte_str)[::-1]
++
 +
 +class ZMQTest (BitcoinTestFramework):
 +    def set_test_params(self):
@@ -1404,7 +1293,6 @@ index 000000000..d5182f4cd
 +            self.ctx.destroy(linger=None)
 +
 +    def test_basic(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 60000)
@@ -1412,79 +1300,78 @@ index 000000000..d5182f4cd
 +
 +        self.log.info("Test patched chaintipchanged topic")
 +
-+
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
++        self.connect_nodes(0, 1)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
 +
 +        lastHeight = self.nodes[0].getblockcount()
-+        lastHash = self.nodes[0].getblockhash(lastHeight)
 +
-+        # Generate 3 block in nodes[0] and receive all notifications
-+        genhashes_node0 = self.nodes[0].generatetoaddress(3, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info(
++            "Generate 3 block in nodes[0] and receive all notifications")
++        genhashes_node0 = self.generatetoaddress(
++            self.nodes[0], 3, ADDRESS_BCRT1_UNSPENDABLE)
 +        for block_hash in genhashes_node0:
 +            hash, height, header = subscriber.receive_multi_payload()
 +            assert_equal(struct.unpack("<I", height)[0], lastHeight+1)
 +            assert_equal(block_hash, hash.hex())
-+            assert_equal(self.nodes[0].getblockheader(hash.hex(), False), header.hex())
++            assert_equal(self.nodes[0].getblockheader(
++                hash.hex(), False), header.hex())
 +            # update last height and hash
 +            lastHeight += 1
-+            lastHash = block_hash
-+
-+        # allow both nodes to sync
-+        connect_nodes(self.nodes[0], 1)
-+        self.sync_all()
-+        disconnect_nodes(self.nodes[0], 1)
 +
 +    def test_reorg(self):
-+        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 1000)
 +        subscriber = ZMQSubscriber(socket, b'chaintipchanged')
 +
 +        self.log.info("Reorg testing ZMQ publisher chaintipchanged")
-+
-+        # chaintipchanged should notify when the block tip changes
-+        self.restart_node(0, ['-zmqpub%s=%s' % (subscriber.topic.decode(), address)])
++        self.restart_node(0, ['-zmqpub%s=%s' %
++                          (subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
 +
-+        disconnect_nodes(self.nodes[0], 1)
++        self.disconnect_nodes(0, 1)
 +
-+        # Generate 10 blocks in nodes[0]
-+        genhashes_node0 = self.nodes[0].generatetoaddress(10, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info("Generate ten blocks in node 0")
++        genhashes_node0 = self.generatetoaddress(self.nodes[0],
++                                                 10, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)
 +        for _ in genhashes_node0:
 +            subscriber.receive_multi_payload()
 +
-+        # Generate six different blocks in nodes[1]
-+        self.nodes[1].sendtoaddress(ADDRESS_BCRT1_UNSPENDABLE, 1)
-+        self.nodes[1].generatetoaddress(6, ADDRESS_BCRT1_UNSPENDABLE)
++        self.log.info("Generate six blocks in node 1")
++        self.generatetoaddress(
++            self.nodes[1], 6, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)
 +
-+        # Connect nodes[0] to nodes[1]
-+        connect_nodes(self.nodes[0], 1)
++        self.log.info("Connect both nodes")
++        self.connect_nodes(0, 1)
 +
-+
-+        # nodes[0] should not change the tip for a block generated by nodes[1],
-+        # as nodes[0] has a longer chain
++        self.log.info(
++            "Node 0 should not change the tip for a block generated by node 1 as node 0 has a longer chain")
 +        try:
 +            subscriber.receive_multi_payload()
 +        except zmq.error.Again as e:
 +            self.log.info("ZMQ subscriber timed out as expected: {}".format(e))
 +
++
 +if __name__ == '__main__':
 +    ZMQTest().main()
-diff --git a/test/functional/interface_zmq_mempooladd.py b/test/functional/interface_zmq_mempooladd.py
-new file mode 100644
-index 000000000..ce41b267c
+diff --git a/test/functional/interface_zmq_mempooladded.py b/test/functional/interface_zmq_mempooladded.py
+new file mode 100755
+index 000000000..ff65386b8
 --- /dev/null
-+++ b/test/functional/interface_zmq_mempooladd.py
-@@ -0,0 +1,77 @@
++++ b/test/functional/interface_zmq_mempooladded.py
+@@ -0,0 +1,83 @@
 +#!/usr/bin/env python3
-+"""Test the ZMQ publisher mempooladded to notify us on a transaction (and its
-+fee) that was added to the mempool"""
++# Copyright (c) 2015-2020 The Bitcoin Core developers
++# Distributed under the MIT software license, see the accompanying
++# file COPYING or http://www.opensource.org/licenses/mit-license.php.
++"""Test the ZMQ publisher 'mempooladded' to notify about transactions and their
++fee when being added to the mempool."""
 +
 +import zmq
 +import struct
@@ -1521,11 +1408,11 @@ index 000000000..ce41b267c
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 60000)
 +
-+        # Subscribe to the 'mempooladded' topic
 +        self.log.info("Testing ZMQ publisher mempooladded")
 +        subscriber = ZMQSubscriber(socket, b"mempooladded")
 +
-+        self.restart_node(0, ["-zmqpub{}={}".format(subscriber.topic.decode(), address)])
++        self.restart_node(
++            0, ["-zmqpub{}={}".format(subscriber.topic.decode(), address)])
 +        socket.connect(address)
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
@@ -1534,34 +1421,37 @@ index 000000000..ce41b267c
 +        txid = node.sendtoaddress(node.getnewaddress(), 1.0)
 +        self.sync_all()
 +
-+        # Should receive a payload with three elements (txid rawtx, fee)
++        self.log.info(
++            "Should receive a payload with three elements (txid rawtx, fee)")
 +        payload = subscriber.receive_multi_payload()
 +        assert_equal(3, len(payload))
 +
-+        # First payload element should be the txid
++        self.log.info("First payload element should be the txid")
 +        r_txid = payload[0]
 +        assert_equal(txid, r_txid.hex())
 +
-+        # Second payload element should be the raw transaction
++        self.log.info("Second payload element should be the raw transaction")
 +        r_rawtx = payload[1]
 +        tx = CTransaction()
 +        tx.deserialize(BytesIO(r_rawtx))
 +        tx.calc_sha256()
 +        assert_equal(txid, tx.hash)
 +
-+        # Third payload element should be the transaction fee
++        self.log.info("Third payload element should be the transaction fee")
 +        r_fee = struct.unpack('<q', payload[2])[-1]
-+        assert_equal(int(node.getmempoolentry(txid)["fee"] * COIN), r_fee)
++        assert_equal(int(node.getmempoolentry(txid)[
++                     "fees"]["base"] * COIN), r_fee)
 +
 +        self.log.info("Test the getzmqnotifications RPC for mempooladded")
-+        assert_equal(node.getzmqnotifications(), [{"type": "pubmempooladded", "address": address, "hwm": 100000}])
++        assert_equal(node.getzmqnotifications(), [
++                     {"type": "pubmempooladded", "address": address, "hwm": 100000}])
 +
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolconfirmed.py b/test/functional/interface_zmq_mempoolconfirmed.py
-new file mode 100644
-index 000000000..88395afe0
+new file mode 100755
+index 000000000..805d97593
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolconfirmed.py
 @@ -0,0 +1,69 @@
@@ -1569,16 +1459,16 @@ index 000000000..88395afe0
 +# Copyright (c) 2015-2019 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolconfirmed to notify us on a transaction that
-+was included in a block and thus removed from the mempool"""
++"""Test the ZMQ publisher mempoolconfirmed to notify about transactions that
++were included in a block and thus removed from the mempool"""
 +
 +from random import randint
-+from time import sleep, time
++from time import sleep
 +import struct
 +import zmq
 +
 +from test_framework.test_framework import BitcoinTestFramework, assert_equal
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -1616,10 +1506,9 @@ index 000000000..88395afe0
 +        sleep(0.2)
 +        socket.connect(address)
 +
-+
 +        self.log.info("Testing mempoolconfirmed")
 +        txid = node0.sendtoaddress(node0.getnewaddress(), 1.0)
-+        hash = node0.generatetoaddress(1, node0.getnewaddress())
++        hash = self.generatetoaddress(node0, 1, node0.getnewaddress())
 +
 +        raw = node0.getrawtransaction(txid)
 +        height = node0.getblockcount()
@@ -1629,31 +1518,32 @@ index 000000000..88395afe0
 +        assert_equal(raw, r_raw.hex())
 +        assert_equal(height, struct.unpack("<I", r_height)[0])
 +        assert_equal(hash[0], r_hash.hex())
-+        assert_equal(self.nodes[0].getblockheader(r_hash.hex(), False), header.hex())
++        assert_equal(self.nodes[0].getblockheader(
++            r_hash.hex(), False), header.hex())
 +
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_block.py b/test/functional/interface_zmq_mempoolremove_block.py
-new file mode 100644
-index 000000000..f5cf49978
+new file mode 100755
+index 000000000..b676e7a4b
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_block.py
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,61 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
-+was included in a block and thus removed from the mempool"""
++"""Test the ZMQ publisher mempoolremoved to notify about transactions that
++were removed from the mempool by block inclusion"""
 +
 +from random import randint
-+from time import sleep, time
++from time import sleep
 +
 +import zmq
 +
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -1692,26 +1582,27 @@ index 000000000..f5cf49978
 +        socket.connect(address)
 +
 +        self.log.info("Testing mempoolremoved BLOCK")
-+        txid = node0.sendtoaddress( node0.getnewaddress(), 1.0)
-+        node0.generatetoaddress(1, node0.getnewaddress())
++        txid = node0.sendtoaddress(node0.getnewaddress(), 1.0)
++        self.generatetoaddress(node0, 1, node0.getnewaddress())
 +
 +        expected = {txid: 'BLOCK'}
 +        subscriber.check_mempoolremoved_messages(expected)
 +
++
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_conflict.py b/test/functional/interface_zmq_mempoolremove_conflict.py
-new file mode 100644
-index 000000000..2cdb0cead
+new file mode 100755
+index 000000000..1c0cdea7a
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_conflict.py
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,101 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
-+was removed from the the mempool due to a conflict with an in-block
++"""Test the ZMQ publisher mempoolremoved to notify about transactions that
++were removed from the mempool due to conflicting with an in-block
 +transaction"""
 +
 +import zmq
@@ -1720,8 +1611,9 @@ index 000000000..2cdb0cead
 +
 +from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.util import assert_equal, connect_nodes, find_vout_for_address, disconnect_nodes
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util import find_vout_for_address
++from test_framework.util_patched_zmq import ZMQSubscriber
++
 +
 +class ZMQTest (BitcoinTestFramework):
 +    def set_test_params(self):
@@ -1742,22 +1634,6 @@ index 000000000..2cdb0cead
 +            self.log.debug("Destroying ZMQ context")
 +            self.ctx.destroy(linger=None)
 +
-+    def receive_removed_transaction(self, zmq_subscriber):
-+        # Should receive a payload with two elements (rawtx, removal reason)
-+        payload = zmq_subscriber.receive_multi_payload()
-+        assert_equal(2, len(payload))
-+
-+        # First payload element should be the raw transaction
-+        rawtx = payload[0]
-+        tx = CTransaction()
-+        tx.deserialize(BytesIO(rawtx))
-+        tx.calc_sha256()
-+
-+        # Second payload element should be the removal reason
-+        reason = struct.unpack('<I', payload[1])[-1]
-+
-+        return [tx.hash, reason]
-+
 +    def test_mempool_removed(self):
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
@@ -1776,18 +1652,19 @@ index 000000000..2cdb0cead
 +        socket.connect(address)
 +
 +        self.log.info("Testing mempoolremoved CONFLICT")
-+        connect_nodes(node0, 1)
++        self.connect_nodes(0, 1)
 +        self.sync_all()
 +
-+        # create an utxo that the in-block and the in-mempool transaction
-+        # will spend
++        self.log.info(
++            "create an utxo that the in-block and the in-mempool transaction will spend")
 +        utxo_address = node0.getnewaddress()
 +        utxo_txid = node0.sendtoaddress(utxo_address, 1.0)
-+        node0.generatetoaddress(1, ADDRESS_BCRT1_UNSPENDABLE)
++        self.generatetoaddress(node0, 1, ADDRESS_BCRT1_UNSPENDABLE)
 +        # discard zmq messages for removed tx for block inclusion
 +        subscriber.discard_mempoolremoved_message_block()
 +
-+        # create two different transactions spending the same UTXO
++        self.log.info(
++            "reate two different transactions spending the same UTXO")
 +        txns = []
 +        vout = find_vout_for_address(node0, utxo_txid, utxo_address)
 +        inputs = [{'txid': utxo_txid, 'vout': vout}]
@@ -1797,23 +1674,24 @@ index 000000000..2cdb0cead
 +            signed = node0.signrawtransactionwithwallet(raw)["hex"]
 +            txns.append(signed)
 +
-+        # disconnect the nodes
++        self.log.info("disconnect the nodes")
 +        self.sync_all()
-+        disconnect_nodes(node0, 1)
++        self.disconnect_nodes(0, 1)
 +        self.log.info("Nodes disconnected")
 +
-+        # node1: broadcast the first tx and then mine a block on
++        self.log.info("node1: broadcast the first tx and then mine a block on")
 +        node1.sendrawtransaction(txns[0])
-+        node1.generatetoaddress(1, ADDRESS_BCRT1_UNSPENDABLE)[0]
++        self.generatetoaddress(
++            node1, 1, ADDRESS_BCRT1_UNSPENDABLE, sync_fun=self.no_op)[0]
 +
-+        # node0: broadcast the in-mempool tx
++        self.log.info("node0: broadcast the in-mempool tx")
 +        inmempool_txid = node0.sendrawtransaction(txns[1])
 +
-+        # re-connect the nodes
-+        connect_nodes(node0, 1)
++        self.log.info("re-connect the nodes")
++        self.connect_nodes(0, 1)
 +
-+        # The ZMQ interface should receive the in-mempool tx that conflicts
-+        # with the in-block transaction
++        self.log.info(
++            "The ZMQ interface should receive the in-mempool tx that conflicts with the in-block transaction")
 +        expected = {inmempool_txid: 'CONFLICT'}
 +        subscriber.check_mempoolremoved_messages(expected)
 +
@@ -1821,26 +1699,26 @@ index 000000000..2cdb0cead
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_expiry.py b/test/functional/interface_zmq_mempoolremove_expiry.py
-new file mode 100644
-index 000000000..3390c279e
+new file mode 100755
+index 000000000..48e4cfc67
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_expiry.py
-@@ -0,0 +1,108 @@
+@@ -0,0 +1,111 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
++"""Test the ZMQ publisher mempoolremoved to notify about transactions that
 +expired from the mempool"""
 +
 +from random import randint
-+from time import sleep, time
++from time import sleep
 +
 +import zmq
 +
 +from test_framework.test_framework import BitcoinTestFramework
 +from test_framework.util import assert_equal, find_vout_for_address
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -1862,11 +1740,10 @@ index 000000000..3390c279e
 +            self.log.debug("Destroying ZMQ context")
 +            self.ctx.destroy(linger=None)
 +
-+
 +    def test_mempool_removed(self):
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
-+        socket.set(zmq.RCVTIMEO, 60000)
++        socket.set(zmq.RCVTIMEO, 2000)
 +        topic = b"mempoolremoved"
 +
 +        arg_zmq_mempoolremoved = "-zmqpub%s=%s" % (
@@ -1884,34 +1761,37 @@ index 000000000..3390c279e
 +        self.log.info(
 +            "Testing the getzmqnotifications RPC for mempoolremoved")
 +        assert_equal(node.getzmqnotifications(), [
-+                        {"type": "pubmempoolremoved", "address": address, "hwm": 100000}])
++            {"type": "pubmempoolremoved", "address": address, "hwm": 100000}])
 +
 +        self.log.info("Testing removal reason EXPIRY")
 +        DEFAULT_MEMPOOL_EXPIRY = 336
 +
-+        # Send a parent transaction that will expire.
++        self.log.info("Send a parent transaction that will expire.")
 +        parent_address = node.getnewaddress()
 +        parent_txid = node.sendtoaddress(parent_address, 1.0)
 +
-+        # Set the mocktime to the arrival time of the parent transaction.
++        self.log.info(
++            "Set the mocktime to the arrival time of the parent transaction.")
 +        entry_time = node.getmempoolentry(parent_txid)["time"]
 +        node.setmocktime(entry_time)
 +
-+        # Create child transaction spending the parent transaction
++        self.log.info(
++            "Create child transaction spending the parent transaction")
 +        vout = find_vout_for_address(node, parent_txid, parent_address)
 +        inputs = [{'txid': parent_txid, 'vout': vout}]
 +        outputs = {node.getnewaddress(): 0.99}
 +        child_raw = node.createrawtransaction(inputs, outputs)
 +        child_signed = node.signrawtransactionwithwallet(child_raw)["hex"]
 +
-+        # Let half of the timeout elapse and broadcast the child transaction.
++        self.log.info(
++            "Let half of the timeout elapse and broadcast the child transaction.")
 +        half_expiry_time = entry_time + \
 +            int(60 * 60 * DEFAULT_MEMPOOL_EXPIRY/2)
 +        node.setmocktime(half_expiry_time)
 +        child_txid = node.sendrawtransaction(child_signed)
 +
-+        # Let most of the timeout elapse and check that the parent tx is still
-+        # in the mempool.
++        self.log.info(
++            "Let most of the timeout elapse and check that the parent tx is still in the mempool.")
 +        nearly_expiry_time = entry_time + 60 * 60 * DEFAULT_MEMPOOL_EXPIRY - 5
 +        node.setmocktime(nearly_expiry_time)
 +        # Expiry of mempool transactions is only checked when a new transaction
@@ -1919,33 +1799,34 @@ index 000000000..3390c279e
 +        node.sendtoaddress(node.getnewaddress(), 1.0)
 +        assert_equal(entry_time, node.getmempoolentry(parent_txid)["time"])
 +
-+        # Transaction should be evicted from the mempool after the expiry time
-+        # has passed.
++        self.log.info(
++            "Transaction should be evicted from the mempool after the expiry time has passed.")
 +        expiry_time = entry_time + 60 * 60 * DEFAULT_MEMPOOL_EXPIRY + 5
 +        node.setmocktime(expiry_time)
 +        # Expiry of mempool transactions is only checked when a new transaction
 +        # is added to the to the mempool.
 +        node.sendtoaddress(node.getnewaddress(), 1.0)
 +
-+        # The ZMQ interface should receive two removed transactions (the
-+        # parent and the child), however we don't know the removal order
++        self.log.info(
++            "The ZMQ interface should receive two removed transactions (the parent and the child).")
 +        expected = {parent_txid: 'EXPIRY', child_txid: 'EXPIRY'}
 +        subscriber.check_mempoolremoved_messages(expected)
++
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_reorg.py b/test/functional/interface_zmq_mempoolremove_reorg.py
-new file mode 100644
-index 000000000..41a410797
+new file mode 100755
+index 000000000..2a3f3dfc2
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_reorg.py
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,99 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
-+was removed from the the mempool in a reorg"""
++"""Test the ZMQ publisher mempoolremoved to notify about transactions that
++were removed from the mempool in a reorg"""
 +
 +
 +from random import randint
@@ -1956,7 +1837,7 @@ index 000000000..41a410797
 +from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
 +from test_framework.test_framework import BitcoinTestFramework
 +from test_framework.util import assert_equal, find_vout_for_address
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -1990,9 +1871,9 @@ index 000000000..41a410797
 +
 +        node = self.nodes[0]
 +
-+        self.log.info("Testing ZMQ publisher mempoolremoved")
++        self.log.info("Testing ZMQ publisher mempoolremoved REORG")
 +        subscriber = ZMQSubscriber(socket, topic)
-+        self.restart_node(0,[arg_txindex, arg_zmq_mempoolremoved])
++        self.restart_node(0, [arg_txindex, arg_zmq_mempoolremoved])
 +        sleep(0.2)
 +        socket.connect(address)
 +
@@ -2004,16 +1885,17 @@ index 000000000..41a410797
 +        # - if the standardness or consensus rules have changed across the reorg
 +        # - and probably more...
 +        # We only test the non-final case.
-+        self.log.info("Testing removal reason REORG (tx non-final after reorg)")
++        self.log.info(
++            "Testing removal reason REORG (tx non-final after reorg)")
 +
-+        # create an output to spend from
++        self.log.info("Create an output to spend from")
 +        address = node.getnewaddress()
 +        included_in_block_txid = node.sendtoaddress(address, 1.0)
-+        tip = node.generatetoaddress(1, ADDRESS_BCRT1_UNSPENDABLE)[0]
++        tip = self.generatetoaddress(node, 1, ADDRESS_BCRT1_UNSPENDABLE)[0]
 +        # discard zmq messages for removed tx for block inclusion
 +        subscriber.discard_mempoolremoved_message_block()
 +
-+        # spend output from tx from the just mined block
++        self.log.info("spend output from tx from the just mined block")
 +        vout = find_vout_for_address(node, included_in_block_txid, address)
 +        inputs = [{'txid': included_in_block_txid, 'vout': vout}]
 +        outputs = {node.getnewaddress(): 0.99}
@@ -2023,51 +1905,40 @@ index 000000000..41a410797
 +        signed = node.signrawtransactionwithwallet(raw)["hex"]
 +        mempool_to_be_reorged_txid = node.sendrawtransaction(signed)
 +
-+        # invalidate the mined block
++        self.log.info("invalidate the just mined block")
 +        node.invalidateblock(tip)
 +
-+        # The ZMQ interface should receive the transaction that is reorged as
-+        # the transaction is not final anymore
++        self.log.info(
++            "The ZMQ interface should receive the transaction that is reorged as the transaction is not final anymore")
 +        expected = {mempool_to_be_reorged_txid: "REORG"}
 +        subscriber.check_mempoolremoved_messages(expected)
 +
-+        # The mempool should now contain the 'included_in_block_txid' tx
++        self.log.info(
++            "The mempool should now contain the 'included_in_block_txid' tx")
 +        assert_equal(True, included_in_block_txid in node.getrawmempool())
++
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_replaced.py b/test/functional/interface_zmq_mempoolremove_replaced.py
-new file mode 100644
-index 000000000..31d94a5f9
+new file mode 100755
+index 000000000..069900cac
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_replaced.py
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,65 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
-+was replaced by another."""
++"""Test the ZMQ publisher mempoolremoved to notify about transactions that
++were replaced."""
 +
 +
-+import struct
-+from io import BytesIO
-+from time import sleep, time
++from time import sleep
 +from random import randint
 +
-+from feature_rbf import make_utxo, txToHex
-+from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
-+from test_framework.messages import (
-+    COIN,
-+    COutPoint,
-+    CTransaction,
-+    CTxIn,
-+    CTxOut
-+)
-+from test_framework.script import CScript
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.util import (assert_equal, assert_raises_rpc_error,connect_nodes, find_vout_for_address)
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -2094,57 +1965,44 @@ index 000000000..31d94a5f9
 +        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
-+        socket.set(zmq.RCVTIMEO, 60000)
++        socket.set(zmq.RCVTIMEO, 2000)
 +        topic = b"mempoolremoved"
-+
-+        arg_zmq_mempoolremoved = "-zmqpub%s=%s" % (topic.decode(), address)
-+        arg_accept_non_standard = "-acceptnonstdtxn=1"
-+
 +        node = self.nodes[0]
 +
-+        # create utxo set before we start to listen on mempoolremoved
-+        utxo_test_removal_replaced = make_utxo(node, int(1.1*COIN))
-+
-+        self.log.info("Testing ZMQ publisher mempoolremoved")
++        self.log.info(
++            "Testing ZMQ publisher mempoolremoved with reason REPLACED")
 +        subscriber = ZMQSubscriber(socket, topic)
-+        self.restart_node(0, [arg_accept_non_standard, arg_zmq_mempoolremoved])
++        self.restart_node(0, ["-zmqpub%s=%s" % (topic.decode(), address)])
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
 +        socket.connect(address)
 +
-+        self.log.info("Testing removal reason REPLACED")
-+        # create transaction that will be replaced
-+        tx1a = CTransaction()
-+        tx1a.vin = [CTxIn(utxo_test_removal_replaced, nSequence=0)]
-+        tx1a.vout = [CTxOut(1 * COIN, CScript([b'a' * 35]))]
-+        tx1a_hex = txToHex(tx1a)
-+        replaced_txid = node.sendrawtransaction(tx1a_hex, 0)
++        self.log.info("Sending transaction that will be replaced")
++        txid_replaced = node.sendtoaddress(
++            node.getnewaddress(), 1.0, "", "", False, True)
 +
-+        # create replacement transaction with an extra 0.1 BTC in fees
-+        tx1b = CTransaction()
-+        tx1b.vin = [CTxIn(utxo_test_removal_replaced, nSequence=0)]
-+        tx1b.vout = [CTxOut(int(0.9 * COIN), CScript([b'b' * 35]))]
-+        tx1b_hex = txToHex(tx1b)
-+        node.sendrawtransaction(tx1b_hex, 0)
++        self.log.info("feebump the transaction")
++        node.bumpfee(txid_replaced)
 +
-+        # The ZMQ interface should receive the removed child transaction
-+        expected = {replaced_txid: 'REPLACED'}
++        self.log.info("We should be notified about the bumped transaction")
++        expected = {txid_replaced: 'REPLACED'}
 +        subscriber.check_mempoolremoved_messages(expected)
++
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolremove_sizelimit.py b/test/functional/interface_zmq_mempoolremove_sizelimit.py
-new file mode 100644
-index 000000000..86e3eafa5
+new file mode 100755
+index 000000000..c67f3a2b3
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_sizelimit.py
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,84 @@
 +#!/usr/bin/env python3
-+# Copyright (c) 2015-2019 The Bitcoin Core developers
++# Copyright (c) 2015-2022 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ notification mempoolremoved to notify us on a low-fee
-+transaction that was removed from the the mempool due to size limiting"""
++"""Test the ZMQ notification mempoolremoved to notify about low-fee
++transactions that were removed from the the mempool due to size limiting"""
 +
 +import zmq
 +from time import sleep
@@ -2153,7 +2011,8 @@ index 000000000..86e3eafa5
 +from test_framework.test_framework import BitcoinTestFramework
 +from test_framework.util import create_confirmed_utxos, create_lots_of_big_transactions, gen_return_txouts
 +
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util_patched_zmq import ZMQSubscriber
++
 +
 +class ZMQTest (BitcoinTestFramework):
 +    def set_test_params(self):
@@ -2186,7 +2045,8 @@ index 000000000..86e3eafa5
 +
 +        self.log.info("Testing ZMQ publisher mempoolremoved")
 +        subscriber = ZMQSubscriber(socket, topic)
-+        self.restart_node(0,["-acceptnonstdtxn=1", "-maxmempool=5", "-spendzeroconfchange=0", arg_zmq_mempoolremoved])
++        self.restart_node(0, ["-acceptnonstdtxn=1", "-maxmempool=5",
++                          "-spendzeroconfchange=0", arg_zmq_mempoolremoved])
 +        sleep(0.2)
 +        socket.connect(address)
 +
@@ -2194,22 +2054,23 @@ index 000000000..86e3eafa5
 +
 +        txouts = gen_return_txouts()
 +        relayfee = node0.getnetworkinfo()['relayfee']
-+        utxos = create_confirmed_utxos(relayfee, node0, 91)
++        utxos = create_confirmed_utxos(self, relayfee, node0, 91)
 +
 +        self.log.info('Create a mempool tx that will be evicted')
 +        us0 = utxos.pop()
-+        inputs = [{ "txid" : us0["txid"], "vout" : us0["vout"]}]
-+        outputs = {node0.getnewaddress() : 0.0001}
++        inputs = [{"txid": us0["txid"], "vout": us0["vout"]}]
++        outputs = {node0.getnewaddress(): 0.0001}
 +        tx = node0.createrawtransaction(inputs, outputs)
-+        node0.settxfee(relayfee) # specifically fund this tx with low fee
++        node0.settxfee(relayfee)  # specifically fund this tx with low fee
 +        txF = node0.fundrawtransaction(tx)
-+        node0.settxfee(0) # return to automatic fee selection
++        node0.settxfee(0)  # return to automatic fee selection
 +        txFS = node0.signrawtransactionwithwallet(txF['hex'])
 +        txid = node0.sendrawtransaction(txFS['hex'])
 +
 +        base_fee = relayfee*100
-+        for i in range (3):
-+            create_lots_of_big_transactions(node0, txouts, utxos[30*i:30*i+30], 30, (i+1)*base_fee)
++        for i in range(3):
++            create_lots_of_big_transactions(
++                node0, txouts, utxos[30*i:30*i+30], 30, (i+1)*base_fee)
 +
 +        self.log.info('The tx should be evicted by now')
 +        # The ZMQ interface should receive the evicted transaction as the
@@ -2217,40 +2078,31 @@ index 000000000..86e3eafa5
 +        expected = {txid: "SIZELIMIT"}
 +        subscriber.check_mempoolremoved_messages(expected)
 +
++
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/interface_zmq_mempoolreplace.py b/test/functional/interface_zmq_mempoolreplace.py
-new file mode 100644
-index 000000000..ce501c64b
+new file mode 100755
+index 000000000..d771027d1
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolreplace.py
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,79 @@
 +#!/usr/bin/env python3
 +# Copyright (c) 2015-2019 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
 +# file COPYING or http://www.opensource.org/licenses/mit-license.php.
-+"""Test the ZMQ publisher mempoolremoved to notify us on a transaction that
++"""Test the ZMQ publisher mempoolreplaced to notify us on a transaction that
 +was replaced by another."""
 +
 +
 +import struct
-+from io import BytesIO
-+from time import sleep, time
++from time import sleep
 +from random import randint
 +
-+from feature_rbf import make_utxo, txToHex
-+from test_framework.address import ADDRESS_BCRT1_UNSPENDABLE
-+from test_framework.messages import (
-+    COIN,
-+    COutPoint,
-+    CTransaction,
-+    CTxIn,
-+    CTxOut
-+)
-+from test_framework.script import CScript
++from test_framework.messages import COIN
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.util import (assert_equal, assert_raises_rpc_error,connect_nodes, find_vout_for_address)
-+from test_framework.util_patched_zmq import ZMQSubscriber, removalReason
++from test_framework.util import assert_equal
++from test_framework.util_patched_zmq import ZMQSubscriber
 +
 +
 +class ZMQTest (BitcoinTestFramework):
@@ -2267,64 +2119,56 @@ index 000000000..ce501c64b
 +        import zmq
 +        self.ctx = zmq.Context()
 +        try:
-+            self.test_mempool_removed()
++            self.test_mempool_replaced()
 +        finally:
 +            # Destroy the ZMQ context.
 +            self.log.debug("Destroying ZMQ context")
 +            self.ctx.destroy(linger=None)
 +
-+    def test_mempool_removed(self):
++    def test_mempool_replaced(self):
 +        import zmq
 +        address = 'tcp://127.0.0.1:{}'.format(randint(20000, 50000))
 +        socket = self.ctx.socket(zmq.SUB)
 +        socket.set(zmq.RCVTIMEO, 60000)
 +        topic = b"mempoolreplaced"
 +
-+        arg_zmq_mempoolreplaced = "-zmqpub%s=%s" % (topic.decode(), address)
-+        arg_accept_non_standard = "-acceptnonstdtxn=1"
-+
 +        node = self.nodes[0]
-+
-+        # create utxo set before we start to listen on mempoolreplaced
-+        utxo_value = 1.1*COIN
-+        utxo_test_removal_replaced = make_utxo(node, int(utxo_value))
 +
 +        self.log.info("Testing ZMQ publisher mempoolreplaced")
 +        subscriber = ZMQSubscriber(socket, topic)
-+        self.restart_node(0, [arg_accept_non_standard, arg_zmq_mempoolreplaced])
++        self.restart_node(0, ["-zmqpub%s=%s" % (topic.decode(), address)])
 +        # Relax so that the subscriber is ready before publishing zmq messages
 +        sleep(0.2)
 +        socket.connect(address)
 +
-+        self.log.info("Testing removal reason REPLACED")
-+        # create transaction that will be replaced
-+        replaced = CTransaction()
-+        replaced.vin = [CTxIn(utxo_test_removal_replaced, nSequence=0)]
-+        replaced.vout = [CTxOut(1 * COIN, CScript([b'a' * 35]))]
-+        replaced_hex = txToHex(replaced)
-+        replaced_txid = node.sendrawtransaction(replaced_hex, 0)
++        self.log.info("Sending transaction that will be replaced")
++        txid_replaced = node.sendtoaddress(
++            node.getnewaddress(), 1.0, "", "", False, True)
++        fee_replaced = node.getmempoolentry(
++            txid_replaced)["fees"]["base"] * COIN
++        tx_replaced = node.getrawtransaction(txid_replaced)
 +
-+        # create replacement transaction with an extra 0.1 BTC in fees
-+        replacement = CTransaction()
-+        replacement.vin = [CTxIn(utxo_test_removal_replaced, nSequence=0)]
-+        replacement.vout = [CTxOut(int(0.9 * COIN), CScript([b'b' * 35]))]
-+        replacement_hex = txToHex(replacement)
-+        replacement_txid = node.sendrawtransaction(replacement_hex, 0)
++        self.log.info("feebump the transaction")
++        replacement = node.bumpfee(txid_replaced)
++        tx_replacement = node.getrawtransaction(replacement["txid"])
 +
-+        # The ZMQ interface should receive the replaced notification
++        self.log.info("Testing that the replacement is received")
 +        r_replaced_txid, r_replaced_rawtx, r_replaced_tx_fee, r_replacement_txid, r_replacement_rawtx, r_replacement_tx_fee = subscriber.receive_multi_payload()
-+        assert_equal(replaced_txid, r_replaced_txid.hex())
-+        assert_equal(replaced_hex, r_replaced_rawtx.hex())
-+        assert_equal(int(utxo_value) - replaced.vout[0].nValue, int(struct.unpack("<q", r_replaced_tx_fee)[0]))
-+        assert_equal(replacement_txid, r_replacement_txid.hex())
-+        assert_equal(replacement_hex, r_replacement_rawtx.hex())
-+        assert_equal(int(utxo_value) - replacement.vout[0].nValue, int(struct.unpack("<q", r_replacement_tx_fee)[0]))
++        assert_equal(txid_replaced, r_replaced_txid.hex())
++        assert_equal(tx_replaced, r_replaced_rawtx.hex())
++        assert_equal(fee_replaced, int(
++            struct.unpack("<q", r_replaced_tx_fee)[0]))
++        assert_equal(replacement["txid"], r_replacement_txid.hex())
++        assert_equal(tx_replacement, r_replacement_rawtx.hex())
++        assert_equal(replacement["fee"] * COIN,
++                     int(struct.unpack("<q", r_replacement_tx_fee)[0]))
++
 +
 +if __name__ == '__main__':
 +    ZMQTest().main()
 diff --git a/test/functional/test_framework/util_patched_zmq.py b/test/functional/test_framework/util_patched_zmq.py
 new file mode 100644
-index 000000000..e2a648448
+index 000000000..ccd5a0d0b
 --- /dev/null
 +++ b/test/functional/test_framework/util_patched_zmq.py
 @@ -0,0 +1,98 @@
@@ -2337,8 +2181,8 @@ index 000000000..e2a648448
 +
 +import zmq
 +
-+from test_framework.messages import COutPoint, CTransaction
 +from test_framework.util import assert_equal
++from test_framework.messages import CTransaction
 +
 +removalReason = {
 +    'EXPIRY': 0,
@@ -2348,6 +2192,7 @@ index 000000000..e2a648448
 +    'CONFLICT': 4,
 +    'REPLACED': 5,
 +}
++
 +
 +class ZMQSubscriber:
 +    def __init__(self, socket, topic):
@@ -2361,7 +2206,6 @@ index 000000000..e2a648448
 +        and checks the topic and sequence number"""
 +        msg = self.socket.recv_multipart()
 +
-+
 +        # Message should consist of at least three parts
 +        # (topic, timestamp and sequence)
 +        assert(len(msg) >= 3)
@@ -2374,10 +2218,10 @@ index 000000000..e2a648448
 +
 +        # Timestamp should be roughly in the range of the current timestamp.
 +        timestamp = struct.unpack('<q', timestamp)[-1]
-+        timestamp = timestamp / 1000 # convert to seconds
++        timestamp = timestamp / 1000  # convert to seconds
 +        diff_seconds = time.time() - timestamp
-+        assert diff_seconds < 5 # seconds
-+        assert diff_seconds > -5 # seconds
++        assert diff_seconds < 5  # seconds
++        assert diff_seconds > -5  # seconds
 +
 +        # Sequence should be incremental.
 +        assert_equal(struct.unpack('<I', sequence)[-1], self.sequence)
@@ -2390,7 +2234,7 @@ index 000000000..e2a648448
 +        and the removal reason"""
 +        assert_equal(self.topic, b'mempoolremoved')
 +
-+                # Should receive a payload with three elements (txid, rawtx, removal reason)
++        # Should receive a payload with three elements (txid, rawtx, removal reason)
 +        payload = self.receive_multi_payload()
 +        assert_equal(3, len(payload))
 +
@@ -2421,33 +2265,31 @@ index 000000000..e2a648448
 +    def check_mempoolremoved_messages(self, expected):
 +        """checks that the in 'expected' defined txid-reason tuples arrive"""
 +        for _ in range(len(expected)):
-+            hash, reason = self.receive_mempoolremoved_message()
-+            assert_equal(True, hash in expected)
-+            assert_equal(removalReason[expected[hash]], reason)
-+            del expected[hash]
++            txhash, reason = self.receive_mempoolremoved_message()
++            assert_equal(True, txhash in expected)
++            assert_equal(removalReason[expected[txhash]], reason)
++            del expected[txhash]
 +        assert_equal(0, len(expected))
 diff --git a/test/functional/test_runner.py b/test/functional/test_runner.py
-index b3b894b7c..447825de9 100755
+index b0f24e3b9..a41d2b26c 100755
 --- a/test/functional/test_runner.py
 +++ b/test/functional/test_runner.py
-@@ -160,6 +160,12 @@ BASE_SCRIPTS = [
-     'wallet_reorgsrestore.py',
-     'interface_http.py',
-     'interface_rpc.py',
+@@ -195,6 +195,18 @@ BASE_SCRIPTS = [
+     'p2p_getdata.py',
+     'p2p_addrfetch.py',
+     'rpc_net.py',
++    'interface_zmq_mempooladded.py',
 +    'interface_zmq_mempoolremove_block.py',
++    'interface_zmq_mempoolremove_conflict.py',
 +    'interface_zmq_mempoolremove_expiry.py',
 +    'interface_zmq_mempoolremove_reorg.py',
 +    'interface_zmq_mempoolremove_replaced.py',
-+    'interface_zmq_mempoolremove_conflict.py',
 +    'interface_zmq_mempoolremove_sizelimit.py',
-     'rpc_psbt.py',
-     'rpc_psbt.py --descriptors',
-     'rpc_users.py',
-@@ -251,6 +257,7 @@ BASE_SCRIPTS = [
-     'feature_minchainwork.py',
-     'rpc_estimatefee.py',
-     'rpc_getblockstats.py',
++    'interface_zmq_mempoolreplace.py',
++    'interface_zmq_mempoolconfirmed.py',
++    'interface_zmq_chaintipchanged.py',
++    'interface_zmq_chainblockconnected.py',
 +    'interface_zmq_chainheaderadded.py',
-     'wallet_create_tx.py',
-     'wallet_send.py',
-     'wallet_create_tx.py --descriptors',
+     'wallet_keypool.py --legacy-wallet',
+     'wallet_keypool.py --descriptors',
+     'wallet_descriptor.py --descriptors',

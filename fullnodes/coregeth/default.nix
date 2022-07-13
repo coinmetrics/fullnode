@@ -6,7 +6,7 @@ rec {
 
     vendorSha256 = {
       "1.12.6"  = "sha256-TcDNU2HyI5kIXlflcj2uqDAUeVsRzxzZRZZc8mvkk6o=";
-      "1.12.7"  = "sha256-xvAgMwkO/sVrwk9SCwIXhgttntzmEY6HCi1dM3PJ35Q=";
+      "1.12.7"  = "sha256-TcDNU2HyI5kIXlflcj2uqDAUeVsRzxzZRZZc8mvkk6o=";
     }.${version} or (builtins.trace "CoreGeth fullnode: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

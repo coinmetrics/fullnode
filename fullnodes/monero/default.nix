@@ -10,7 +10,7 @@ rec {
       fetchSubmodules = true;
       sha256 = {
         "0.17.2.3" = "0nax991fshfh51grhh2ryfrwwws35k16gzl1l3niva28zff2xmq6";
-        "0.17.3.0" = "1spsf7m3x4psp9s7mivr6x4886jnbq4i8ll2dl8bv5bsdhcd3pjm";
+        "0.17.3.0" = "sha256-j/6j46wMoP11atsWSJBXRq3YphDja+0IBm2qX+CVPk0=";
       }.${version} or (builtins.trace "Monero fullnode: using dummy SHA256" "0000000000000000000000000000000000000000000000000000");
     };
 

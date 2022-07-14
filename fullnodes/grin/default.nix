@@ -5,10 +5,8 @@ rec {
     inherit version;
 
     cargoSha256 = {
-      "5.0.4" = "1fxq7ybb5immakjdgsy60y730jjfwj8nd148sw7nphn2m03brjz5";
-      "5.1.0" = "12ciinv2136x8vr011v71ixlhixnrwifjfx36kkj1nblrrg0vawd";
-      "5.1.1" = "11l46ajihgndqdf906iqmwgmdc535rkby8l1n90w74a0j36vpamz";
-      "5.1.2" = "LQWO50XCaq+gYtsX4sZtWineKRLw14PjZMnCTzckifg=";
+      "5.1.1" = "sha256-v6q7zZBAkcNBsoEiv2Yuo7BWH684GpBcw80+GKUyhIY=";
+      "5.1.2" = "sha256-aC693nZapyTwIKlXBUeo/UnFbBVnZv+yBGKl5WMCEcA=";
     }.${version} or lib.fakeSha256;
 
     src = builtins.fetchGit {

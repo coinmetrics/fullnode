@@ -6,7 +6,7 @@ rec {
 
     vendorSha256 = {
       "0.1.1" = "sha256-ASAN4qEsqL5B0CLnlW/yHU4dwoSxjjAoK8nBNULVOu8=";
-      "1.0.0" = "sha256-7/47y9o5UNBWD3Il35F4o2Ou9egEgcAQahohimkmM0A=";
+      "1.0.0" = "sha256-ASAN4qEsqL5B0CLnlW/yHU4dwoSxjjAoK8nBNULVOu8=";
     }.${version} or (builtins.trace "Cosmos Rosetta gateway: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
 
     src = builtins.fetchGit {

@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = with nixpkgs; callPackage (./. + "/bitcoin-zmce-${version}.nix") {
+  package = with pkgs; callPackage (./. + "/bitcoin-zmce-${version}.nix") {
     boost = boost17x;
     miniupnpc = miniupnpc_2;
     withGui = false;

@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/dogecoin-${version}.nix") {
+  package = pkgs.callPackage (./. + "/dogecoin-${version}.nix") {
     withGui = false;
     withUpnp = false;
     withUtils = false;
@@ -16,8 +16,8 @@ rec {
 
     extraCommands = ''
       mkdir ./bin && \
-      ln -s ${nixpkgs.dash}/bin/dash ./bin/sh && \
-      ln -s ${nixpkgs.gawk}/bin/awk ./bin/awk && \
+      ln -s ${pkgs.dash}/bin/dash ./bin/sh && \
+      ln -s ${pkgs.gawk}/bin/awk ./bin/awk && \
       ln -s ${package}/bin/dogecoind ./bin/dogecoind
     '';
   };

@@ -1,7 +1,7 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/openethereum-${version}.nix") {
-    stdenv = nixpkgs.llvmPackages_12.stdenv;
+  package = pkgs.callPackage (./. + "/openethereum-${version}.nix") {
+    stdenv = pkgs.llvmPackages_12.stdenv;
   };
 
   imageConfig = {
@@ -12,8 +12,8 @@ rec {
 
     extraCommands = ''
       mkdir ./bin && \
-      ln -s ${nixpkgs.dash}/bin/dash ./bin/sh && \
-      ln -s ${nixpkgs.gawk}/bin/awk ./bin/awk && \
+      ln -s ${pkgs.dash}/bin/dash ./bin/sh && \
+      ln -s ${pkgs.gawk}/bin/awk ./bin/awk && \
       ln -s ${package}/bin/openethereum ./bin/openethereum
     '';
   };

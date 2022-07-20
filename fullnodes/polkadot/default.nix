@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/polkadot-${version}.nix") { };
+  package = pkgs.callPackage (./. + "/polkadot-${version}.nix") { };
 
   imageConfig = {
     config = {

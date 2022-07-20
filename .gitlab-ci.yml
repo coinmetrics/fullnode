@@ -1,19 +1,27 @@
 stages:
   - build
+  - publish
 
-images:
+variables:
+  NIXRUN: nix --print-build-logs run --override-input nixpkgs nixpkgs
+
+.generic-build:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - fullnodes/$FULLNODE/**
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
   image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.10.3
-    entrypoint: [""]
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: build
   before_script:
     - /before-script.sh
   script:
-    - $(nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix)
+    - $NIXRUN .#publish-$FULLNODE -- dry-run
   after_script:
+    - /copy-logs.sh artifacts
     - /after-script.sh
-    - mkdir -p artifacts
-    - cp -r /nix/var/log/nix/drvs artifacts
   artifacts:
     expire_in: "1 week"
     when: always
@@ -21,29 +29,236 @@ images:
       - artifacts
   tags:
     - kube-any-large
-  only:
-    - master
-    - schedules
 
-images-mr:
+.generic-publish:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
   image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:2.10.3
-    entrypoint: [""]
-  stage: build
+    name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
+  stage: publish
   before_script:
     - /before-script.sh
   script:
-    - nix-build --no-out-link -QA updateAllScript --argstr imageBaseName "$DOCKER_REPO" ./release.nix
+    - $NIXRUN .#login
+    - $NIXRUN .#publish-$FULLNODE
   after_script:
+    - /copy-logs.sh artifacts
     - /after-script.sh
-    - mkdir -p artifacts
-    - cp -r /nix/var/log/nix/drvs artifacts
   artifacts:
     expire_in: "1 week"
     when: always
     paths:
       - artifacts
   tags:
-    - kube-any-large
-  only:
-    - merge_requests
+    - kube-any-small
+
+build bitcoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin
+
+publish bitcoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin
+
+build bitcoin-cash:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-cash
+
+publish bitcoin-cash:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-cash
+
+build bitcoin-gold:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-gold
+
+publish bitcoin-gold:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-gold
+
+build bitcoin-sv:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-sv
+
+publish bitcoin-sv:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-sv
+
+build bitcoin-zmce:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-zmce
+
+publish bitcoin-zmce:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-zmce
+
+build coregeth:
+  extends: .generic-build
+  variables:
+    FULLNODE: coregeth
+
+publish coregeth:
+  extends: .generic-publish
+  variables:
+    FULLNODE: coregeth
+
+build cosmos-rosetta:
+  extends: .generic-build
+  variables:
+    FULLNODE: cosmos-rosetta
+
+publish cosmos-rosetta:
+  extends: .generic-publish
+  variables:
+    FULLNODE: cosmos-rosetta
+
+build decred:
+  extends: .generic-build
+  variables:
+    FULLNODE: decred
+
+publish decred:
+  extends: .generic-publish
+  variables:
+    FULLNODE: decred
+
+build digibyte:
+  extends: .generic-build
+  variables:
+    FULLNODE: digibyte
+
+publish digibyte:
+  extends: .generic-publish
+  variables:
+    FULLNODE: digibyte
+
+build dogecoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: dogecoin
+
+publish dogecoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: dogecoin
+
+build elements:
+  extends: .generic-build
+  variables:
+    FULLNODE: elements
+
+publish elements:
+  extends: .generic-publish
+  variables:
+    FULLNODE: elements
+
+build geth:
+  extends: .generic-build
+  variables:
+    FULLNODE: geth
+
+publish geth:
+  extends: .generic-publish
+  variables:
+    FULLNODE: geth
+
+build grin:
+  extends: .generic-build
+  variables:
+    FULLNODE: grin
+
+publish grin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: grin
+
+build litecoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: litecoin
+
+publish litecoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: litecoin
+
+build monero:
+  extends: .generic-build
+  variables:
+    FULLNODE: monero
+
+publish monero:
+  extends: .generic-publish
+  variables:
+    FULLNODE: monero
+
+build omnicore:
+  extends: .generic-build
+  variables:
+    FULLNODE: omnicore
+
+publish omnicore:
+  extends: .generic-publish
+  variables:
+    FULLNODE: omnicore
+
+build openethereum:
+  extends: .generic-build
+  variables:
+    FULLNODE: openethereum
+
+publish openethereum:
+  extends: .generic-publish
+  variables:
+    FULLNODE: openethereum
+
+build pivx:
+  extends: .generic-build
+  variables:
+    FULLNODE: pivx
+
+publish pivx:
+  extends: .generic-publish
+  variables:
+    FULLNODE: pivx
+
+build polkadot:
+  extends: .generic-build
+  variables:
+    FULLNODE: polkadot
+
+publish polkadot:
+  extends: .generic-publish
+  variables:
+    FULLNODE: polkadot
+
+build vertcoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: vertcoin
+
+publish vertcoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: vertcoin
+
+build zcash:
+  extends: .generic-build
+  variables:
+    FULLNODE: zcash
+
+publish zcash:
+  extends: .generic-publish
+  variables:
+    FULLNODE: zcash

@@ -1,22 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = with nixpkgs; buildGoModule {
-    pname = "cosmos-rosetta";
-    inherit version;
-
-    vendorSha256 = {
-      "0.1.1" = "sha256-ASAN4qEsqL5B0CLnlW/yHU4dwoSxjjAoK8nBNULVOu8=";
-      "1.0.0" = "sha256-ASAN4qEsqL5B0CLnlW/yHU4dwoSxjjAoK8nBNULVOu8=";
-    }.${version} or (builtins.trace "Cosmos Rosetta gateway: using dummy vendor SHA256" "0000000000000000000000000000000000000000000000000000");
-
-    src = builtins.fetchGit {
-      url = "https://github.com/tendermint/cosmos-rosetta-gateway.git";
-      ref = "refs/tags/v${version}";
-    };
-
-    proxyVendor = true;
-    doCheck = false;
-  };
+  package = pkgs.callPackage (./. + "/cosmos-rosetta-${version}.nix") {};
 
   imageConfig = {
     config = {

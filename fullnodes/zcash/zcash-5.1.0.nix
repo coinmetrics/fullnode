@@ -1,19 +1,18 @@
-{ rust, rustPlatform, stdenv, lib, fetchFromGitHub, fetchpatch, autoreconfHook
-, makeWrapper, cargo, pkg-config, curl, coreutils, boost179, db62, hexdump
-, libsodium, libevent, testers, utf8cpp, util-linux, withDaemon ? true
-, withMining ? true, withUtils ? true, withWallet ? true, withZmq ? true, zcash
-, zeromq
+{ autoreconfHook, boost179, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
+, hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
+, stdenv, testers, utf8cpp, util-linux, withDaemon ? true, withMining ? true
+, withUtils ? true, withWallet ? true, withZmq ? true, zcash, zeromq
 }:
 
-rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
+rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   pname = "zcash";
-  version = "5.0.0";
+  version = "5.1.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    sha256 = "sha256-5PlqFs2njqNeZgmNz0VKMWcRY5lPaF9oTsoh/uLEWi8=";
+    sha256 = "sha256-tU6DuWpe8Vlx0qIilAKWuO7WFp1ucbxtvOxoWLA0gdc=";
   };
 
   prePatch = lib.optionalString stdenv.isAarch64 ''
@@ -22,9 +21,14 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
       --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
   '';
 
-  cargoSha256 = "sha256-eRRRjUbOieRC88wf+f1jAYvqGFmogBEla67NnImicEc=";
+  patches = [
+    ./patches/fix-missing-header.patch
+  ];
 
-  nativeBuildInputs = [ autoreconfHook cargo hexdump makeWrapper pkg-config ];
+  cargoSha256 = "sha256-ZWmkveDEENdXRirGmnUWSjtPNJvX0Jpgfxhzk44F7Q0=";
+
+  nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
+
   buildInputs = [ boost179 libevent libsodium utf8cpp ]
     ++ lib.optional withWallet db62
     ++ lib.optional withZmq zeromq;
@@ -42,10 +46,14 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     configureFlagsArray+=("RUST_VENDORED_SOURCES=$NIX_BUILD_TOP/$cargoDepsCopy")
   '';
 
+  CXXFLAGS = [
+    "-I${lib.getDev utf8cpp}/include/utf8cpp"
+    "-I${lib.getDev cxx-rs}/include"
+  ];
+
   configureFlags = [
     "--disable-tests"
     "--with-boost-libdir=${lib.getLib boost179}/lib"
-    "CXXFLAGS=-I${lib.getDev utf8cpp}/include/utf8cpp"
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
   ] ++ lib.optional (!withWallet) "--disable-wallet"
     ++ lib.optional (!withDaemon) "--without-daemon"
@@ -73,6 +81,5 @@ rustPlatform.buildRustPackage.override { stdenv = stdenv; } rec {
     homepage = "https://z.cash/";
     maintainers = with maintainers; [ rht tkerber centromere ];
     license = licenses.mit;
-    platforms = platforms.linux ++ platforms.darwin;
   };
 }

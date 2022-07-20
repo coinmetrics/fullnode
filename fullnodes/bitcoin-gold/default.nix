@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/bitcoin-gold-${version}.nix") {
+  package = pkgs.callPackage (./. + "/bitcoin-gold-${version}.nix") {
     withGui = false;
     withWallet = false;
   };

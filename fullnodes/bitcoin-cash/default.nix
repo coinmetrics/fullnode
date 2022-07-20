@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/bitcoin-cash-${version}.nix") {};
+  package = pkgs.callPackage (./. + "/bitcoin-cash-${version}.nix") {};
 
   imageConfig = {
     config = {

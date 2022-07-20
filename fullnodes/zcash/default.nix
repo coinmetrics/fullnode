@@ -1,7 +1,7 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/zcash-${version}.nix") {
-    stdenv = nixpkgs.llvmPackages_13.stdenv;
+  package = pkgs.callPackage (./. + "/zcash-${version}.nix") {
+    stdenv = pkgs.llvmPackages_13.stdenv;
     withMining = false;
     withWallet = true; # The build fails without this. >:(
   };
@@ -14,8 +14,8 @@ rec {
 
     extraCommands = ''
       mkdir ./bin && \
-      ln -s ${nixpkgs.dash}/bin/dash ./bin/sh && \
-      ln -s ${nixpkgs.gawk}/bin/awk ./bin/awk && \
+      ln -s ${pkgs.dash}/bin/dash ./bin/sh && \
+      ln -s ${pkgs.gawk}/bin/awk ./bin/awk && \
       ln -s ${package}/bin/zcashd ./bin/zcashd && \
       ln -s ${package}/bin/zcash-cli ./bin/zcash-cli
     '';

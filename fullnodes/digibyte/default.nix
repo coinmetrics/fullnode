@@ -1,6 +1,6 @@
-{ nixpkgs, version }:
+{ pkgs, version }:
 rec {
-  package = nixpkgs.callPackage (./. + "/digibyte-${version}.nix") {
+  package = pkgs.callPackage (./. + "/digibyte-${version}.nix") {
     withGui = false;
   };
 

@@ -4,13 +4,11 @@ buildGoModule {
   version = "1.10.21";
 
   vendorSha256 = "sha256-eR/qu9QAd3+0R3XYP0M17+wXL9dRVDjW0Af9PRchrps=";
-  #vendorSha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
   src = fetchFromGitHub {
     owner = "ethereum";
     repo = "go-ethereum";
-    #rev = "refs/tags/v${version}";
-    rev = "refs/tags/v1.10.21";
+    rev = "671094279e8d27f4b4c3c94bf8b636c26b473976";
     sha256 = "sha256-qaM1I3ytMZN+5v/Oj47n3Oc21Jk7DtjfWA/xDprbn/M=";
   };
 

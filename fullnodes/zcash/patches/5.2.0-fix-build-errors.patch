@@ -1,0 +1,150 @@
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 50bc11206..9932776ca 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -150,8 +150,6 @@ $(LIBUNIVALUE): $(wildcard univalue/lib/*) $(wildcard univalue/include/*)
+ # But to build the less dependent modules first, we manually select their order here:
+ EXTRA_LIBRARIES += \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBBITCOIN_COMMON) \
+   $(LIBBITCOIN_SERVER) \
+@@ -463,6 +461,7 @@ crypto_libbitcoin_crypto_sse41_a_CPPFLAGS = $(AM_CPPFLAGS)
+ if ENABLE_SSE41
+ crypto_libbitcoin_crypto_sse41_a_CXXFLAGS += $(SSE41_CXXFLAGS)
+ crypto_libbitcoin_crypto_sse41_a_CPPFLAGS += -DENABLE_SSE41
++LIBBITCOIN_CRYPTO += $(LIBBITCOIN_CRYPTO_SSE41)
+ endif
+ crypto_libbitcoin_crypto_sse41_a_SOURCES = crypto/sha256_sse41.cpp
+ 
+@@ -471,6 +470,7 @@ crypto_libbitcoin_crypto_avx2_a_CPPFLAGS = $(AM_CPPFLAGS)
+ if ENABLE_AVX2
+ crypto_libbitcoin_crypto_avx2_a_CXXFLAGS += $(AVX2_CXXFLAGS)
+ crypto_libbitcoin_crypto_avx2_a_CPPFLAGS += -DENABLE_AVX2
++LIBBITCOIN_CRYPTO += $(LIBBITCOIN_CRYPTO_AVX2)
+ endif
+ crypto_libbitcoin_crypto_avx2_a_SOURCES = crypto/sha256_avx2.cpp
+ 
+@@ -579,10 +579,8 @@ zcashd_LDADD = \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBBITCOIN_ZMQ) \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+-  $(LIBZCASH) \
+   $(LIBRUSTZCASH) \
++  $(LIBZCASH) \
+   $(LIBLEVELDB) \
+   $(LIBLEVELDB_SSE42) \
+   $(LIBMEMENV) \
+@@ -594,7 +592,6 @@ zcashd_LDADD += \
+   $(EVENT_PTHREADS_LIBS) \
+   $(EVENT_LIBS) \
+   $(ZMQ_LIBS) \
+-  $(LIBBITCOIN_CRYPTO) \
+   $(LIBZCASH_LIBS)
+ 
+ # bitcoin-cli binary #
+@@ -613,11 +610,9 @@ zcash_cli_LDADD = \
+   $(LIBBITCOIN_UTIL) \
+   $(BOOST_LIBS) \
+   $(EVENT_LIBS) \
+-  $(LIBZCASH) \
+   $(LIBRUSTZCASH) \
++  $(LIBZCASH) \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+   $(LIBSECP256K1) \
+   $(LIBZCASH_LIBS)
+ #
+@@ -638,11 +633,9 @@ zcash_tx_LDADD = \
+   $(LIBBITCOIN_COMMON) \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBSECP256K1) \
+-  $(LIBZCASH) \
+   $(LIBRUSTZCASH) \
++  $(LIBZCASH) \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+   $(LIBZCASH_LIBS)
+ 
+ zcash_tx_LDADD += $(BOOST_LIBS)
+diff --git a/src/Makefile.bench.include b/src/Makefile.bench.include
+index d177f7b51..c3d98c2cf 100644
+--- a/src/Makefile.bench.include
++++ b/src/Makefile.bench.include
+@@ -32,15 +32,13 @@ bench_bench_bitcoin_LDADD = \
+   $(LIBBITCOIN_UNIVALUE) \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+   $(LIBLEVELDB) \
+   $(LIBLEVELDB_SSE42) \
+   $(LIBMEMENV) \
+   $(LIBSECP256K1) \
+   $(LIBUNIVALUE) \
+-  $(LIBZCASH) \
+-  $(LIBRUSTZCASH)
++  $(LIBRUSTZCASH) \
++  $(LIBZCASH)
+ 
+ if ENABLE_ZMQ
+ bench_bench_bitcoin_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)
+diff --git a/src/Makefile.gtest.include b/src/Makefile.gtest.include
+index b0c92fd6d..ec80559d7 100644
+--- a/src/Makefile.gtest.include
++++ b/src/Makefile.gtest.include
+@@ -77,8 +77,6 @@ zcash_gtest_LDADD = \
+   $(LIBBITCOIN_ZMQ) \
+   $(LIBBITCOIN_PROTON) \
+   $(LIBBITCOIN_CRYPTO) \
+-  $(LIBBITCOIN_CRYPTO_SSE41) \
+-  $(LIBBITCOIN_CRYPTO_AVX2) \
+   $(LIBUNIVALUE) \
+   $(LIBLEVELDB) \
+   $(LIBLEVELDB_SSE42) \
+@@ -93,8 +91,8 @@ zcash_gtest_LDADD += \
+   $(EVENT_PTHREADS_LIBS) \
+   $(EVENT_LIBS) \
+   $(ZMQ_LIBS) \
+-  $(LIBZCASH) \
+   $(LIBRUSTZCASH) \
++  $(LIBZCASH) \
+   $(LIBZCASH_LIBS)
+ 
+ zcash_gtest_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
+diff --git a/src/Makefile.test.include b/src/Makefile.test.include
+index 1be490b1f..1d7727d4c 100644
+--- a/src/Makefile.test.include
++++ b/src/Makefile.test.include
+@@ -138,11 +138,11 @@ if ENABLE_WALLET
+ test_test_bitcoin_LDADD += $(LIBBITCOIN_WALLET)
+ endif
+ 
+-test_test_bitcoin_LDADD += $(LIBBITCOIN_SERVER) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CRYPTO) $(LIBBITCOIN_CRYPTO_SSE41) $(LIBBITCOIN_CRYPTO_AVX2) $(LIBUNIVALUE) \
++test_test_bitcoin_LDADD += $(LIBBITCOIN_SERVER) $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CRYPTO) $(LIBUNIVALUE) \
+   $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV) $(BOOST_LIBS) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(LIBSECP256K1) $(EVENT_LIBS) $(EVENT_PTHREADS_LIBS)
+ test_test_bitcoin_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+ 
+-test_test_bitcoin_LDADD += $(LIBZCASH_SCRIPT) $(BDB_LIBS) $(LIBZCASH) $(LIBRUSTZCASH) $(LIBZCASH_LIBS)
++test_test_bitcoin_LDADD += $(LIBZCASH_SCRIPT) $(BDB_LIBS) $(LIBRUSTZCASH) $(LIBZCASH) $(LIBZCASH_LIBS)
+ test_test_bitcoin_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) -static
+ 
+ if ENABLE_ZMQ
+diff --git a/src/cuckoocache.h b/src/cuckoocache.h
+index 33260a35a..14bcd98c6 100644
+--- a/src/cuckoocache.h
++++ b/src/cuckoocache.h
+@@ -5,6 +5,7 @@
+ #ifndef BITCOIN_CUCKOOCACHE_H
+ #define BITCOIN_CUCKOOCACHE_H
+ 
++#include <algorithm>
+ #include <array>
+ #include <atomic>
+ #include <cmath>

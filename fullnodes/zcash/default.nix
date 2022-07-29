@@ -2,8 +2,6 @@
 rec {
   package = pkgs.callPackage (./. + "/zcash-${version}.nix") {
     stdenv = pkgs.llvmPackages_13.stdenv;
-    withMining = false;
-    withWallet = true; # The build fails without this. >:(
   };
 
   imageConfig = {

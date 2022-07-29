@@ -1,18 +1,17 @@
 { autoreconfHook, boost179, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
 , hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
-, stdenv, testers, utf8cpp, util-linux, withDaemon ? true, withMining ? true
-, withUtils ? true, withWallet ? true, withZmq ? true, zcash, zeromq
+, stdenv, testers, utf8cpp, util-linux, zcash, zeromq
 }:
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   pname = "zcash";
-  version = "5.1.0";
+  version = "5.2.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
-    rev = "v${version}";
-    sha256 = "sha256-tU6DuWpe8Vlx0qIilAKWuO7WFp1ucbxtvOxoWLA0gdc=";
+    rev = "d6d2093beb66a052059d3771f6195c0bafad84ff";
+    sha256 = "sha256-ItjPqyWU5h/XFmFkw4B2+RQURF3LmJXKlwYFbxRnTik=";
   };
 
   prePatch = lib.optionalString stdenv.isAarch64 ''
@@ -22,16 +21,14 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   '';
 
   patches = [
-    ./patches/5.1.0-fix-missing-header.patch
+    ./patches/5.2.0-fix-build-errors.patch
   ];
 
-  cargoSha256 = "sha256-ZWmkveDEENdXRirGmnUWSjtPNJvX0Jpgfxhzk44F7Q0=";
+  cargoSha256 = "sha256-TPvAIgQO9IumFK5wCOIhfpfCQaPcLgcX1iAqdsYeGsI=";
 
   nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
 
-  buildInputs = [ boost179 libevent libsodium utf8cpp ]
-    ++ lib.optional withWallet db62
-    ++ lib.optional withZmq zeromq;
+  buildInputs = [ boost179 db62 libevent libsodium utf8cpp zeromq ];
 
   # Use the stdenv default phases (./configure; make) instead of the
   # ones from buildRustPackage.
@@ -53,12 +50,11 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
 
   configureFlags = [
     "--disable-tests"
+    "--disable-bench"
+    "--disable-mining"
     "--with-boost-libdir=${lib.getLib boost179}/lib"
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
-  ] ++ lib.optional (!withWallet) "--disable-wallet"
-    ++ lib.optional (!withDaemon) "--without-daemon"
-    ++ lib.optional (!withUtils) "--without-utils"
-    ++ lib.optional (!withMining) "--disable-mining";
+  ];
 
   # Workaround for problem identified in:
   # https://github.com/NixOS/nixpkgs/pull/174473

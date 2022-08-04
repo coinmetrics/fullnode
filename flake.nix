@@ -1,10 +1,23 @@
 {
   description = "Fullnodes";
 
-  outputs = { self, nixpkgs }:
+  inputs = {
+    nix = {
+      type = "gitlab";
+      owner = "coinmetrics%2Finfrastructure";
+      repo = "nix";
+    };
+  };
+
+  outputs = { self, nixpkgs, nix }:
   let
     system = "x86_64-linux";
-    pkgs = import nixpkgs { inherit system; };
+
+    pkgs = import nixpkgs {
+      inherit system;
+      overlays = [ self.overlays.default ];
+    };
+
     allFullnodeVersions = import ./versions.nix;
 
     importVersion = name: version: {
@@ -77,6 +90,8 @@
       };
   in
   {
+    overlays.default = nix.overlays.default;
+
     packages.${system} =
       builtins.zipAttrsWith
         (_: images: builtins.head images)

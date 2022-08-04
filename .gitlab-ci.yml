@@ -2,22 +2,21 @@ stages:
   - build
   - publish
 
-variables:
-  NIXRUN: nix --print-build-logs run --override-input nixpkgs nixpkgs
-
 .generic-build:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
         paths:
           - fullnodes/$FULLNODE/**
+          - .gitlab-ci.yml
   image:
     name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: build
   before_script:
+    - echo "access-tokens = gitlab.com=OAuth2:$NIX_REPO_TOKEN" >> /etc/nix/nix.conf
     - /before-script.sh
   script:
-    - $NIXRUN .#publish-$FULLNODE -- dry-run
+    - nix --print-build-logs run .#publish-$FULLNODE -- dry-run
   after_script:
     - /copy-logs.sh artifacts
     - /after-script.sh
@@ -37,10 +36,11 @@ variables:
     name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: publish
   before_script:
+    - echo "access-tokens = gitlab.com=OAuth2:$NIX_REPO_TOKEN" >> /etc/nix/nix.conf
     - /before-script.sh
   script:
-    - $NIXRUN .#login
-    - $NIXRUN .#publish-$FULLNODE
+    - nix --print-build-logs run .#login
+    - nix --print-build-logs run .#publish-$FULLNODE
   after_script:
     - /copy-logs.sh artifacts
     - /after-script.sh

@@ -9,6 +9,7 @@ stages:
         paths:
           - fullnodes/$FULLNODE/**
           - .gitlab-ci.yml
+          - flake.lock
   image:
     name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: build

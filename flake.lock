@@ -39,11 +39,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1659678196,
-        "narHash": "sha256-Oy7nHOZhHtsvO14x12ZW0q44r4JGBj4s9WI0CUy2KiY=",
+        "lastModified": 1659686624,
+        "narHash": "sha256-zxkmt+9/31RtNMvunZNZAK9UHP+UKg2SiEhi0PkIi2U=",
         "owner": "coinmetrics%2Finfrastructure",
         "repo": "nix",
-        "rev": "4b00f38d5b87aae65aa8b0e810fae1f699987d3f",
+        "rev": "33cff7ad73e4becce24fb58f0ff01709f32027d3",
         "type": "gitlab"
       },
       "original": {

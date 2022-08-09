@@ -10,48 +10,32 @@ stages:
           - fullnodes/$FULLNODE/**
           - .gitlab-ci.yml
           - flake.lock
-  image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: build
-  before_script:
-    - echo "access-tokens = gitlab.com=OAuth2:$NIX_REPO_TOKEN" >> /etc/nix/nix.conf
-    - /before-script.sh
   script:
-    - nix --print-build-logs run .#publish-$FULLNODE -- dry-run
-  after_script:
-    - /copy-logs.sh artifacts
-    - /after-script.sh
+    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#publish-$FULLNODE -- dry-run
   artifacts:
     expire_in: "1 week"
     when: always
     paths:
       - artifacts
   tags:
-    - kube-any-large
+    - kube-hel1-nix
 
 .generic-publish:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
-  image:
-    name: registry.gitlab.com/coinmetrics/infrastructure/nix:$NIX_IMAGE_TAG
   stage: publish
-  before_script:
-    - echo "access-tokens = gitlab.com=OAuth2:$NIX_REPO_TOKEN" >> /etc/nix/nix.conf
-    - /before-script.sh
   script:
-    - nix --print-build-logs run .#login
-    - nix --print-build-logs run .#publish-$FULLNODE
-  after_script:
-    - /copy-logs.sh artifacts
-    - /after-script.sh
+    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#login
+    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#publish-$FULLNODE
   artifacts:
     expire_in: "1 week"
     when: always
     paths:
       - artifacts
   tags:
-    - kube-any-small
+    - kube-any-nix
 
 build bitcoin:
   extends: .generic-build

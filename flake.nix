@@ -41,6 +41,10 @@
       builtins.mapAttrs (fullnodeImage name) versions
     ) allFullnodes;
 
+    allFullnodeBinaries = builtins.mapAttrs (_: versions:
+      builtins.mapAttrs (_: fullnode: fullnode.package) versions
+    ) allFullnodes;
+
     flattenAttrs = f: s: builtins.concatLists (
       pkgs.lib.mapAttrsToList (outerName: outerValue:
         pkgs.lib.mapAttrsToList (innerName: innerValue:
@@ -48,6 +52,20 @@
         ) outerValue
       ) s
     );
+
+    flatBinaryMap = builtins.zipAttrsWith
+      (_: binaries: builtins.head binaries)
+      (flattenAttrs
+        (outer: inner: builtins.replaceStrings [ "." ] [ "_" ] "${outer}_${inner}")
+        allFullnodeBinaries
+      );
+
+    flatImageMap = builtins.zipAttrsWith
+      (_: images: builtins.head images)
+      (flattenAttrs
+        (outer: inner: builtins.replaceStrings [ "." ] [ "_" ] "${outer}_${inner}-image")
+        allFullnodeImages
+      );
 
     registryLoginScript = pkgs.writeShellApplication {
       name = "authenticate-to-registries";
@@ -92,13 +110,7 @@
   {
     overlays.default = nix.overlays.default;
 
-    packages.${system} =
-      builtins.zipAttrsWith
-        (_: images: builtins.head images)
-        (flattenAttrs
-          (outer: inner: builtins.replaceStrings [ "." ] [ "_" ] "${outer}_${inner}")
-          allFullnodeImages
-        );
+    packages.${system} = flatBinaryMap // flatImageMap;
 
     # TODO: Autogenerate
     apps.${system} = {

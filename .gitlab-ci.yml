@@ -167,6 +167,16 @@ publish grin:
   variables:
     FULLNODE: grin
 
+build lighthouse:
+  extends: .generic-build
+  variables:
+    FULLNODE: lighthouse
+
+publish lighthouse:
+  extends: .generic-publish
+  variables:
+    FULLNODE: lighthouse
+
 build litecoin:
   extends: .generic-build
   variables:

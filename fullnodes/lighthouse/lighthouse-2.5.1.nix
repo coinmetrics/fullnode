@@ -13,14 +13,23 @@ rustPlatform.buildRustPackage rec {
     sha256 = "sha256-o8fntnEDRRtxDHsqHTJ3GoHpFtRpuwPQQJ+kxHV1NKA=";
   };
 
-  cargoHash = "sha256-oyX+v2dJ54GXd0XdesZC/zw7FXtFfx6qOJgX4OJLR+A=";
+  cargoPatches = [
+    ./patches/2.5.1-coinmetrics-Cargo-lock.patch
+  ];
+
+  cargoHash = "sha256-22aAqGf/cV1lx/7yS6N+ig+DaYhBW3dZksjnyGfZH74=";
 
   patches = [
     (fetchurl {
-      url = "https://github.com/sigp/lighthouse/commit/3c2a6392ee626e8b945efa84d08a906029c582a2.diff";
-      hash = "sha256-dwp7vkwlm2ZhGm1/uhdH71FmCIJyT3lB/NYMKYLxmA8=";
+      url = "https://github.com/sigp/lighthouse/commit/e0f86588e634c186c0ab493694a8e4804fcbbf93.diff";
+      hash = "sha256-0VTnSN0jt/FE/OwylEYmTu/OTJC8lwxhJd5whqCAeZk=";
     })
+    ./patches/2.5.1-coinmetrics.patch
   ];
+
+  buildFeatures = [ "modern" "gnosis" ];
+
+  checkFeatures = [ ];
 
   nativeBuildInputs = [ clang cmake nodePackages.ganache perl protobuf ];
 
@@ -41,13 +50,7 @@ rustPlatform.buildRustPackage rec {
 
   cargoBuildFlags = [
     "--workspace"
-    "--exclude" "beacon_node"
     "--exclude" "ef_tests"
-    "--exclude" "http_api"
-    "--exclude" "beacon_chain"
-    "--exclude" "lighthouse"
-    "--exclude" "lighthouse_network"
-    "--exclude" "slashing_protection"
     "--exclude" "web3signer_tests"
   ];
 
@@ -79,6 +82,5 @@ rustPlatform.buildRustPackage rec {
     homepage = "https://lighthouse.sigmaprime.io/";
     license = licenses.asl20;
     maintainers = with maintainers; [ centromere ];
-    platforms = platforms.linux;
   };
 }

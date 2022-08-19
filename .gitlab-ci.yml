@@ -1,10 +1,28 @@
+---
 stages:
+  - update lock file
   - build
   - publish
 
+update lock file:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  stage: update lock file
+  script:
+    - nix --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" flake update
+    - if git diff --exit-code; then echo "No changes."; exit 0; fi
+    - git add flake.lock
+    - git config --global user.name "${GITLAB_USER_NAME}"
+    - git config --global user.email "${GITLAB_USER_EMAIL}"
+    - git commit -m 'Update flake.lock'
+    - git remote set-url origin --push ${CI_SERVER_PROTOCOL}://${FULLNODE_GIT_USERNAME}:${FULLNODE_GIT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
+    - git push origin HEAD:${CI_COMMIT_REF_NAME}
+  tags:
+    - kube-hel1-nix
+
 .generic-build:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_PIPELINE_SOURCE == "schedule"
       changes:
         paths:
           - fullnodes/$FULLNODE/**
@@ -24,7 +42,11 @@ stages:
 .generic-publish:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
+      changes:
+        paths:
+          - fullnodes/$FULLNODE/**
+          - .gitlab-ci.yml
+          - flake.lock
   stage: publish
   script:
     - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#login

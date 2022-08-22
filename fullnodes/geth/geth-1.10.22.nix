@@ -1,5 +1,5 @@
 { buildGoModule, fetchFromGitHub }:
-buildGoModule {
+buildGoModule rec {
   pname = "geth";
   version = "1.10.22";
 
@@ -8,7 +8,7 @@ buildGoModule {
   src = fetchFromGitHub {
     owner = "ethereum";
     repo = "go-ethereum";
-    rev = "671094279e8d27f4b4c3c94bf8b636c26b473976";
+    rev = "refs/tags/v${version}";
     sha256 = "sha256-qaM1I3ytMZN+5v/Oj47n3Oc21Jk7DtjfWA/xDprbn/M=";
   };
 

@@ -22,11 +22,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1661197608,
-        "narHash": "sha256-jKXagiexzcwuoEpV9o7tDNaMqBu5/e5uScnGN+K9wvw=",
+        "lastModified": 1661205330,
+        "narHash": "sha256-YJG5umSFdmDpZLRC3n78QoLyAM3k3mK65qQ5UhT0gZs=",
         "owner": "coinmetrics%2Finfrastructure",
         "repo": "nix",
-        "rev": "e8fd7e45a489a2cf9e134cffb0ddc26d859ff78c",
+        "rev": "406a5c3149af12167a05301ae138ec4c1e06420b",
         "type": "gitlab"
       },
       "original": {

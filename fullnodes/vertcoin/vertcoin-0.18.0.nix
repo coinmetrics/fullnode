@@ -21,6 +21,8 @@ stdenv.mkDerivation {
     "--disable-wallet"
     "--disable-bench"
     "--disable-tests"
+    "--enable-cxx"
+    "--with-pic"
   ];
 
   doCheck = false;

@@ -1,0 +1,1387 @@
+diff --git a/beacon_node/beacon_chain/src/events.rs b/beacon_node/beacon_chain/src/events.rs
+index 6f4415ef..d993185f 100644
+--- a/beacon_node/beacon_chain/src/events.rs
++++ b/beacon_node/beacon_chain/src/events.rs
+@@ -16,6 +16,7 @@ pub struct ServerSentEventHandler<T: EthSpec> {
+     contribution_tx: Sender<EventKind<T>>,
+     late_head: Sender<EventKind<T>>,
+     block_reward_tx: Sender<EventKind<T>>,
++    trace_tx: Sender<EventKind<T>>,
+     log: Logger,
+ }
+ 
+@@ -34,6 +35,7 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+         let (contribution_tx, _) = broadcast::channel(capacity);
+         let (late_head, _) = broadcast::channel(capacity);
+         let (block_reward_tx, _) = broadcast::channel(capacity);
++        let (trace_tx, _) = broadcast::channel(capacity);
+ 
+         Self {
+             attestation_tx,
+@@ -45,6 +47,7 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+             contribution_tx,
+             late_head,
+             block_reward_tx,
++            trace_tx,
+             log,
+         }
+     }
+@@ -72,6 +75,8 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+                 .map(|count| trace!(self.log, "Registering server-sent late head event"; "receiver_count" => count)),
+             EventKind::BlockReward(block_reward) => self.block_reward_tx.send(EventKind::BlockReward(block_reward))
+                 .map(|count| trace!(self.log, "Registering server-sent contribution and proof event"; "receiver_count" => count)),
++            EventKind::Trace(trace) => self.trace_tx.send(EventKind::Trace(trace))
++                .map(|count| trace!(self.log, "Registering server-sent trace event"; "receiver_count" => count)),
+         };
+         if let Err(SendError(event)) = result {
+             trace!(self.log, "No receivers registered to listen for event"; "event" => ?event);
+@@ -113,6 +118,9 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+     pub fn subscribe_block_reward(&self) -> Receiver<EventKind<T>> {
+         self.block_reward_tx.subscribe()
+     }
++    pub fn subscribe_trace(&self) -> Receiver<EventKind<T>> {
++        self.trace_tx.subscribe()
++    }
+ 
+     pub fn has_attestation_subscribers(&self) -> bool {
+         self.attestation_tx.receiver_count() > 0
+@@ -149,4 +157,8 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+     pub fn has_block_reward_subscribers(&self) -> bool {
+         self.block_reward_tx.receiver_count() > 0
+     }
++
++    pub fn has_trace_subscribers(&self) -> bool {
++        self.trace_tx.receiver_count() > 0
++    }
+ }
+diff --git a/beacon_node/beacon_chain/tests/store_tests.rs b/beacon_node/beacon_chain/tests/store_tests.rs
+index d9d5ca20..6ed68ea2 100644
+--- a/beacon_node/beacon_chain/tests/store_tests.rs
++++ b/beacon_node/beacon_chain/tests/store_tests.rs
+@@ -534,7 +534,7 @@ async fn block_replayer_hooks() {
+             pre_block_slots.push(block.slot());
+             Ok(())
+         }))
+-        .post_block_hook(Box::new(|state, block| {
++        .post_block_hook(Box::new(|state, block, _updates| {
+             assert_eq!(state.slot(), block.slot());
+             post_block_slots.push(block.slot());
+             Ok(())
+diff --git a/beacon_node/genesis/src/eth1_genesis_service.rs b/beacon_node/genesis/src/eth1_genesis_service.rs
+index 089f79aa..784a24a1 100644
+--- a/beacon_node/genesis/src/eth1_genesis_service.rs
++++ b/beacon_node/genesis/src/eth1_genesis_service.rs
+@@ -436,6 +436,7 @@ impl Eth1GenesisService {
+ 
+                 process_deposit(&mut state, &deposit, spec, PROOF_VERIFICATION)
+                     .map_err(|e| format!("Error whilst processing deposit: {:?}", e))
++                    .map(|_r| ())
+             })?;
+ 
+         process_activations(&mut state, spec)
+diff --git a/beacon_node/http_api/src/lib.rs b/beacon_node/http_api/src/lib.rs
+index bcd87884..df68e270 100644
+--- a/beacon_node/http_api/src/lib.rs
++++ b/beacon_node/http_api/src/lib.rs
+@@ -16,6 +16,7 @@ mod proposer_duties;
+ mod publish_blocks;
+ mod state_id;
+ mod sync_committees;
++mod traces;
+ mod validator_inclusion;
+ mod version;
+ 
+@@ -584,6 +585,10 @@ pub fn serve<T: BeaconChainTypes>(
+                                         .iter()
+                                         .zip(state.balances().iter())
+                                         .enumerate()
++                                        // filter by start_index
++                                        .filter(|(index, (_, _))| {
++                                            *index as u64 >= query.start_index
++                                        })
+                                         // filter by validator id(s) if provided
+                                         .filter(|(index, (validator, _))| {
+                                             query.id.as_ref().map_or(true, |ids| {
+@@ -2928,6 +2933,34 @@ pub fn serve<T: BeaconChainTypes>(
+             blocking_json_task(move || block_rewards::compute_block_rewards(blocks, chain, log))
+         });
+ 
++    // GET lighthouse/analysis/traces/{slot}
++    let get_lighthouse_traces = warp::path("lighthouse")
++        .and(warp::path("analysis"))
++        .and(warp::path("traces"))
++        .and(warp::path::param::<Slot>())
++        .and(warp::path::end())
++        .and(chain_filter.clone())
++        .and(log_filter.clone())
++        .and_then(|slot, chain, log| {
++            blocking_json_task(move || traces::get_traces(slot, chain, log))
++        });
++
++    // GET lighthouse/supply/{state_root}
++    let get_lighthouse_supply = warp::path("lighthouse")
++        .and(warp::path("supply"))
++        .and(warp::path::param::<StateId>())
++        .and(warp::path::end())
++        .and(chain_filter.clone())
++        .and_then(|state_id: StateId, chain: Arc<BeaconChain<T>>| {
++            blocking_json_task(move || {
++                state_id
++                    .map_state_and_execution_optimistic(&chain, |state, execution_optimistic| {
++                        Ok((state.balances().iter().sum::<u64>(), execution_optimistic))
++                    })
++                    .map(api_types::GenericResponse::from)
++            })
++        });
++
+     // GET lighthouse/analysis/attestation_performance/{index}
+     let get_lighthouse_attestation_performance = warp::path("lighthouse")
+         .and(warp::path("analysis"))
+@@ -3006,6 +3039,7 @@ pub fn serve<T: BeaconChainTypes>(
+                                 api_types::EventTopic::BlockReward => {
+                                     event_handler.subscribe_block_reward()
+                                 }
++                                api_types::EventTopic::Trace => event_handler.subscribe_trace(),
+                             };
+ 
+                             receivers.push(BroadcastStream::new(receiver).map(|msg| {
+@@ -3093,6 +3127,8 @@ pub fn serve<T: BeaconChainTypes>(
+                 .or(get_lighthouse_staking.boxed())
+                 .or(get_lighthouse_database_info.boxed())
+                 .or(get_lighthouse_block_rewards.boxed())
++                .or(get_lighthouse_traces.boxed())
++                .or(get_lighthouse_supply.boxed())
+                 .or(get_lighthouse_attestation_performance.boxed())
+                 .or(get_lighthouse_block_packing_efficiency.boxed())
+                 .or(get_lighthouse_merge_readiness.boxed())
+diff --git a/beacon_node/http_api/src/traces.rs b/beacon_node/http_api/src/traces.rs
+new file mode 100644
+index 00000000..0b4db69e
+--- /dev/null
++++ b/beacon_node/http_api/src/traces.rs
+@@ -0,0 +1,114 @@
++use beacon_chain::{BeaconChain, BeaconChainError, BeaconChainTypes, WhenSlotSkipped};
++use eth2::lighthouse::Trace;
++use slog::{warn, Logger};
++use state_processing::common::BalanceUpdate;
++use state_processing::per_epoch_processing::EpochProcessingSummary;
++use state_processing::BlockReplayer;
++use std::sync::Arc;
++use types::Slot;
++use warp_utils::reject::{beacon_chain_error, beacon_state_error, custom_bad_request};
++
++pub fn get_traces<T: BeaconChainTypes>(
++    slot: Slot,
++    chain: Arc<BeaconChain<T>>,
++    log: Logger,
++) -> Result<Trace, warp::Rejection> {
++    let prior_slot = slot - 1;
++
++    if slot == 0 {
++        return Err(custom_bad_request(format!("invalid slot: {}", slot)));
++    }
++
++    let end_block_root = chain
++        .block_root_at_slot(slot, WhenSlotSkipped::Prev)
++        .map_err(beacon_chain_error)?
++        .ok_or_else(|| custom_bad_request(format!("block at slot {} unknown", slot)))?;
++
++    let blocks = chain
++        .store
++        .load_blocks_to_replay(slot, slot, end_block_root)
++        .map_err(|e| beacon_chain_error(e.into()))?;
++
++    let state_root = chain
++        .state_root_at_slot(prior_slot)
++        .map_err(beacon_chain_error)?
++        .ok_or_else(|| custom_bad_request(format!("prior state at slot {} unknown", prior_slot)))?;
++
++    let mut state = chain
++        .get_state(&state_root, Some(prior_slot))
++        .and_then(|maybe_state| maybe_state.ok_or(BeaconChainError::MissingBeaconState(state_root)))
++        .map_err(beacon_chain_error)?;
++
++    state
++        .build_all_caches(&chain.spec)
++        .map_err(beacon_state_error)?;
++
++    let mut block_traces = Vec::new();
++    let mut slot_traces = Vec::new();
++
++    let block_replayer = BlockReplayer::new(state, &chain.spec)
++        .post_block_hook(Box::new(|_state, _block, updates| {
++            let mut filtered_updates = updates
++                .iter()
++                .map(|v| *v)
++                .filter(|update| update.delta != 0)
++                .collect::<Vec<BalanceUpdate>>();
++
++            block_traces.append(&mut filtered_updates);
++            Ok(())
++        }))
++        .post_slot_hook(Box::new(|_state, summary, _| {
++            match summary {
++                Some(epoch_summary) => match epoch_summary {
++                    EpochProcessingSummary::Base {
++                        balance_updates, ..
++                    } => {
++                        let mut filtered_updates = balance_updates
++                            .iter()
++                            .map(|v| *v)
++                            .filter(|update| update.delta != 0)
++                            .collect::<Vec<BalanceUpdate>>();
++
++                        slot_traces.append(&mut filtered_updates);
++                    }
++                    EpochProcessingSummary::Altair {
++                        balance_updates, ..
++                    } => {
++                        let mut filtered_updates = balance_updates
++                            .iter()
++                            .map(|v| *v)
++                            .filter(|update| update.delta != 0)
++                            .collect::<Vec<BalanceUpdate>>();
++
++                        slot_traces.append(&mut filtered_updates);
++                    }
++                },
++                None => {}
++            }
++            Ok(())
++        }))
++        .state_root_iter(
++            chain
++                .forwards_iter_state_roots_until(prior_slot, slot)
++                .map_err(beacon_chain_error)?,
++        )
++        .no_signature_verification()
++        .minimal_block_root_verification()
++        .apply_blocks(blocks, Some(slot))
++        .map_err(beacon_chain_error)?;
++
++    if block_replayer.state_root_miss() {
++        warn!(
++            log,
++            "Block traces state root miss";
++            "slot" => slot,
++        );
++    }
++
++    drop(block_replayer);
++
++    Ok(Trace {
++        block_root: end_block_root,
++        balance_updates: [slot_traces, block_traces].concat(),
++    })
++}
+diff --git a/build.sh b/build.sh
+new file mode 100644
+index 00000000..3af9d4b7
+--- /dev/null
++++ b/build.sh
+@@ -0,0 +1,21 @@
++#!/bin/sh
++
++set -e
++
++export DOCKER_REGISTRY_REPO="${DOCKER_REGISTRY_REPO:-"$(basename "$PWD")"}"
++
++VERSION=$(git log -1 --format=%h)
++export ${VERSION}
++echo "Building $DOCKER_REGISTRY_REPO version ${VERSION}."
++
++echo "Building image..."
++docker build --build-arg "VERSION=${VERSION}" -t "${DOCKER_REGISTRY_REPO}:${VERSION}" .
++echo "Image ready."
++
++if [ -n "${DOCKER_REGISTRY}" ] && [ -n "${DOCKER_REGISTRY_USER}" ] && [ -n "${DOCKER_REGISTRY_PASSWORD}" ]
++then
++	echo "Logging into ${DOCKER_REGISTRY}..."
++	docker login -u="${DOCKER_REGISTRY_USER}" -p="${DOCKER_REGISTRY_PASSWORD}" "${DOCKER_REGISTRY}"
++	echo "Pushing image to ${DOCKER_REGISTRY_REPO}:${VERSION}..."
++	docker push "${DOCKER_REGISTRY_REPO}:${VERSION}"
++fi
+\ No newline at end of file
+diff --git a/common/eth2/Cargo.toml b/common/eth2/Cargo.toml
+index 294f8ec8..62e6fabe 100644
+--- a/common/eth2/Cargo.toml
++++ b/common/eth2/Cargo.toml
+@@ -19,6 +19,7 @@ libsecp256k1 = "0.7.0"
+ ring = "0.16.19"
+ bytes = "1.0.1"
+ account_utils = { path = "../../common/account_utils" }
++state_processing = { path = "../../consensus/state_processing" }
+ sensitive_url = { path = "../../common/sensitive_url" }
+ eth2_ssz = "0.4.1"
+ eth2_ssz_derive = "0.3.0"
+diff --git a/common/eth2/src/lighthouse.rs b/common/eth2/src/lighthouse.rs
+index 91e6a555..79c3ab0e 100644
+--- a/common/eth2/src/lighthouse.rs
++++ b/common/eth2/src/lighthouse.rs
+@@ -3,6 +3,7 @@
+ mod attestation_performance;
+ mod block_packing_efficiency;
+ mod block_rewards;
++mod traces;
+ 
+ use crate::{
+     ok_or_error,
+@@ -24,6 +25,7 @@ pub use block_packing_efficiency::{
+ };
+ pub use block_rewards::{AttestationRewards, BlockReward, BlockRewardMeta, BlockRewardsQuery};
+ pub use lighthouse_network::{types::SyncState, PeerInfo};
++pub use traces::Trace;
+ 
+ // Define "legacy" implementations of `Option<T>` which use four bytes for encoding the union
+ // selector.
+diff --git a/common/eth2/src/lighthouse/traces.rs b/common/eth2/src/lighthouse/traces.rs
+new file mode 100644
+index 00000000..c27c9039
+--- /dev/null
++++ b/common/eth2/src/lighthouse/traces.rs
+@@ -0,0 +1,10 @@
++use serde::{Deserialize, Serialize};
++use state_processing::common::BalanceUpdate;
++use types::Hash256;
++
++/// Details about the balance updates in a slot.
++#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
++pub struct Trace {
++    pub block_root: Hash256,
++    pub balance_updates: Vec<BalanceUpdate>,
++}
+diff --git a/common/eth2/src/types.rs b/common/eth2/src/types.rs
+index 340d38b8..e2282cf2 100644
+--- a/common/eth2/src/types.rs
++++ b/common/eth2/src/types.rs
+@@ -14,6 +14,8 @@ pub use types::*;
+ 
+ #[cfg(feature = "lighthouse")]
+ use crate::lighthouse::BlockReward;
++#[cfg(feature = "lighthouse")]
++use crate::lighthouse::Trace;
+ 
+ /// An API error serializable to JSON.
+ #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+@@ -464,6 +466,8 @@ pub struct AttestationPoolQuery {
+ #[derive(Debug, Deserialize)]
+ #[serde(deny_unknown_fields)]
+ pub struct ValidatorsQuery {
++    #[serde(default, with = "eth2_serde_utils::quoted_u64")]
++    pub start_index: u64,
+     #[serde(default, deserialize_with = "option_query_vec")]
+     pub id: Option<Vec<ValidatorId>>,
+     #[serde(default, deserialize_with = "option_query_vec")]
+@@ -888,6 +892,8 @@ pub enum EventKind<T: EthSpec> {
+     LateHead(SseLateHead),
+     #[cfg(feature = "lighthouse")]
+     BlockReward(BlockReward),
++    #[cfg(feature = "lighthouse")]
++    Trace(Trace),
+ }
+ 
+ impl<T: EthSpec> EventKind<T> {
+@@ -903,6 +909,8 @@ impl<T: EthSpec> EventKind<T> {
+             EventKind::LateHead(_) => "late_head",
+             #[cfg(feature = "lighthouse")]
+             EventKind::BlockReward(_) => "block_reward",
++            #[cfg(feature = "lighthouse")]
++            EventKind::Trace(_) => "trace",
+         }
+     }
+ 
+@@ -959,6 +967,10 @@ impl<T: EthSpec> EventKind<T> {
+             "block_reward" => Ok(EventKind::BlockReward(serde_json::from_str(data).map_err(
+                 |e| ServerError::InvalidServerSentEvent(format!("Block Reward: {:?}", e)),
+             )?)),
++            #[cfg(feature = "lighthouse")]
++            "trace" => Ok(EventKind::Trace(serde_json::from_str(data).map_err(
++                |e| ServerError::InvalidServerSentEvent(format!("Trace: {:?}", e)),
++            )?)),
+             _ => Err(ServerError::InvalidServerSentEvent(
+                 "Could not parse event tag".to_string(),
+             )),
+@@ -986,6 +998,8 @@ pub enum EventTopic {
+     LateHead,
+     #[cfg(feature = "lighthouse")]
+     BlockReward,
++    #[cfg(feature = "lighthouse")]
++    Trace,
+ }
+ 
+ impl FromStr for EventTopic {
+@@ -1003,6 +1017,8 @@ impl FromStr for EventTopic {
+             "late_head" => Ok(EventTopic::LateHead),
+             #[cfg(feature = "lighthouse")]
+             "block_reward" => Ok(EventTopic::BlockReward),
++            #[cfg(feature = "lighthouse")]
++            "trace" => Ok(EventTopic::Trace),
+             _ => Err("event topic cannot be parsed.".to_string()),
+         }
+     }
+@@ -1021,6 +1037,7 @@ impl fmt::Display for EventTopic {
+             EventTopic::LateHead => write!(f, "late_head"),
+             #[cfg(feature = "lighthouse")]
+             EventTopic::BlockReward => write!(f, "block_reward"),
++            EventTopic::Trace => write!(f, "trace"),
+         }
+     }
+ }
+diff --git a/consensus/state_processing/Cargo.toml b/consensus/state_processing/Cargo.toml
+index c7ed4b30..45c78ddc 100644
+--- a/consensus/state_processing/Cargo.toml
++++ b/consensus/state_processing/Cargo.toml
+@@ -26,7 +26,7 @@ smallvec = "1.6.1"
+ arbitrary = { version = "1.0", features = ["derive"], optional = true }
+ lighthouse_metrics = { path = "../../common/lighthouse_metrics", optional = true }
+ lazy_static = { version = "1.4.0", optional = true }
+-
++serde = { version = "1.0.116", features = ["derive"] }
+ [features]
+ default = ["legacy-arith", "metrics"]
+ fake_crypto = ["bls/fake_crypto"]
+diff --git a/consensus/state_processing/src/block_replayer.rs b/consensus/state_processing/src/block_replayer.rs
+index d4b4b067..e879e805 100644
+--- a/consensus/state_processing/src/block_replayer.rs
++++ b/consensus/state_processing/src/block_replayer.rs
+@@ -9,7 +9,16 @@ type PreBlockHook<'a, E, Error> = Box<
+     dyn FnMut(&mut BeaconState<E>, &SignedBeaconBlock<E, BlindedPayload<E>>) -> Result<(), Error>
+         + 'a,
+ >;
+-type PostBlockHook<'a, E, Error> = PreBlockHook<'a, E, Error>;
++type PostBlockHook<'a, E, Error> = Box<
++    dyn FnMut(
++            &mut BeaconState<E>,
++            &SignedBeaconBlock<E, BlindedPayload<E>>,
++            &Vec<BalanceUpdate>,
++        ) -> Result<(), Error>
++        + 'a,
++>;
++use crate::common::BalanceUpdate;
++
+ type PreSlotHook<'a, E, Error> = Box<dyn FnMut(&mut BeaconState<E>) -> Result<(), Error> + 'a>;
+ type PostSlotHook<'a, E, Error> = Box<
+     dyn FnMut(&mut BeaconState<E>, Option<EpochProcessingSummary<E>>, bool) -> Result<(), Error>
+@@ -254,7 +263,7 @@ where
+                     VerifyBlockRoot::False
+                 }
+             });
+-            per_block_processing(
++            let balance_updates = per_block_processing(
+                 &mut self.state,
+                 block,
+                 None,
+@@ -265,7 +274,7 @@ where
+             .map_err(BlockReplayError::from)?;
+ 
+             if let Some(ref mut post_block_hook) = self.post_block_hook {
+-                post_block_hook(&mut self.state, block)?;
++                post_block_hook(&mut self.state, block, &balance_updates)?;
+             }
+         }
+ 
+diff --git a/consensus/state_processing/src/common/mod.rs b/consensus/state_processing/src/common/mod.rs
+index 334a293e..bbccb613 100644
+--- a/consensus/state_processing/src/common/mod.rs
++++ b/consensus/state_processing/src/common/mod.rs
+@@ -16,16 +16,39 @@ pub use initiate_validator_exit::initiate_validator_exit;
+ pub use slash_validator::slash_validator;
+ 
+ use safe_arith::SafeArith;
++use serde::{Deserialize, Serialize};
+ use types::{BeaconState, BeaconStateError, EthSpec};
+ 
++#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, Copy)]
++pub enum BalanceUpdateReason {
++    Reward,
++    Penalty,
++    Deposit,
++    SlashingPenalty,
++    SlashingWhistleblowerReward,
++    SlashingProposerReward,
++}
++
++#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, Copy)]
++pub struct BalanceUpdate {
++    pub index: usize,
++    pub delta: i64,
++    pub reason: BalanceUpdateReason,
++}
++
+ /// Increase the balance of a validator, erroring upon overflow, as per the spec.
+ pub fn increase_balance<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     index: usize,
+     delta: u64,
+-) -> Result<(), BeaconStateError> {
++    reason: BalanceUpdateReason,
++) -> Result<BalanceUpdate, BeaconStateError> {
+     state.get_balance_mut(index)?.safe_add_assign(delta)?;
+-    Ok(())
++    Ok(BalanceUpdate {
++        index,
++        delta: delta as i64,
++        reason,
++    })
+ }
+ 
+ /// Decrease the balance of a validator, saturating upon overflow, as per the spec.
+@@ -33,8 +56,13 @@ pub fn decrease_balance<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     index: usize,
+     delta: u64,
+-) -> Result<(), BeaconStateError> {
++    reason: BalanceUpdateReason,
++) -> Result<BalanceUpdate, BeaconStateError> {
+     let balance = state.get_balance_mut(index)?;
+     *balance = balance.saturating_sub(delta);
+-    Ok(())
++    Ok(BalanceUpdate {
++        index,
++        delta: -(delta as i64),
++        reason,
++    })
+ }
+diff --git a/consensus/state_processing/src/common/slash_validator.rs b/consensus/state_processing/src/common/slash_validator.rs
+index e9d94a10..714370df 100644
+--- a/consensus/state_processing/src/common/slash_validator.rs
++++ b/consensus/state_processing/src/common/slash_validator.rs
+@@ -1,4 +1,6 @@
+-use crate::common::{decrease_balance, increase_balance, initiate_validator_exit};
++use crate::common::{
++    decrease_balance, increase_balance, initiate_validator_exit, BalanceUpdate, BalanceUpdateReason,
++};
+ use safe_arith::SafeArith;
+ use std::cmp;
+ use types::{
+@@ -12,7 +14,7 @@ pub fn slash_validator<T: EthSpec>(
+     slashed_index: usize,
+     opt_whistleblower_index: Option<usize>,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Vec<BalanceUpdate>, Error> {
+     let epoch = state.current_epoch();
+ 
+     initiate_validator_exit(state, slashed_index, spec)?;
+@@ -30,13 +32,15 @@ pub fn slash_validator<T: EthSpec>(
+             .get_slashings(epoch)?
+             .safe_add(validator_effective_balance)?,
+     )?;
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
+ 
+-    decrease_balance(
++    balance_updates.push(decrease_balance(
+         state,
+         slashed_index,
+         validator_effective_balance
+             .safe_div(spec.min_slashing_penalty_quotient_for_state(state))?,
+-    )?;
++        BalanceUpdateReason::SlashingPenalty,
++    )?);
+ 
+     // Apply proposer and whistleblower rewards
+     let proposer_index = state.get_beacon_proposer_index(state.slot(), spec)?;
+@@ -55,12 +59,18 @@ pub fn slash_validator<T: EthSpec>(
+         return Err(BeaconStateError::UnknownValidator(whistleblower_index));
+     }
+ 
+-    increase_balance(state, proposer_index, proposer_reward)?;
+-    increase_balance(
++    balance_updates.push(increase_balance(
++        state,
++        proposer_index,
++        proposer_reward,
++        BalanceUpdateReason::SlashingProposerReward,
++    )?);
++    balance_updates.push(increase_balance(
+         state,
+         whistleblower_index,
+         whistleblower_reward.safe_sub(proposer_reward)?,
+-    )?;
++        BalanceUpdateReason::SlashingWhistleblowerReward,
++    )?);
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+diff --git a/consensus/state_processing/src/per_block_processing.rs b/consensus/state_processing/src/per_block_processing.rs
+index e409372d..8212a166 100644
+--- a/consensus/state_processing/src/per_block_processing.rs
++++ b/consensus/state_processing/src/per_block_processing.rs
+@@ -1,3 +1,4 @@
++use crate::common::BalanceUpdate;
+ use errors::{BlockOperationError, BlockProcessingError, HeaderInvalid};
+ use rayon::prelude::*;
+ use safe_arith::{ArithError, SafeArith};
+@@ -94,7 +95,7 @@ pub fn per_block_processing<T: EthSpec, Payload: ExecPayload<T>>(
+     block_signature_strategy: BlockSignatureStrategy,
+     verify_block_root: VerifyBlockRoot,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     let block = signed_block.message();
+ 
+     // Verify that the `SignedBeaconBlock` instantiation matches the fork at `signed_block.slot()`.
+@@ -156,22 +157,29 @@ pub fn per_block_processing<T: EthSpec, Payload: ExecPayload<T>>(
+         let payload = block.body().execution_payload()?;
+         process_execution_payload(state, payload, spec)?;
+     }
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
+ 
+     process_randao(state, block, verify_randao, spec)?;
+     process_eth1_data(state, block.body().eth1_data())?;
+-    process_operations(state, block.body(), proposer_index, verify_signatures, spec)?;
++    balance_updates.append(&mut process_operations(
++        state,
++        block.body(),
++        proposer_index,
++        verify_signatures,
++        spec,
++    )?);
+ 
+     if let Ok(sync_aggregate) = block.body().sync_aggregate() {
+-        process_sync_aggregate(
++        balance_updates.append(&mut process_sync_aggregate(
+             state,
+             sync_aggregate,
+             proposer_index,
+             verify_signatures,
+             spec,
+-        )?;
++        )?);
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ 
+ /// Processes the block header, returning the proposer index.
+diff --git a/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs b/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
+index 306e8671..07a2baa8 100644
+--- a/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
++++ b/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
+@@ -1,4 +1,7 @@
+-use crate::common::{altair::BaseRewardPerIncrement, decrease_balance, increase_balance};
++use crate::common::{
++    altair::BaseRewardPerIncrement, decrease_balance, increase_balance, BalanceUpdate,
++    BalanceUpdateReason,
++};
+ use crate::per_block_processing::errors::{BlockProcessingError, SyncAggregateInvalid};
+ use crate::{signature_sets::sync_aggregate_signature_set, VerifySignatures};
+ use safe_arith::SafeArith;
+@@ -12,7 +15,7 @@ pub fn process_sync_aggregate<T: EthSpec>(
+     proposer_index: u64,
+     verify_signatures: VerifySignatures,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     let current_sync_committee = state.current_sync_committee()?.clone();
+ 
+     // Verify sync committee aggregate signature signing over the previous slot block root
+@@ -47,19 +50,36 @@ pub fn process_sync_aggregate<T: EthSpec>(
+     // Apply participant and proposer rewards
+     let committee_indices = state.get_sync_committee_indices(&current_sync_committee)?;
+ 
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
++
+     for (participant_index, participation_bit) in committee_indices
+         .into_iter()
+         .zip(aggregate.sync_committee_bits.iter())
+     {
+         if participation_bit {
+-            increase_balance(state, participant_index as usize, participant_reward)?;
+-            increase_balance(state, proposer_index as usize, proposer_reward)?;
++            balance_updates.push(increase_balance(
++                state,
++                participant_index as usize,
++                participant_reward,
++                BalanceUpdateReason::Reward,
++            )?);
++            balance_updates.push(increase_balance(
++                state,
++                proposer_index as usize,
++                proposer_reward,
++                BalanceUpdateReason::Reward,
++            )?);
+         } else {
+-            decrease_balance(state, participant_index as usize, participant_reward)?;
++            balance_updates.push(decrease_balance(
++                state,
++                participant_index as usize,
++                participant_reward,
++                BalanceUpdateReason::Penalty,
++            )?);
+         }
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ 
+ /// Compute the `(participant_reward, proposer_reward)` for a sync aggregate.
+diff --git a/consensus/state_processing/src/per_block_processing/process_operations.rs b/consensus/state_processing/src/per_block_processing/process_operations.rs
+index 31a4ac1f..547aa101 100644
+--- a/consensus/state_processing/src/per_block_processing/process_operations.rs
++++ b/consensus/state_processing/src/per_block_processing/process_operations.rs
+@@ -2,7 +2,7 @@ use super::*;
+ use crate::common::{
+     altair::{get_base_reward, BaseRewardPerIncrement},
+     get_attestation_participation_flag_indices, increase_balance, initiate_validator_exit,
+-    slash_validator,
++    slash_validator, BalanceUpdate, BalanceUpdateReason,
+ };
+ use crate::per_block_processing::errors::{BlockProcessingError, IntoWithIndex};
+ use crate::VerifySignatures;
+@@ -15,23 +15,30 @@ pub fn process_operations<'a, T: EthSpec, Payload: ExecPayload<T>>(
+     proposer_index: u64,
+     verify_signatures: VerifySignatures,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
+-    process_proposer_slashings(
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
++    let proposer_slashing_updates = process_proposer_slashings(
+         state,
+         block_body.proposer_slashings(),
+         verify_signatures,
+         spec,
+     )?;
+-    process_attester_slashings(
++    let attestater_slashings = process_attester_slashings(
+         state,
+         block_body.attester_slashings(),
+         verify_signatures,
+         spec,
+     )?;
+-    process_attestations(state, block_body, proposer_index, verify_signatures, spec)?;
+-    process_deposits(state, block_body.deposits(), spec)?;
++    let attestation_updates =
++        process_attestations(state, block_body, proposer_index, verify_signatures, spec)?;
++    let deposits_updates = process_deposits(state, block_body.deposits(), spec)?;
+     process_exits(state, block_body.voluntary_exits(), verify_signatures, spec)?;
+-    Ok(())
++    Ok([
++        proposer_slashing_updates,
++        attestater_slashings,
++        deposits_updates,
++        attestation_updates,
++    ]
++    .concat())
+ }
+ 
+ pub mod base {
+@@ -46,7 +53,7 @@ pub mod base {
+         attestations: &[Attestation<T>],
+         verify_signatures: VerifySignatures,
+         spec: &ChainSpec,
+-    ) -> Result<(), BlockProcessingError> {
++    ) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+         // Ensure the previous epoch cache exists.
+         state.build_committee_cache(RelativeEpoch::Previous, spec)?;
+ 
+@@ -77,7 +84,7 @@ pub mod base {
+             }
+         }
+ 
+-        Ok(())
++        Ok(Vec::<BalanceUpdate>::new())
+     }
+ }
+ 
+@@ -90,20 +97,21 @@ pub mod altair {
+         proposer_index: u64,
+         verify_signatures: VerifySignatures,
+         spec: &ChainSpec,
+-    ) -> Result<(), BlockProcessingError> {
+-        attestations
+-            .iter()
+-            .enumerate()
+-            .try_for_each(|(i, attestation)| {
+-                process_attestation(
++    ) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
++        attestations.iter().enumerate().try_fold(
++            Vec::<BalanceUpdate>::new(),
++            |acc, (i, attestation)| {
++                let update = process_attestation(
+                     state,
+                     attestation,
+                     i,
+                     proposer_index,
+                     verify_signatures,
+                     spec,
+-                )
+-            })
++                )?;
++                Ok([acc, vec![update]].concat())
++            },
++        )
+     }
+ 
+     pub fn process_attestation<T: EthSpec>(
+@@ -113,7 +121,7 @@ pub mod altair {
+         proposer_index: u64,
+         verify_signatures: VerifySignatures,
+         spec: &ChainSpec,
+-    ) -> Result<(), BlockProcessingError> {
++    ) -> Result<BalanceUpdate, BlockProcessingError> {
+         state.build_committee_cache(RelativeEpoch::Previous, spec)?;
+         state.build_committee_cache(RelativeEpoch::Current, spec)?;
+ 
+@@ -157,8 +165,12 @@ pub mod altair {
+             .safe_mul(WEIGHT_DENOMINATOR)?
+             .safe_div(PROPOSER_WEIGHT)?;
+         let proposer_reward = proposer_reward_numerator.safe_div(proposer_reward_denominator)?;
+-        increase_balance(state, proposer_index as usize, proposer_reward)?;
+-        Ok(())
++        Ok(increase_balance(
++            state,
++            proposer_index as usize,
++            proposer_reward,
++            BalanceUpdateReason::Reward,
++        )?)
+     }
+ }
+ 
+@@ -171,26 +183,26 @@ pub fn process_proposer_slashings<T: EthSpec>(
+     proposer_slashings: &[ProposerSlashing],
+     verify_signatures: VerifySignatures,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     // Verify and apply proposer slashings in series.
+     // We have to verify in series because an invalid block may contain multiple slashings
+     // for the same validator, and we need to correctly detect and reject that.
+-    proposer_slashings
+-        .iter()
+-        .enumerate()
+-        .try_for_each(|(i, proposer_slashing)| {
++    proposer_slashings.iter().enumerate().try_fold(
++        Vec::<BalanceUpdate>::new(),
++        |acc, (i, proposer_slashing)| {
+             verify_proposer_slashing(proposer_slashing, state, verify_signatures, spec)
+                 .map_err(|e| e.into_with_index(i))?;
+ 
+-            slash_validator(
++            let slashing_updates = slash_validator(
+                 state,
+                 proposer_slashing.signed_header_1.message.proposer_index as usize,
+                 None,
+                 spec,
+             )?;
+ 
+-            Ok(())
+-        })
++            Ok([acc, slashing_updates].concat())
++        },
++    )
+ }
+ 
+ /// Validates each `AttesterSlashing` and updates the state, short-circuiting on an invalid object.
+@@ -202,7 +214,8 @@ pub fn process_attester_slashings<T: EthSpec>(
+     attester_slashings: &[AttesterSlashing<T>],
+     verify_signatures: VerifySignatures,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
+     for (i, attester_slashing) in attester_slashings.iter().enumerate() {
+         verify_attester_slashing(state, attester_slashing, verify_signatures, spec)
+             .map_err(|e| e.into_with_index(i))?;
+@@ -211,11 +224,11 @@ pub fn process_attester_slashings<T: EthSpec>(
+             get_slashable_indices(state, attester_slashing).map_err(|e| e.into_with_index(i))?;
+ 
+         for i in slashable_indices {
+-            slash_validator(state, i as usize, None, spec)?;
++            balance_updates.append(&mut slash_validator(state, i as usize, None, spec)?);
+         }
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ /// Wrapper function to handle calling the correct version of `process_attestations` based on
+ /// the fork.
+@@ -225,22 +238,24 @@ pub fn process_attestations<'a, T: EthSpec, Payload: ExecPayload<T>>(
+     proposer_index: u64,
+     verify_signatures: VerifySignatures,
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     match block_body {
+-        BeaconBlockBodyRef::Base(_) => {
+-            base::process_attestations(state, block_body.attestations(), verify_signatures, spec)?;
+-        }
++        BeaconBlockBodyRef::Base(_) => Ok(base::process_attestations(
++            state,
++            block_body.attestations(),
++            verify_signatures,
++            spec,
++        )?),
+         BeaconBlockBodyRef::Altair(_) | BeaconBlockBodyRef::Merge(_) => {
+-            altair::process_attestations(
++            Ok(altair::process_attestations(
+                 state,
+                 block_body.attestations(),
+                 proposer_index,
+                 verify_signatures,
+                 spec,
+-            )?;
++            )?)
+         }
+     }
+-    Ok(())
+ }
+ 
+ /// Validates each `Exit` and updates the state, short-circuiting on an invalid object.
+@@ -271,7 +286,7 @@ pub fn process_deposits<T: EthSpec>(
+     state: &mut BeaconState<T>,
+     deposits: &[Deposit],
+     spec: &ChainSpec,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     let expected_deposit_len = std::cmp::min(
+         T::MaxDeposits::to_u64(),
+         state.get_outstanding_deposit_len()?,
+@@ -298,12 +313,17 @@ pub fn process_deposits<T: EthSpec>(
+             .map_err(|e| e.into_with_index(i))
+         })?;
+ 
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
++
+     // Update the state in series.
+     for deposit in deposits {
+-        process_deposit(state, deposit, spec, false)?;
++        match process_deposit(state, deposit, spec, false)? {
++            Some(update) => balance_updates.push(update),
++            None => {}
++        }
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ 
+ /// Process a single deposit, optionally verifying its merkle proof.
+@@ -312,7 +332,7 @@ pub fn process_deposit<T: EthSpec>(
+     deposit: &Deposit,
+     spec: &ChainSpec,
+     verify_merkle_proof: bool,
+-) -> Result<(), BlockProcessingError> {
++) -> Result<Option<BalanceUpdate>, BlockProcessingError> {
+     let deposit_index = state.eth1_deposit_index() as usize;
+     if verify_merkle_proof {
+         verify_deposit_merkle_proof(state, deposit, state.eth1_deposit_index(), spec)
+@@ -330,12 +350,17 @@ pub fn process_deposit<T: EthSpec>(
+ 
+     if let Some(index) = validator_index {
+         // Update the existing validator balance.
+-        increase_balance(state, index as usize, amount)?;
++        Ok(Some(increase_balance(
++            state,
++            index as usize,
++            amount,
++            BalanceUpdateReason::Deposit,
++        )?))
+     } else {
+         // The signature should be checked for new validators. Return early for a bad
+         // signature.
+         if verify_deposit_signature(&deposit.data, spec).is_err() {
+-            return Ok(());
++            return Ok(None);
+         }
+ 
+         // Create a new validator.
+@@ -365,7 +390,10 @@ pub fn process_deposit<T: EthSpec>(
+         if let Ok(inactivity_scores) = state.inactivity_scores_mut() {
+             inactivity_scores.push(0)?;
+         }
++        Ok(Some(BalanceUpdate {
++            index: state.validators().len() - 1,
++            delta: deposit.data.amount as i64,
++            reason: BalanceUpdateReason::Deposit,
++        }))
+     }
+-
+-    Ok(())
+ }
+diff --git a/consensus/state_processing/src/per_block_processing/tests.rs b/consensus/state_processing/src/per_block_processing/tests.rs
+index e244e02c..486bdc72 100644
+--- a/consensus/state_processing/src/per_block_processing/tests.rs
++++ b/consensus/state_processing/src/per_block_processing/tests.rs
+@@ -220,7 +220,7 @@ async fn valid_4_deposits() {
+     let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
+ 
+     // Expecting Ok because these are valid deposits.
+-    assert_eq!(result, Ok(()));
++    assert!(result.is_ok());
+ }
+ 
+ #[tokio::test]
+@@ -342,7 +342,7 @@ async fn invalid_deposit_wrong_sig() {
+ 
+     let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
+     // Expecting Ok(()) even though the block signature does not correspond to the correct public key
+-    assert_eq!(result, Ok(()));
++    assert!(result.is_ok());
+ }
+ 
+ #[tokio::test]
+@@ -367,7 +367,7 @@ async fn invalid_deposit_invalid_pub_key() {
+     let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
+ 
+     // Expecting Ok(()) even though we passed in invalid publickeybytes in the public key field of the deposit data.
+-    assert_eq!(result, Ok(()));
++    assert!(result.is_ok());
+ }
+ 
+ #[tokio::test]
+@@ -648,7 +648,7 @@ async fn valid_insert_attester_slashing() {
+     );
+ 
+     // Expecting Ok(()) because attester slashing is valid
+-    assert_eq!(result, Ok(()));
++    assert!(result.is_ok());
+ }
+ 
+ #[tokio::test]
+diff --git a/consensus/state_processing/src/per_epoch_processing/altair.rs b/consensus/state_processing/src/per_epoch_processing/altair.rs
+index d5df2fc9..d17e31ff 100644
+--- a/consensus/state_processing/src/per_epoch_processing/altair.rs
++++ b/consensus/state_processing/src/per_epoch_processing/altair.rs
+@@ -40,13 +40,14 @@ pub fn process_epoch<T: EthSpec>(
+     process_inactivity_updates(state, &participation_cache, spec)?;
+ 
+     // Rewards and Penalties.
+-    process_rewards_and_penalties(state, &participation_cache, spec)?;
++    let rewards_and_penalties_updates =
++        process_rewards_and_penalties(state, &participation_cache, spec)?;
+ 
+     // Registry Updates.
+     process_registry_updates(state, spec)?;
+ 
+     // Slashings.
+-    process_slashings(
++    let slashing_updates = process_slashings(
+         state,
+         participation_cache.current_epoch_total_active_balance(),
+         spec,
+@@ -76,6 +77,7 @@ pub fn process_epoch<T: EthSpec>(
+     state.advance_caches(spec)?;
+ 
+     Ok(EpochProcessingSummary::Altair {
++        balance_updates: [rewards_and_penalties_updates, slashing_updates].concat(),
+         participation_cache,
+         sync_committee,
+     })
+diff --git a/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs b/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
+index ccebbcb3..abcf275a 100644
+--- a/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
++++ b/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
+@@ -8,7 +8,7 @@ use types::{BeaconState, ChainSpec, EthSpec};
+ 
+ use crate::common::{
+     altair::{get_base_reward, BaseRewardPerIncrement},
+-    decrease_balance, increase_balance,
++    decrease_balance, increase_balance, BalanceUpdate, BalanceUpdateReason,
+ };
+ use crate::per_epoch_processing::{Delta, Error};
+ 
+@@ -19,9 +19,9 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
+     state: &mut BeaconState<T>,
+     participation_cache: &ParticipationCache,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Vec<BalanceUpdate>, Error> {
+     if state.current_epoch() == T::genesis_epoch() {
+-        return Ok(());
++        return Ok(Vec::new());
+     }
+ 
+     let mut deltas = vec![Delta::default(); state.validators().len()];
+@@ -40,15 +40,26 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
+     }
+ 
+     get_inactivity_penalty_deltas(&mut deltas, state, participation_cache, spec)?;
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
+ 
+     // Apply the deltas, erroring on overflow above but not on overflow below (saturating at 0
+     // instead).
+     for (i, delta) in deltas.into_iter().enumerate() {
+-        increase_balance(state, i, delta.rewards)?;
+-        decrease_balance(state, i, delta.penalties)?;
++        balance_updates.push(increase_balance(
++            state,
++            i,
++            delta.rewards,
++            BalanceUpdateReason::Reward,
++        )?);
++        balance_updates.push(decrease_balance(
++            state,
++            i,
++            delta.penalties,
++            BalanceUpdateReason::Penalty,
++        )?);
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ 
+ /// Return the deltas for a given flag index by scanning through the participation flags.
+diff --git a/consensus/state_processing/src/per_epoch_processing/base.rs b/consensus/state_processing/src/per_epoch_processing/base.rs
+index cb7e7d4b..71868c65 100644
+--- a/consensus/state_processing/src/per_epoch_processing/base.rs
++++ b/consensus/state_processing/src/per_epoch_processing/base.rs
+@@ -36,13 +36,14 @@ pub fn process_epoch<T: EthSpec>(
+     justification_and_finalization_state.apply_changes_to_state(state);
+ 
+     // Rewards and Penalties.
+-    process_rewards_and_penalties(state, &mut validator_statuses, spec)?;
++    let rewards_and_penalties_updates =
++        process_rewards_and_penalties(state, &mut validator_statuses, spec)?;
+ 
+     // Registry Updates.
+     process_registry_updates(state, spec)?;
+ 
+     // Slashings.
+-    process_slashings(
++    let slashing_updates = process_slashings(
+         state,
+         validator_statuses.total_balances.current_epoch(),
+         spec,
+@@ -70,6 +71,7 @@ pub fn process_epoch<T: EthSpec>(
+     state.advance_caches(spec)?;
+ 
+     Ok(EpochProcessingSummary::Base {
++        balance_updates: [rewards_and_penalties_updates, slashing_updates].concat(),
+         total_balances: validator_statuses.total_balances,
+         statuses: validator_statuses.statuses,
+     })
+diff --git a/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs b/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
+index 87e4261e..a0322fee 100644
+--- a/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
++++ b/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
+@@ -1,4 +1,6 @@
+-use crate::common::{base::get_base_reward, decrease_balance, increase_balance};
++use crate::common::{
++    base::get_base_reward, decrease_balance, increase_balance, BalanceUpdate, BalanceUpdateReason,
++};
+ use crate::per_epoch_processing::{
+     base::{TotalBalances, ValidatorStatus, ValidatorStatuses},
+     Delta, Error,
+@@ -47,9 +49,9 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
+     state: &mut BeaconState<T>,
+     validator_statuses: &mut ValidatorStatuses,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Vec<BalanceUpdate>, Error> {
+     if state.current_epoch() == T::genesis_epoch() {
+-        return Ok(());
++        return Ok(Vec::new());
+     }
+ 
+     // Guard against an out-of-bounds during the validator balance update.
+@@ -61,15 +63,27 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
+ 
+     let deltas = get_attestation_deltas(state, validator_statuses, spec)?;
+ 
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
++
+     // Apply the deltas, erroring on overflow above but not on overflow below (saturating at 0
+     // instead).
+     for (i, delta) in deltas.into_iter().enumerate() {
+         let combined_delta = delta.flatten()?;
+-        increase_balance(state, i, combined_delta.rewards)?;
+-        decrease_balance(state, i, combined_delta.penalties)?;
++        balance_updates.push(increase_balance(
++            state,
++            i,
++            combined_delta.rewards,
++            BalanceUpdateReason::Reward,
++        )?);
++        balance_updates.push(decrease_balance(
++            state,
++            i,
++            combined_delta.penalties,
++            BalanceUpdateReason::Penalty,
++        )?);
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+ 
+ /// Apply rewards for participation in attestations during the previous epoch.
+diff --git a/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs b/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
+index 5e15aa3e..e9b3a74a 100644
+--- a/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
++++ b/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
+@@ -2,6 +2,7 @@ use super::{
+     altair::{participation_cache::Error as ParticipationCacheError, ParticipationCache},
+     base::{validator_statuses::InclusionInfo, TotalBalances, ValidatorStatus},
+ };
++use crate::common::BalanceUpdate;
+ use crate::metrics;
+ use std::sync::Arc;
+ use types::{EthSpec, SyncCommittee};
+@@ -10,10 +11,12 @@ use types::{EthSpec, SyncCommittee};
+ #[derive(PartialEq, Debug)]
+ pub enum EpochProcessingSummary<T: EthSpec> {
+     Base {
++        balance_updates: Vec<BalanceUpdate>,
+         total_balances: TotalBalances,
+         statuses: Vec<ValidatorStatus>,
+     },
+     Altair {
++        balance_updates: Vec<BalanceUpdate>,
+         participation_cache: ParticipationCache,
+         sync_committee: Arc<SyncCommittee<T>>,
+     },
+diff --git a/consensus/state_processing/src/per_epoch_processing/slashings.rs b/consensus/state_processing/src/per_epoch_processing/slashings.rs
+index 6d5342cd..50331d72 100644
+--- a/consensus/state_processing/src/per_epoch_processing/slashings.rs
++++ b/consensus/state_processing/src/per_epoch_processing/slashings.rs
+@@ -1,3 +1,4 @@
++use crate::common::{BalanceUpdate, BalanceUpdateReason};
+ use crate::per_epoch_processing::Error;
+ use safe_arith::{SafeArith, SafeArithIter};
+ use types::{BeaconState, BeaconStateError, ChainSpec, EthSpec, Unsigned};
+@@ -7,7 +8,8 @@ pub fn process_slashings<T: EthSpec>(
+     state: &mut BeaconState<T>,
+     total_balance: u64,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Vec<BalanceUpdate>, Error> {
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
+     let epoch = state.current_epoch();
+     let sum_slashings = state.get_all_slashings().iter().copied().safe_sum()?;
+ 
+@@ -36,8 +38,13 @@ pub fn process_slashings<T: EthSpec>(
+                 .get_mut(index)
+                 .ok_or(BeaconStateError::BalancesOutOfBounds(index))?;
+             *balance = balance.saturating_sub(penalty);
++            balance_updates.push(BalanceUpdate {
++                index,
++                delta: penalty as i64,
++                reason: BalanceUpdateReason::SlashingPenalty,
++            });
+         }
+     }
+ 
+-    Ok(())
++    Ok(balance_updates)
+ }
+diff --git a/testing/ef_tests/src/cases/epoch_processing.rs b/testing/ef_tests/src/cases/epoch_processing.rs
+index 0283d13d..6da95c13 100644
+--- a/testing/ef_tests/src/cases/epoch_processing.rs
++++ b/testing/ef_tests/src/cases/epoch_processing.rs
+@@ -116,14 +116,16 @@ impl<E: EthSpec> EpochTransition<E> for RewardsAndPenalties {
+             BeaconState::Base(_) => {
+                 let mut validator_statuses = base::ValidatorStatuses::new(state, spec)?;
+                 validator_statuses.process_attestations(state)?;
+-                base::process_rewards_and_penalties(state, &mut validator_statuses, spec)
++                let _ = base::process_rewards_and_penalties(state, &mut validator_statuses, spec);
++                Ok(())
+             }
+             BeaconState::Altair(_) | BeaconState::Merge(_) => {
+-                altair::process_rewards_and_penalties(
++                let _ = altair::process_rewards_and_penalties(
+                     state,
+                     &altair::ParticipationCache::new(state, spec).unwrap(),
+                     spec,
+-                )
++                );
++                Ok(())
+             }
+         }
+     }
+diff --git a/testing/ef_tests/src/cases/operations.rs b/testing/ef_tests/src/cases/operations.rs
+index 798dae08..0cff2f07 100644
+--- a/testing/ef_tests/src/cases/operations.rs
++++ b/testing/ef_tests/src/cases/operations.rs
+@@ -79,16 +79,13 @@ impl<E: EthSpec> Operation<E> for Attestation<E> {
+         let proposer_index = state.get_beacon_proposer_index(state.slot(), spec)? as u64;
+         match state {
+             BeaconState::Base(_) => {
+-                base::process_attestations(state, &[self.clone()], VerifySignatures::True, spec)
++                let _ = base::process_attestations(state, &[self.clone()], VerifySignatures::True, spec);
++                Ok(())
++            }
++            BeaconState::Altair(_) | BeaconState::Merge(_) => {
++                let _ = altair::process_attestation(state, self, 0, proposer_index, VerifySignatures::True, spec);
++                Ok(())
+             }
+-            BeaconState::Altair(_) | BeaconState::Merge(_) => altair::process_attestation(
+-                state,
+-                self,
+-                0,
+-                proposer_index,
+-                VerifySignatures::True,
+-                spec,
+-            ),
+         }
+     }
+ }
+@@ -108,7 +105,8 @@ impl<E: EthSpec> Operation<E> for AttesterSlashing<E> {
+         spec: &ChainSpec,
+         _: &Operations<E, Self>,
+     ) -> Result<(), BlockProcessingError> {
+-        process_attester_slashings(state, &[self.clone()], VerifySignatures::True, spec)
++        let _ = process_attester_slashings(state, &[self.clone()], VerifySignatures::True, spec);
++        Ok(())
+     }
+ }
+ 
+@@ -123,7 +121,8 @@ impl<E: EthSpec> Operation<E> for Deposit {
+         spec: &ChainSpec,
+         _: &Operations<E, Self>,
+     ) -> Result<(), BlockProcessingError> {
+-        process_deposits(state, &[self.clone()], spec)
++        let _ = process_deposits(state, &[self.clone()], spec);
++        Ok(())
+     }
+ }
+ 
+@@ -142,7 +141,8 @@ impl<E: EthSpec> Operation<E> for ProposerSlashing {
+         spec: &ChainSpec,
+         _: &Operations<E, Self>,
+     ) -> Result<(), BlockProcessingError> {
+-        process_proposer_slashings(state, &[self.clone()], VerifySignatures::True, spec)
++        let _ = process_proposer_slashings(state, &[self.clone()], VerifySignatures::True, spec);
++        Ok(())
+     }
+ }
+ 
+@@ -161,7 +161,8 @@ impl<E: EthSpec> Operation<E> for SignedVoluntaryExit {
+         spec: &ChainSpec,
+         _: &Operations<E, Self>,
+     ) -> Result<(), BlockProcessingError> {
+-        process_exits(state, &[self.clone()], VerifySignatures::True, spec)
++        let _ = process_exits(state, &[self.clone()], VerifySignatures::True, spec);
++        Ok(())
+     }
+ }
+ 
+@@ -218,7 +219,8 @@ impl<E: EthSpec> Operation<E> for SyncAggregate<E> {
+         _: &Operations<E, Self>,
+     ) -> Result<(), BlockProcessingError> {
+         let proposer_index = state.get_beacon_proposer_index(state.slot(), spec)? as u64;
+-        process_sync_aggregate(state, self, proposer_index, VerifySignatures::True, spec)
++        let _ = process_sync_aggregate(state, self, proposer_index, VerifySignatures::True, spec);
++        Ok(())
+     }
+ }
+ 
+diff --git a/testing/state_transition_vectors/src/exit.rs b/testing/state_transition_vectors/src/exit.rs
+index f485e1a2..d9f054ae 100644
+--- a/testing/state_transition_vectors/src/exit.rs
++++ b/testing/state_transition_vectors/src/exit.rs
+@@ -71,7 +71,8 @@ impl ExitTest {
+             BlockSignatureStrategy::VerifyIndividual,
+             VerifyBlockRoot::True,
+             &E::default_spec(),
+-        )
++        )?;
++        Ok(())
+     }
+ 
+     #[cfg(all(test, not(debug_assertions)))]

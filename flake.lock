@@ -22,11 +22,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1662030619,
-        "narHash": "sha256-YyZhnvHsrkOsSc8Z+koXdvTppFx9F5C/t7+5c+j6zj4=",
+        "lastModified": 1662033751,
+        "narHash": "sha256-a6a5X7ICe7AYXf5IwzLnaMJFhAgbWYZhXLfFfc6OxJk=",
         "owner": "coinmetrics%2Finfrastructure",
         "repo": "nix",
-        "rev": "d1620042a67967114f33706f889b2c280b00a6ca",
+        "rev": "0e720065b672afa06b5d37704c5e701fa2285682",
         "type": "gitlab"
       },
       "original": {
@@ -45,11 +45,11 @@
         "nixpkgs-regression": "nixpkgs-regression"
       },
       "locked": {
-        "lastModified": 1661758191,
-        "narHash": "sha256-spw1+WufLY/rvWa8VUgque5VbJnU50nNBqwj1DNbF4g=",
+        "lastModified": 1662026640,
+        "narHash": "sha256-iUbbcvu7y++seyz+05veVrXNLFfysCH0JCr7sXC1pLI=",
         "owner": "NixOS",
         "repo": "nix",
-        "rev": "ddb82ffda993d237d62d59578f7808a9d98c77fe",
+        "rev": "c530cda345377370c52a616d608de88b9d67cd40",
         "type": "github"
       },
       "original": {

@@ -22,11 +22,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1662033751,
-        "narHash": "sha256-a6a5X7ICe7AYXf5IwzLnaMJFhAgbWYZhXLfFfc6OxJk=",
+        "lastModified": 1662139978,
+        "narHash": "sha256-94s85RQFRbPTRtDl/a8wq7eJhXq1j1x5fi0ueIDxEpo=",
         "owner": "coinmetrics%2Finfrastructure",
         "repo": "nix",
-        "rev": "0e720065b672afa06b5d37704c5e701fa2285682",
+        "rev": "b49bd83b604762a284432ffbd2cb8e541e5ce104",
         "type": "gitlab"
       },
       "original": {
@@ -45,11 +45,11 @@
         "nixpkgs-regression": "nixpkgs-regression"
       },
       "locked": {
-        "lastModified": 1662026640,
-        "narHash": "sha256-iUbbcvu7y++seyz+05veVrXNLFfysCH0JCr7sXC1pLI=",
+        "lastModified": 1662138112,
+        "narHash": "sha256-a6npUulSKtJQj/B+RXYDmhAG42a/+Gu+s46ZJ/tOGp4=",
         "owner": "NixOS",
         "repo": "nix",
-        "rev": "c530cda345377370c52a616d608de88b9d67cd40",
+        "rev": "0c7f213c87c11c6c0f6b2fa07ba96548f6ea85ad",
         "type": "github"
       },
       "original": {
@@ -59,16 +59,17 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1661353537,
-        "narHash": "sha256-1E2IGPajOsrkR49mM5h55OtYnU0dGyre6gl60NXKITE=",
+        "lastModified": 1662139482,
+        "narHash": "sha256-1rXb5VsTqTVrMn50FoZcaxs4CZU1+psRJ/b2cOhlvJY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "0e304ff0d9db453a4b230e9386418fd974d5804a",
+        "rev": "3f9b0f53e48c6866c604183d04871b8122c62972",
         "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
-        "type": "indirect"
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "nixpkgs-regression": {
@@ -89,11 +90,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1661353537,
-        "narHash": "sha256-1E2IGPajOsrkR49mM5h55OtYnU0dGyre6gl60NXKITE=",
+        "lastModified": 1661799568,
+        "narHash": "sha256-P3xXCyYfd6WzVC3anpb5ZvUeZ6vMttcs05OWGWvgc+E=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "0e304ff0d9db453a4b230e9386418fd974d5804a",
+        "rev": "c3e4dc4f6d23c7e41dda5ce98956c75c7779e2fa",
         "type": "github"
       },
       "original": {

@@ -40,6 +40,8 @@ update lock file:
     - kube-hel1-nix
 
 .generic-publish:
+  variables:
+    PUBLIC_IMAGE: "true"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"
       changes:
@@ -198,6 +200,7 @@ publish lighthouse:
   extends: .generic-publish
   variables:
     FULLNODE: lighthouse
+    PUBLIC_IMAGE: "false"
 
 build litecoin:
   extends: .generic-build

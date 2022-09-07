@@ -102,7 +102,11 @@
 
           for i in "''${!images[@]}"; do
             [[ -n ''${CI_REGISTRY_IMAGE+x} ]] && skopeo --insecure-policy copy -f oci docker-archive:"''${images[i]}" docker://"$CI_REGISTRY_IMAGE"/${fullnode}:"''${tags[i]}"
-            skopeo --insecure-policy copy -f oci docker-archive:"''${images[i]}" docker://docker.io/coinmetrics/${fullnode}:"''${tags[i]}"
+            if [[ $PUBLIC_IMAGE == "true" ]]; do
+              skopeo --insecure-policy copy -f oci docker-archive:"''${images[i]}" docker://docker.io/coinmetrics/${fullnode}:"''${tags[i]}"
+            else
+              echo "Image marked private: Skipping publish to Docker Hub."
+            fi
           done
         '';
       };

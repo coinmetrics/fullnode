@@ -41,7 +41,7 @@ update lock file:
 
 .generic-publish:
   variables:
-    PUBLIC_IMAGE: "true"
+    PRIVATE: "false"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"
       changes:
@@ -200,7 +200,7 @@ publish lighthouse:
   extends: .generic-publish
   variables:
     FULLNODE: lighthouse
-    PUBLIC_IMAGE: "false"
+    PRIVATE: "true"
 
 build litecoin:
   extends: .generic-build

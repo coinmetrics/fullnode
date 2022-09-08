@@ -105,11 +105,11 @@
           tags=(${builtins.concatStringsSep " " (builtins.map (i: "\"${i.tag}\"") images)})
 
           for i in "''${!images[@]}"; do
-            [[ -n ''${CI_REGISTRY_IMAGE+x} ]] && skopeo --insecure-policy copy -f oci docker-archive:"''${images[i]}" docker://"$CI_REGISTRY_IMAGE"/${fullnode}:"''${tags[i]}"
+            [[ -n ''${CI_REGISTRY_IMAGE+x} ]] && skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"''${images[i]}" docker://"$CI_REGISTRY_IMAGE"/${fullnode}:"''${tags[i]}"
             if [[ $PRIVATE == "true" ]]; then
               echo "Image marked private: Skipping publish to Docker Hub."
             else
-              skopeo --insecure-policy copy -f oci docker-archive:"''${images[i]}" docker://docker.io/coinmetrics/${fullnode}:"''${tags[i]}"
+              skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"''${images[i]}" docker://docker.io/coinmetrics/${fullnode}:"''${tags[i]}"
             fi
           done
         '';

@@ -105,12 +105,12 @@ build bitcoin-zmce:
   extends: .generic-build
   variables:
     FULLNODE: bitcoin-zmce
-    PRIVATE: "true"
 
 publish bitcoin-zmce:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-zmce
+    PRIVATE: "true"
 
 build coregeth:
   extends: .generic-build

@@ -2,6 +2,10 @@
   description = "Fullnodes";
 
   inputs = {
+    nixpkgs = {
+      url = "github:NixOS/nixpkgs";
+    };
+
     nix = {
       type = "gitlab";
       owner = "coinmetrics%2Finfrastructure";

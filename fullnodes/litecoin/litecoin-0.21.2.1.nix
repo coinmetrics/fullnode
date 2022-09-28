@@ -1,5 +1,5 @@
 { autoreconfHook, boost17x, db48, fetchFromGitHub, fmt, libevent, openssl
-, pkgconfig, stdenv, zeromq }:
+, pkg-config, stdenv, zeromq }:
 stdenv.mkDerivation rec {
   pname = "litecoin";
   version = "0.21.2.1";
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-WJFdac5hGrHy9o3HzjS91zH+4EtJY7kUJAQK+aZaEyo=";
   };
 
-  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  nativeBuildInputs = [ autoreconfHook pkg-config ];
 
   buildInputs = [ boost17x db48 fmt libevent openssl zeromq ];
 

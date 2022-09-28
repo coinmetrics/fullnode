@@ -1,5 +1,5 @@
 { autoreconfHook, boost17x, db48, fetchFromGitHub, gmp, libevent, libsodium
-, openssl, pkgconfig, rustPlatform, stdenv }:
+, openssl, pkg-config, rustPlatform, stdenv }:
 let
   version = "5.4.0";
 
@@ -24,7 +24,7 @@ in
     pname = "pivx";
     inherit version src;
 
-    nativeBuildInputs = [ autoreconfHook pkgconfig ];
+    nativeBuildInputs = [ autoreconfHook pkg-config ];
 
     buildInputs = [ boost17x db48 gmp libevent librustzcash libsodium openssl ];
 

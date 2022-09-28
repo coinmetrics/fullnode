@@ -1,4 +1,4 @@
-{ autoreconfHook, boost, fetchFromGitHub, libevent, openssl, pkgconfig, stdenv }:
+{ autoreconfHook, boost, fetchFromGitHub, libevent, openssl, pkg-config, stdenv }:
 stdenv.mkDerivation {
   pname = "elements";
   version = "0.21.0.2";
@@ -10,7 +10,7 @@ stdenv.mkDerivation {
     sha256 = "sha256-5b3wylp9Z2U0ueu2gI9jGeWiiJoddjcjQ/6zkFATyvA=";
   };
 
-  nativeBuildInputs = [ pkgconfig autoreconfHook ];
+  nativeBuildInputs = [ pkg-config autoreconfHook ];
 
   buildInputs = [ boost libevent openssl ];
 

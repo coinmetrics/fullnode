@@ -1,4 +1,4 @@
-{ stdenv, fetchFromGitHub, pkgconfig, autoreconfHook, boost, libevent, openssl }:
+{ stdenv, fetchFromGitHub, pkg-config, autoreconfHook, boost, libevent, openssl }:
 
 stdenv.mkDerivation rec {
   pname = "bitcoin-sv";
@@ -15,7 +15,7 @@ stdenv.mkDerivation rec {
     ./patches/000-fix-missing-includes.patch
   ];
 
-  nativeBuildInputs = [ pkgconfig autoreconfHook ];
+  nativeBuildInputs = [ pkg-config autoreconfHook ];
 
   buildInputs = [ boost libevent openssl ];
 

@@ -1,4 +1,4 @@
-{ autoreconfHook, boost17x, db48, fetchFromGitHub, libevent, openssl, pkgconfig
+{ autoreconfHook, boost17x, db48, fetchFromGitHub, libevent, openssl, pkg-config
 , stdenv }:
 stdenv.mkDerivation rec {
   pname = "omnicore";
@@ -11,7 +11,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-hOsv2lrMhIm1oC6WNnc/1ednM90+uWSImbKq+Zwv6AE=";
   };
 
-  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  nativeBuildInputs = [ autoreconfHook pkg-config ];
 
   buildInputs = [ boost17x db48 libevent openssl ];
 

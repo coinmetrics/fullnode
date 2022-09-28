@@ -1,4 +1,4 @@
-{ boost17x, cmake, fetchFromGitHub, libsodium, ninja, openssl, pkgconfig, stdenv
+{ boost17x, cmake, fetchFromGitHub, libsodium, ninja, openssl, pkg-config, stdenv
 , unbound, zeromq }:
 stdenv.mkDerivation rec {
   pname = "monero";
@@ -12,7 +12,7 @@ stdenv.mkDerivation rec {
     hash = "sha256-R3ajdsHVgvkUEwaShwMvhIrcbM4YjsXgBk2QGBhxGRQ=";
   };
 
-  nativeBuildInputs = [ cmake ninja pkgconfig ];
+  nativeBuildInputs = [ cmake ninja pkg-config ];
 
   cmakeFlags = [
     "-DBUILD_TESTS=OFF"

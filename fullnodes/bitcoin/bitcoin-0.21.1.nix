@@ -1,4 +1,4 @@
-{ autoreconfHook, boost, fetchzip, lib, libevent, pkgconfig, stdenv }:
+{ autoreconfHook, boost, fetchzip, lib, libevent, pkg-config, stdenv }:
 stdenv.mkDerivation rec {
   pname = "bitcoin";
   version = "0.21.1";
@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-FbU/XmehxBjiBxFDo5XjimTc9EAIEh/75tE0CK8+jG4=";
   };
 
-  nativeBuildInputs = [ pkgconfig autoreconfHook ];
+  nativeBuildInputs = [ pkg-config autoreconfHook ];
 
   buildInputs = [ boost libevent ];
 

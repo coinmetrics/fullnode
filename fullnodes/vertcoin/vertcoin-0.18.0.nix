@@ -1,4 +1,4 @@
-{ autoreconfHook, boost17x, fetchFromGitHub, gmp, libevent, openssl, pkgconfig
+{ autoreconfHook, boost17x, fetchFromGitHub, gmp, libevent, openssl, pkg-config
 , stdenv }:
 stdenv.mkDerivation {
   pname = "vertcoin";
@@ -11,7 +11,7 @@ stdenv.mkDerivation {
     sha256 = "sha256-ua9xXA+UQHGVpCZL0srX58DDUgpfNa+AAIKsxZbhvMk=";
   };
 
-  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  nativeBuildInputs = [ autoreconfHook pkg-config ];
 
   buildInputs = [ boost17x gmp libevent openssl ];
 

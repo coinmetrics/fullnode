@@ -1,6 +1,8 @@
 { pkgs, version }:
 rec {
-  package = pkgs.callPackage (./. + "/lighthouse-${version}.nix") { };
+  package = pkgs.callPackage (./. + "/lighthouse-${version}.nix") {
+    inherit (pkgs.darwin.apple_sdk.frameworks) Security;
+  };
 
   imageConfig = {
     config = {

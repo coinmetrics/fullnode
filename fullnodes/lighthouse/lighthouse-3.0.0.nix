@@ -1,5 +1,6 @@
 { clang, cmake, darwin, fetchFromGitHub, fetchurl, lib, lighthouse, llvmPackages
-, nodePackages, perl, protobuf, runCommand, rustPlatform, stdenv, testers, unzip }:
+, nodePackages, perl, protobuf, runCommand, rustPlatform, Security, stdenv
+, testers, unzip }:
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
   version = "3.0.0";
@@ -32,7 +33,7 @@ rustPlatform.buildRustPackage rec {
   nativeBuildInputs = [ clang cmake nodePackages.ganache perl protobuf ];
 
   buildInputs = lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.Security
+    Security
   ];
 
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";

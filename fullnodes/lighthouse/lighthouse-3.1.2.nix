@@ -1,8 +1,25 @@
-{ clang, cmake, fetchFromGitHub, fetchurl, lib, lighthouse, llvmPackages
-, nodePackages, perl, protobuf, runCommand, rustPlatform, testers, unzip }:
+{ clang
+, cmake
+, fetchFromGitHub
+, fetchurl
+, lib
+, lighthouse
+, llvmPackages
+, nodePackages
+, perl
+, protobuf
+, rustPlatform
+, Security
+, stdenv
+, testers
+, unzip
+}:
+
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "2.5.1";
+  version = "3.1.2";
+
+  # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
   testnetDepositContractSpecVersion = "0.9.2.1";
 
@@ -10,28 +27,26 @@ rustPlatform.buildRustPackage rec {
     owner = "sigp";
     repo = "lighthouse";
     rev = "v${version}";
-    sha256 = "sha256-o8fntnEDRRtxDHsqHTJ3GoHpFtRpuwPQQJ+kxHV1NKA=";
+    hash = "sha256-EJFg6ZjxxijxJNMwKRh0cYeqwujUV3OJgXBvBRsnbVI=";
   };
 
   cargoPatches = [
-    ./patches/2.5.1-coinmetrics-Cargo-lock.patch
+    ./patches/3.1.2-coinmetrics-Cargo-lock.patch
   ];
-
-  cargoHash = "sha256-22aAqGf/cV1lx/7yS6N+ig+DaYhBW3dZksjnyGfZH74=";
 
   patches = [
-    (fetchurl {
-      url = "https://github.com/sigp/lighthouse/commit/e0f86588e634c186c0ab493694a8e4804fcbbf93.diff";
-      hash = "sha256-0VTnSN0jt/FE/OwylEYmTu/OTJC8lwxhJd5whqCAeZk=";
-    })
-    ./patches/2.5.1-coinmetrics.patch
+    ./patches/3.1.2-coinmetrics.patch
   ];
+
+  cargoHash = "sha256-n0mxURgf9l85vS7aNruuuXetWjwhiD9j/NfZp/OpqLg=";
 
   buildFeatures = [ "modern" "gnosis" ];
 
-  checkFeatures = [ ];
+  nativeBuildInputs = [ clang cmake perl protobuf ];
 
-  nativeBuildInputs = [ clang cmake nodePackages.ganache perl protobuf ];
+  buildInputs = lib.optionals stdenv.isDarwin [
+    Security
+  ];
 
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
 
@@ -49,26 +64,36 @@ rustPlatform.buildRustPackage rec {
   LIGHTHOUSE_DEPOSIT_CONTRACT_TESTNET_URL = "file://${testnetDepositContractSpec}";
 
   cargoBuildFlags = [
-    "--workspace"
-    "--exclude" "ef_tests"
-    "--exclude" "web3signer_tests"
+    "--package lighthouse"
   ];
+
+  __darwinAllowLocalNetworking = true;
+
+  checkFeatures = [ ];
 
   # All of these tests require network access
   cargoTestFlags = [
     "--workspace"
-    "--exclude" "beacon_node"
-    "--exclude" "ef_tests"
-    "--exclude" "http_api"
-    "--exclude" "beacon_chain"
-    "--exclude" "lighthouse"
-    "--exclude" "lighthouse_network"
-    "--exclude" "slashing_protection"
-    "--exclude" "web3signer_tests"
+    "--exclude beacon_node"
+    "--exclude http_api"
+    "--exclude beacon_chain"
+    "--exclude lighthouse"
+    "--exclude lighthouse_network"
+    "--exclude slashing_protection"
+    "--exclude web3signer_tests"
   ];
 
+  # All of these tests require network access
   checkFlags = [
-    "--skip" "service::tests::tests::test_dht_persistence"
+    "--skip service::tests::tests::test_dht_persistence"
+    "--skip time::test::test_reinsertion_updates_timeout"
+  ] ++ lib.optionals (stdenv.isAarch64 && stdenv.isDarwin) [
+    "--skip subnet_service::tests::sync_committee_service::same_subscription_with_lower_until_epoch"
+    "--skip subnet_service::tests::sync_committee_service::subscribe_and_unsubscribe"
+  ];
+
+  checkInputs = [
+    nodePackages.ganache
   ];
 
   passthru.tests.version = testers.testVersion {
@@ -81,6 +106,6 @@ rustPlatform.buildRustPackage rec {
     description = "Ethereum consensus client in Rust";
     homepage = "https://lighthouse.sigmaprime.io/";
     license = licenses.asl20;
-    maintainers = with maintainers; [ centromere ];
+    maintainers = with maintainers; [ centromere pmw ];
   };
 }

@@ -1,18 +1,17 @@
 { autoreconfHook, boost179, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
 , hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
-, stdenv, testers, utf8cpp, util-linux, withDaemon ? true, withMining ? true
-, withUtils ? true, withWallet ? true, withZmq ? true, zcash, zeromq
+, stdenv, testers, utf8cpp, util-linux, zcash, zeromq
 }:
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   pname = "zcash";
-  version = "5.1.0";
+  version = "5.3.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    sha256 = "sha256-tU6DuWpe8Vlx0qIilAKWuO7WFp1ucbxtvOxoWLA0gdc=";
+    hash = "sha256-mlABKZDYYC3y+KlXQVFqdcm46m8K9tbOCqk4lM4shp8=";
   };
 
   prePatch = lib.optionalString stdenv.isAarch64 ''
@@ -21,17 +20,11 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
       --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
   '';
 
-  patches = [
-    ./patches/5.1.0-fix-missing-header.patch
-  ];
-
-  cargoSha256 = "sha256-ZWmkveDEENdXRirGmnUWSjtPNJvX0Jpgfxhzk44F7Q0=";
+  cargoHash = "sha256-6uhtOaBsgMw59Dy6yivZYUEWDsYfpInA7VmJrqxDS/4=";
 
   nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
 
-  buildInputs = [ boost179 libevent libsodium utf8cpp ]
-    ++ lib.optional withWallet db62
-    ++ lib.optional withZmq zeromq;
+  buildInputs = [ boost179 db62 libevent libsodium utf8cpp zeromq ];
 
   # Use the stdenv default phases (./configure; make) instead of the
   # ones from buildRustPackage.
@@ -53,12 +46,11 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
 
   configureFlags = [
     "--disable-tests"
+    "--disable-bench"
+    "--disable-mining"
     "--with-boost-libdir=${lib.getLib boost179}/lib"
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
-  ] ++ lib.optional (!withWallet) "--disable-wallet"
-    ++ lib.optional (!withDaemon) "--without-daemon"
-    ++ lib.optional (!withUtils) "--without-utils"
-    ++ lib.optional (!withMining) "--disable-mining";
+  ];
 
   # Workaround for problem identified in:
   # https://github.com/NixOS/nixpkgs/pull/174473

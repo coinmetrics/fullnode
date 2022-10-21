@@ -59,7 +59,7 @@ update lock file:
     paths:
       - artifacts
   tags:
-    - kube-any-nix
+    - kube-hel1-nix
 
 build bitcoin:
   extends: .generic-build

@@ -1,4 +1,4 @@
-{ autoreconfHook, boost179, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
+{ autoreconfHook, boost180, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
 , hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
 , stdenv, testers, utf8cpp, util-linux, zcash, zeromq
 }:
@@ -24,7 +24,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
 
   nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
 
-  buildInputs = [ boost179 db62 libevent libsodium utf8cpp zeromq ];
+  buildInputs = [ boost180 db62 libevent libsodium utf8cpp zeromq ];
 
   # Use the stdenv default phases (./configure; make) instead of the
   # ones from buildRustPackage.
@@ -48,7 +48,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     "--disable-tests"
     "--disable-bench"
     "--disable-mining"
-    "--with-boost-libdir=${lib.getLib boost179}/lib"
+    "--with-boost-libdir=${lib.getLib boost180}/lib"
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
   ];
 

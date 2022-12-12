@@ -182,6 +182,16 @@ publish geth:
   variables:
     FULLNODE: geth
 
+build go-opera:
+  extends: .generic-build
+  variables:
+    FULLNODE: go-opera
+
+publish go-opera:
+  extends: .generic-publish
+  variables:
+    FULLNODE: go-opera
+
 build grin:
   extends: .generic-build
   variables:

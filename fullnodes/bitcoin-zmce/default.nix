@@ -2,7 +2,7 @@
 rec {
   package = with pkgs; callPackage (./. + "/bitcoin-zmce-${version}.nix") {
     boost = boost17x;
-    miniupnpc = miniupnpc_2;
+    miniupnpc = miniupnpc;
     withGui = false;
     withWallet = false;
     inherit (darwin) autoSignDarwinBinariesHook;

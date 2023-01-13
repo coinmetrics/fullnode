@@ -1,7 +1,9 @@
 { pkgs, version }:
-rec {
-  package = pkgs.callPackage (./. + "/zcash-${version}.nix") {
-    stdenv = pkgs.llvmPackages_13.stdenv;
+with pkgs; rec {
+  package = callPackage (./. + "/zcash-${version}.nix") rec {
+    boost = boost181.override { inherit stdenv; };
+    db = db62.override { inherit stdenv; };
+    stdenv = llvmPackages_14.libcxxStdenv;
   };
 
   imageConfig = {

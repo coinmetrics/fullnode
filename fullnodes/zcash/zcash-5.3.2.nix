@@ -1,17 +1,17 @@
-{ autoreconfHook, boost179, cargo, coreutils, curl, cxx-rs, db62, fetchFromGitHub
+{ autoreconfHook, boost, cargo, coreutils, curl, cxx-rs, db, fetchFromGitHub
 , hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
 , stdenv, testers, utf8cpp, util-linux, zcash, zeromq
 }:
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   pname = "zcash";
-  version = "5.2.0";
+  version = "5.3.2";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
-    rev = "d6d2093beb66a052059d3771f6195c0bafad84ff";
-    sha256 = "sha256-ItjPqyWU5h/XFmFkw4B2+RQURF3LmJXKlwYFbxRnTik=";
+    rev = "v${version}";
+    hash = "sha256-1pLQWRKodDJHpsqDZISUfempLf/MbbpnNEZ87qeMT1o=";
   };
 
   prePatch = lib.optionalString stdenv.isAarch64 ''
@@ -20,15 +20,11 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
       --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
   '';
 
-  patches = [
-    ./patches/5.2.0-fix-build-errors.patch
-  ];
-
-  cargoSha256 = "sha256-TPvAIgQO9IumFK5wCOIhfpfCQaPcLgcX1iAqdsYeGsI=";
+  cargoHash = "sha256-u9bulmUeoQibNJIB/DP3wosaPVUJeDs9K4DlR+zu3Ug=";
 
   nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
 
-  buildInputs = [ boost179 db62 libevent libsodium utf8cpp zeromq ];
+  buildInputs = [ boost db libevent libsodium utf8cpp zeromq ];
 
   # Use the stdenv default phases (./configure; make) instead of the
   # ones from buildRustPackage.
@@ -52,7 +48,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     "--disable-tests"
     "--disable-bench"
     "--disable-mining"
-    "--with-boost-libdir=${lib.getLib boost179}/lib"
+    "--with-boost=${boost}"
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
   ];
 

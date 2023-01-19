@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
     owner = "bitcoin-sv";
     repo = "bitcoin-sv";
     rev = "v${version}";
-    hash = "sha256-Jo0r2dXim/XObydVZOgY0HPAYNhUq97BeO2PBYVoxY8=";
+    hash = "sha256-n6qXTmsX3y23nntnRk0R/BwPQ/jerJkbFZk3ihbPpbY=";
   };
 
   nativeBuildInputs = [ pkg-config autoreconfHook ];

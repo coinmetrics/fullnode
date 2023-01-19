@@ -5,21 +5,14 @@
     nixpkgs = {
       url = "github:NixOS/nixpkgs";
     };
-
-    nix = {
-      type = "gitlab";
-      owner = "coinmetrics%2Finfrastructure";
-      repo = "nix";
-    };
   };
 
-  outputs = { self, nixpkgs, nix }:
+  outputs = { self, nixpkgs }:
   let
     system = "x86_64-linux";
 
     pkgs = import nixpkgs {
       inherit system;
-      overlays = [ self.overlays.default ];
     };
 
     allFullnodeVersions = import ./versions.nix;
@@ -122,8 +115,6 @@
       };
   in
   {
-    overlays.default = nix.overlays.default;
-
     packages.${system} = flatBinaryMap // flatImageMap;
 
     # TODO: Autogenerate

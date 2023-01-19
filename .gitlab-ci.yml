@@ -9,7 +9,7 @@ update lock file:
     - if: $CI_PIPELINE_SOURCE == "schedule"
   stage: update lock file
   script:
-    - nix --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" flake update
+    - nix flake update
     - if git diff --exit-code; then echo "No changes."; exit 0; fi
     - git add flake.lock
     - git config --global user.name "${GITLAB_USER_NAME}"
@@ -30,12 +30,10 @@ update lock file:
           - flake.lock
   stage: build
   script:
-    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#publish-$FULLNODE -- dry-run
+    - nix --print-build-logs run .#publish-$FULLNODE -- dry-run
   artifacts:
     expire_in: "1 week"
     when: always
-    paths:
-      - artifacts
   tags:
     - kube-hel1-nix
 
@@ -51,13 +49,8 @@ update lock file:
           - flake.lock
   stage: publish
   script:
-    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#login
-    - nix --print-build-logs --access-tokens "gitlab.com=OAuth2:$NIX_REPO_TOKEN" run .#publish-$FULLNODE
-  artifacts:
-    expire_in: "1 week"
-    when: always
-    paths:
-      - artifacts
+    - nix --print-build-logs run .#login
+    - nix --print-build-logs run .#publish-$FULLNODE
   tags:
     - kube-hel1-nix
 

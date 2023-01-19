@@ -1,6 +1,6 @@
 { autoreconfHook, boost, cargo, coreutils, curl, cxx-rs, db, fetchFromGitHub
-, hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform, pkg-config
-, stdenv, testers, utf8cpp, util-linux, zcash, zeromq
+, git, hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform
+, pkg-config, stdenv, testers, utf8cpp, util-linux, zcash, zeromq
 }:
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
@@ -22,7 +22,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
 
   cargoHash = "sha256-u9bulmUeoQibNJIB/DP3wosaPVUJeDs9K4DlR+zu3Ug=";
 
-  nativeBuildInputs = [ autoreconfHook cargo cxx-rs hexdump makeWrapper pkg-config ];
+  nativeBuildInputs = [ autoreconfHook cargo cxx-rs git hexdump makeWrapper pkg-config ];
 
   buildInputs = [ boost db libevent libsodium utf8cpp zeromq ];
 
@@ -52,12 +52,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
   ];
 
-  # Workaround for problem identified in:
-  # https://github.com/NixOS/nixpkgs/pull/174473
-  enableParallelBuilding = false;
-  preBuild = ''
-    makeFlagsArray+=("-j$NIX_BUILD_CORES")
-  '';
+  enableParallelBuilding = true;
 
   # Requires hundreds of megabytes of zkSNARK parameters.
   doCheck = false;

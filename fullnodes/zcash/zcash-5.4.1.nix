@@ -5,13 +5,13 @@
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   pname = "zcash";
-  version = "5.4.0";
+  version = "5.4.1";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-c/jaZ7KlP8zIbcXSmicX4fCiVC/td5GWJa3bMG4RCII=";
+    hash = "sha256-Niqbz+WNqd3rExsNToFO/2PT20NFQJpTvUmtSJKDRfw=";
   };
 
   # See: https://github.com/TartanLlama/expected/pull/117
@@ -31,7 +31,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
       --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
   '';
 
-  cargoHash = "sha256-OAqbwid0FBOFcFO9w6uE0rgtaUAq7Zz4i2ojhxfJQ08=";
+  cargoHash = "sha256-/KBgUrvxfGlbY+9XVYASwYZUxbhW5q43NTBsvUZSkuo=";
 
   nativeBuildInputs = [ autoreconfHook cargo cxx-rs git hexdump makeWrapper pkg-config ];
 

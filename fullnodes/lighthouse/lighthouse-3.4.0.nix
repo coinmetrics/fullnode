@@ -39,7 +39,6 @@ rustPlatform.buildRustPackage rec {
   ];
 
   cargoHash = "sha256-itIr6TkJUM/M8CvQrxS4kiI35e1ATX8QUJHuLybQNps=";
-  #cargoHash = "sha256-0000000000000000000000000000000000000000000=";
 
   buildFeatures = [ "modern" "gnosis" ];
 
@@ -95,7 +94,7 @@ rustPlatform.buildRustPackage rec {
     "--skip subnet_service::tests::sync_committee_service::subscribe_and_unsubscribe"
   ];
 
-  checkInputs = [
+  nativeCheckInputs = [
     nodePackages.ganache
   ];
 

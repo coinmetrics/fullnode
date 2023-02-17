@@ -1,6 +1,7 @@
 { autoreconfHook, boost, cargo, coreutils, curl, cxx-rs, db, fetchFromGitHub
-, fetchurl, git, hexdump, lib, libevent, libsodium, makeWrapper, rust, rustPlatform
-, pkg-config, runCommand, stdenv, testers, utf8cpp, util-linux, zcash, zeromq
+, fetchurl, git, hexdump, lib, libevent, libsodium, makeWrapper, rust
+, rustPlatform, pkg-config, runCommand, stdenv, testers, tl-expected, utf8cpp
+, util-linux, zcash, zeromq
 }:
 
 rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
@@ -14,17 +15,6 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     hash = "sha256-Niqbz+WNqd3rExsNToFO/2PT20NFQJpTvUmtSJKDRfw=";
   };
 
-  # See: https://github.com/TartanLlama/expected/pull/117
-  tl-expected = runCommand "tl-expected" {
-    src = fetchurl {
-      url = "https://raw.githubusercontent.com/daira/expected/remove-undefined-behaviour/include/tl/expected.hpp";
-      hash = "sha256-PWMOn18PHvlbC6D2GptIv4TwV5Ay03IAME2gw8OCrEM=";
-    };
-  } ''
-    mkdir -p $out/include/tl
-    cp -a $src $out/include/tl/expected.hpp
-  '';
-
   prePatch = lib.optionalString stdenv.isAarch64 ''
     substituteInPlace .cargo/config.offline \
       --replace "[target.aarch64-unknown-linux-gnu]" "" \
@@ -33,7 +23,10 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
 
   cargoHash = "sha256-/KBgUrvxfGlbY+9XVYASwYZUxbhW5q43NTBsvUZSkuo=";
 
-  nativeBuildInputs = [ autoreconfHook cargo cxx-rs git hexdump makeWrapper pkg-config ];
+  nativeBuildInputs = [
+    autoreconfHook cargo cxx-rs git hexdump makeWrapper
+    pkg-config tl-expected
+  ];
 
   buildInputs = [ boost db libevent libsodium utf8cpp zeromq ];
 
@@ -53,7 +46,7 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   CXXFLAGS = [
     "-I${lib.getDev utf8cpp}/include/utf8cpp"
     "-I${lib.getDev cxx-rs}/include"
-    "-I${tl-expected}/include"
+    "-I${lib.getDev tl-expected}/include"
   ];
 
   configureFlags = [

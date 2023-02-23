@@ -19,7 +19,7 @@
   omnicore = [ "0.11.0" ];
   openethereum = [ "3.3.5" ];
   pivx = [ "5.5.0" ];
-  polkadot = [ "0.9.37" ];
+  polkadot = [ "0.9.37" "0.9.38" ];
   vertcoin = [ "0.18.0" "22.1" ];
   zcash = [ "5.3.2" "5.4.1" ];
 }

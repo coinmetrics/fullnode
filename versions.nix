@@ -16,7 +16,7 @@
   lighthouse = [ "3.3.0" "3.4.0" ];
   litecoin = [ "0.21.2.1" ];
   monero = [ "0.18.1.1" "0.18.1.2" ];
-  omnicore = [ "0.11.0" ];
+  omnicore = [ "0.11.0" "0.12.0.1" ];
   openethereum = [ "3.3.5" ];
   pivx = [ "5.5.0" ];
   polkadot = [ "0.9.37" "0.9.38" ];

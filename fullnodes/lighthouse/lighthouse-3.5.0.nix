@@ -10,14 +10,17 @@
 , protobuf
 , rustPlatform
 , Security
+, CoreFoundation
 , stdenv
 , testers
 , unzip
+, nix-update-script
+, SystemConfiguration
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "3.3.0";
+  version = "3.5.0";
 
   # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
@@ -27,28 +30,28 @@ rustPlatform.buildRustPackage rec {
     owner = "sigp";
     repo = "lighthouse";
     rev = "v${version}";
-    hash = "sha256-py64CWY3k5Z2mm9WduJ4Fh7lQ8b3sF6iIFsYYjndU5I=";
+    hash = "sha256-09EQr/ghgdcnek0dih0+TXyIh5qwGWmg+nhI8d9n3Jc=";
   };
 
   cargoPatches = [
-    ./patches/3.3.0-coinmetrics-Cargo-lock.patch
+    ./patches/3.5.0-coinmetrics-Cargo-lock.patch
   ];
 
   patches = [
-    ./patches/3.3.0-coinmetrics.patch
+    ./patches/3.5.0-coinmetrics.patch
   ];
 
-  cargoHash = "sha256-Y6p/78Ff9T9/MQgOebBcurRzayYhVYOdeaH7/vMQ82I=";
+  cargoHash = "sha256-p0iiIeSCn5XcaFLK99FfW5MDFYDp+EmuuUyjZY5IRF4=";
 
   buildFeatures = [ "modern" "gnosis" ];
 
-  nativeBuildInputs = [ clang cmake perl protobuf ];
+  nativeBuildInputs = [ rustPlatform.bindgenHook cmake perl protobuf ];
 
   buildInputs = lib.optionals stdenv.isDarwin [
     Security
+    CoreFoundation
+    SystemConfiguration
   ];
-
-  LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
 
   depositContractSpec = fetchurl {
     url = "https://raw.githubusercontent.com/ethereum/eth2.0-specs/v${depositContractSpecVersion}/deposit_contract/contracts/validator_registration.json";
@@ -81,8 +84,6 @@ rustPlatform.buildRustPackage rec {
     "--exclude lighthouse_network"
     "--exclude slashing_protection"
     "--exclude web3signer_tests"
-    "--exclude ef_tests"
-    "--exclude slasher"
   ];
 
   # All of these tests require network access
@@ -98,10 +99,13 @@ rustPlatform.buildRustPackage rec {
     nodePackages.ganache
   ];
 
-  passthru.tests.version = testers.testVersion {
-    package = lighthouse;
-    command = "lighthouse --version";
-    version = "v${lighthouse.version}";
+  passthru = {
+    tests.version = testers.testVersion {
+      package = lighthouse;
+      command = "lighthouse --version";
+      version = "v${lighthouse.version}";
+    };
+    updateScript = nix-update-script { };
   };
 
   meta = with lib; {

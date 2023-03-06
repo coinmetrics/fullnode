@@ -81,7 +81,7 @@ index b7134e37c..9bcaabae4 100644
  
          process_activations(&mut state, spec)
 diff --git a/beacon_node/http_api/src/lib.rs b/beacon_node/http_api/src/lib.rs
-index a0975a5c7..1f2a9d312 100644
+index a0975a5c7..f68fba104 100644
 --- a/beacon_node/http_api/src/lib.rs
 +++ b/beacon_node/http_api/src/lib.rs
 @@ -22,6 +22,7 @@ mod sync_committees;
@@ -92,16 +92,16 @@ index a0975a5c7..1f2a9d312 100644
  
  use beacon_chain::{
      attestation_verification::VerifiedAttestation, observed_operations::ObservationOutcome,
-@@ -653,6 +654,9 @@ pub fn serve<T: BeaconChainTypes>(
-                                         .iter()
+@@ -654,6 +655,9 @@ pub fn serve<T: BeaconChainTypes>(
                                          .zip(state.balances().iter())
                                          .enumerate()
+                                         // filter by validator id(s) if provided
 +                                        .filter(|(index, (_, _))| {
 +                                            *index as u64 >= query.start_index
 +                                        })
-                                         // filter by validator id(s) if provided
                                          .filter(|(index, (validator, _))| {
                                              query.id.as_ref().map_or(true, |ids| {
+                                                 ids.iter().any(|id| match id {
 @@ -3442,6 +3446,34 @@ pub fn serve<T: BeaconChainTypes>(
              blocking_json_task(move || block_rewards::compute_block_rewards(blocks, chain, log))
          });
@@ -294,6 +294,17 @@ index 000000000..d2b906778
 +    })
 +}
 \ No newline at end of file
+diff --git a/beacon_node/http_api/tests/main.rs b/beacon_node/http_api/tests/main.rs
+index ca6a27530..76a851dc4 100644
+--- a/beacon_node/http_api/tests/main.rs
++++ b/beacon_node/http_api/tests/main.rs
+@@ -1,5 +1,5 @@
+ #![cfg(not(debug_assertions))] // Tests are too slow in debug.
+-#![recursion_limit = "256"]
++#![recursion_limit = "512"]
+ 
+ pub mod common;
+ pub mod fork_tests;
 diff --git a/common/eth2/Cargo.toml b/common/eth2/Cargo.toml
 index eca086d83..9595d8fd4 100644
 --- a/common/eth2/Cargo.toml

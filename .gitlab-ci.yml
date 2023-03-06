@@ -25,7 +25,7 @@ update lock file:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" || ($CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "schedule")
       changes:
         paths:
-          - fullnodes/$FULLNODE/**
+          - fullnodes/$FULLNODE/**/*
           - .gitlab-ci.yml
           - flake.lock
   stage: build
@@ -44,7 +44,7 @@ update lock file:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "schedule"
       changes:
         paths:
-          - fullnodes/$FULLNODE/**
+          - fullnodes/$FULLNODE/**/*
           - .gitlab-ci.yml
           - flake.lock
   stage: publish

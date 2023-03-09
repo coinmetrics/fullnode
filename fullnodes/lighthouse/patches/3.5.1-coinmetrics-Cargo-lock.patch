@@ -1,0 +1,20 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 5951b49c7..3191c710b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -2133,6 +2133,7 @@ dependencies = [
+  "serde",
+  "serde_json",
+  "slashing_protection",
++ "state_processing",
+  "store",
+  "types",
+ ]
+@@ -7373,6 +7374,7 @@ dependencies = [
+  "merkle_proof",
+  "rayon",
+  "safe_arith",
++ "serde",
+  "smallvec",
+  "tokio",
+  "tree_hash",

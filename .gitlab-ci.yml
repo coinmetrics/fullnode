@@ -54,6 +54,16 @@ update lock file:
   tags:
     - kube-hel1-nix
 
+build algorand:
+  extends: .generic-build
+  variables:
+    FULLNODE: algorand
+
+publish algorand:
+  extends: .generic-publish
+  variables:
+    FULLNODE: algorand
+
 build bitcoin:
   extends: .generic-build
   variables:

@@ -1,26 +1,27 @@
 { clang
 , cmake
+, CoreFoundation
 , fetchFromGitHub
 , fetchurl
 , lib
 , lighthouse
-, llvmPackages
+, nix-update-script
 , nodePackages
 , perl
+, pkg-config
 , protobuf
 , rustPlatform
 , Security
-, CoreFoundation
+, sqlite
 , stdenv
+, SystemConfiguration
 , testers
 , unzip
-, nix-update-script
-, SystemConfiguration
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "3.5.1";
+  version = "4.0.1";
 
   # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
@@ -30,26 +31,48 @@ rustPlatform.buildRustPackage rec {
     owner = "sigp";
     repo = "lighthouse";
     rev = "v${version}";
-    hash = "sha256-oF32s1nfzEZbaNUi5sQSrotcyOSinULj/qrRQWdMXHg=";
+    hash = "sha256-EwioetkTX58/GBbb2eKJxdgncXwJ9xUOcvq0+XiqhEo=";
   };
 
-  cargoPatches = [
-    ./patches/3.5.1-coinmetrics-Cargo-lock.patch
-  ];
-
   patches = [
-    ./patches/3.5.1-coinmetrics.patch
+    ./patches/use-system-sqlite.patch
+    ./patches/4.0.1-coinmetrics.patch
   ];
 
-  cargoHash = "sha256-VSe/VJYFylsOF843TZdt3TyaIgLcy5t4qY1Nn7oVz7w=";
+  postPatch = ''
+    cp ${./4.0.1-Cargo.lock} Cargo.lock
+  '';
+
+  cargoLock = {
+    lockFile = ./4.0.1-Cargo.lock;
+    outputHashes = {
+      "amcl-0.3.0" = "sha256-Mj4dXTlGVSleFfuTKgVDQ7S3jANMsdtVE5L90WGxA4U=";
+      "arbitrary-1.2.2" = "sha256-39ZefB5Xok28y8lIdKleILBv4aokY90eMOssxUtU7yA=";
+      "beacon-api-client-0.1.0" = "sha256-vqTC7bKXgliN7qd5LstNM5O6jRnn4aV/paj88Mua+Bc=";
+      "ethereum-consensus-0.1.1" = "sha256-aBrZ786Me0BWpnncxQc5MT3r+O0yLQhqGKFBiNTdqSA=";
+      "libmdbx-0.1.4" = "sha256-NMsR/Wl1JIj+YFPyeMMkrJFfoS07iEAKEQawO89a+/Q=";
+      "lmdb-rkv-0.14.0" = "sha256-sxmguwqqcyOlfXOZogVz1OLxfJPo+Q0+UjkROkbbOCk=";
+      "mev-rs-0.2.1" = "sha256-n3ns1oynw5fKQtp/CQHER41+C1EmLCVEBqggkHc3or4=";
+      "ssz-rs-0.8.0" = "sha256-k1JLu+jZrSqUyHou76gbJeA5CDWwdL0fPkek3Vzl4Gs=";
+      "warp-0.3.2" = "sha256-m9lkEgeSs0yEc+6N6DG7IfQY/evkUMoNyst2hMUR//c=";
+    };
+  };
 
   buildFeatures = [ "modern" "gnosis" ];
 
-  nativeBuildInputs = [ rustPlatform.bindgenHook cmake perl protobuf ];
+  nativeBuildInputs = [
+    rustPlatform.bindgenHook
+    cmake
+    perl
+    pkg-config
+    protobuf
+  ];
 
-  buildInputs = lib.optionals stdenv.isDarwin [
-    Security
+  buildInputs = [
+    sqlite
+  ] ++ lib.optionals stdenv.isDarwin [
     CoreFoundation
+    Security
     SystemConfiguration
   ];
 

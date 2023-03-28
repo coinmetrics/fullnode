@@ -1,5 +1,5 @@
 diff --git a/beacon_node/beacon_chain/src/events.rs b/beacon_node/beacon_chain/src/events.rs
-index b3fa6627f..a7266305e 100644
+index fed050323..b7dc49f7b 100644
 --- a/beacon_node/beacon_chain/src/events.rs
 +++ b/beacon_node/beacon_chain/src/events.rs
 @@ -17,6 +17,7 @@ pub struct ServerSentEventHandler<T: EthSpec> {
@@ -26,57 +26,10 @@ index b3fa6627f..a7266305e 100644
              log,
          }
      }
-@@ -65,43 +68,47 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-             EventKind::Attestation(_) => self
-                 .attestation_tx
-                 .send(kind)
--                .map(|count| log_count(count, "attestation")),
-+                .map(|count| log_count("attestation", count)),
-             EventKind::Block(_) => self
-                 .block_tx
-                 .send(kind)
--                .map(|count| log_count(count, "block")),
-+                .map(|count| log_count("block", count)),
-             EventKind::FinalizedCheckpoint(_) => self
-                 .finalized_tx
-                 .send(kind)
--                .map(|count| log_count(count, "finalized checkpoint")),
-+                .map(|count| log_count("finalized checkpoint", count)),
-             EventKind::Head(_) => self
-                 .head_tx
-                 .send(kind)
--                .map(|count| log_count(count, "head")),
-+                .map(|count| log_count("head", count)),
-             EventKind::VoluntaryExit(_) => self
-                 .exit_tx
-                 .send(kind)
--                .map(|count| log_count(count, "exit")),
-+                .map(|count| log_count("exit", count)),
-             EventKind::ChainReorg(_) => self
-                 .chain_reorg_tx
-                 .send(kind)
--                .map(|count| log_count(count, "chain reorg")),
-+                .map(|count| log_count("chain reorg", count)),
-             EventKind::ContributionAndProof(_) => self
-                 .contribution_tx
-                 .send(kind)
--                .map(|count| log_count(count, "contribution and proof")),
-+                .map(|count| log_count("contribution and proof", count)),
-             EventKind::PayloadAttributes(_) => self
-                 .payload_attributes_tx
-                 .send(kind)
--                .map(|count| log_count(count, "payload attributes")),
-+                .map(|count| log_count("payload attributes", count)),
-             EventKind::LateHead(_) => self
-                 .late_head
-                 .send(kind)
--                .map(|count| log_count(count, "late head")),
-+                .map(|count| log_count("late head", count)),
-             EventKind::BlockReward(_) => self
+@@ -102,6 +105,10 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
                  .block_reward_tx
                  .send(kind)
--                .map(|count| log_count(count, "block reward")),
-+                .map(|count| log_count("block reward", count)),
+                 .map(|count| log_count("block reward", count)),
 +            EventKind::Trace(_) => self
 +                .trace_tx
 +                .send(kind)
@@ -84,7 +37,7 @@ index b3fa6627f..a7266305e 100644
          };
          if let Err(SendError(event)) = result {
              trace!(self.log, "No receivers registered to listen for event"; "event" => ?event);
-@@ -148,6 +155,10 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+@@ -148,6 +155,11 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
          self.block_reward_tx.subscribe()
      }
  
@@ -92,10 +45,11 @@ index b3fa6627f..a7266305e 100644
 +        self.trace_tx.subscribe()
 +    }
 +
++
      pub fn has_attestation_subscribers(&self) -> bool {
          self.attestation_tx.receiver_count() > 0
      }
-@@ -187,4 +198,8 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
+@@ -187,4 +199,8 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
      pub fn has_block_reward_subscribers(&self) -> bool {
          self.block_reward_tx.receiver_count() > 0
      }
@@ -130,10 +84,10 @@ index b7134e37c..9bcaabae4 100644
  
          process_activations(&mut state, spec)
 diff --git a/beacon_node/http_api/src/lib.rs b/beacon_node/http_api/src/lib.rs
-index 6cca673b8..5e79ab6a5 100644
+index d3d99c5c9..9630aa0f3 100644
 --- a/beacon_node/http_api/src/lib.rs
 +++ b/beacon_node/http_api/src/lib.rs
-@@ -22,6 +22,7 @@ mod sync_committees;
+@@ -21,6 +21,7 @@ mod sync_committees;
  mod ui;
  mod validator_inclusion;
  mod version;
@@ -141,7 +95,7 @@ index 6cca673b8..5e79ab6a5 100644
  
  use beacon_chain::{
      attestation_verification::VerifiedAttestation, observed_operations::ObservationOutcome,
-@@ -654,6 +655,9 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -655,6 +656,9 @@ pub fn serve<T: BeaconChainTypes>(
                                          .zip(state.balances().iter())
                                          .enumerate()
                                          // filter by validator id(s) if provided
@@ -151,7 +105,7 @@ index 6cca673b8..5e79ab6a5 100644
                                          .filter(|(index, (validator, _))| {
                                              query.id.as_ref().map_or(true, |ids| {
                                                  ids.iter().any(|id| match id {
-@@ -3448,6 +3452,34 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -3530,6 +3534,35 @@ pub fn serve<T: BeaconChainTypes>(
              blocking_json_task(move || block_rewards::compute_block_rewards(blocks, chain, log))
          });
  
@@ -183,10 +137,11 @@ index 6cca673b8..5e79ab6a5 100644
 +            })
 +        });
 +
++
      // GET lighthouse/analysis/attestation_performance/{index}
      let get_lighthouse_attestation_performance = warp::path("lighthouse")
          .and(warp::path("analysis"))
-@@ -3529,6 +3561,9 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -3612,6 +3645,9 @@ pub fn serve<T: BeaconChainTypes>(
                                  api_types::EventTopic::BlockReward => {
                                      event_handler.subscribe_block_reward()
                                  }
@@ -196,15 +151,15 @@ index 6cca673b8..5e79ab6a5 100644
                              };
  
                              receivers.push(BroadcastStream::new(receiver).map(|msg| {
-@@ -3623,6 +3658,8 @@ pub fn serve<T: BeaconChainTypes>(
-                 .or(get_lighthouse_staking.boxed())
-                 .or(get_lighthouse_database_info.boxed())
-                 .or(get_lighthouse_block_rewards.boxed())
-+                .or(get_lighthouse_traces.boxed())
-+                .or(get_lighthouse_supply.boxed())
-                 .or(get_lighthouse_attestation_performance.boxed())
-                 .or(get_lighthouse_block_packing_efficiency.boxed())
-                 .or(get_lighthouse_merge_readiness.boxed())
+@@ -3706,6 +3742,8 @@ pub fn serve<T: BeaconChainTypes>(
+                 .uor(get_lighthouse_staking)
+                 .uor(get_lighthouse_database_info)
+                 .uor(get_lighthouse_block_rewards)
++                .uor(get_lighthouse_traces)
++                .uor(get_lighthouse_supply)
+                 .uor(get_lighthouse_attestation_performance)
+                 .uor(get_lighthouse_block_packing_efficiency)
+                 .uor(get_lighthouse_merge_readiness)
 diff --git a/beacon_node/http_api/src/traces.rs b/beacon_node/http_api/src/traces.rs
 new file mode 100644
 index 000000000..d2b906778
@@ -343,17 +298,20 @@ index 000000000..d2b906778
 +    })
 +}
 \ No newline at end of file
-diff --git a/beacon_node/http_api/tests/main.rs b/beacon_node/http_api/tests/main.rs
-index ca6a27530..76a851dc4 100644
---- a/beacon_node/http_api/tests/main.rs
-+++ b/beacon_node/http_api/tests/main.rs
-@@ -1,5 +1,5 @@
- #![cfg(not(debug_assertions))] // Tests are too slow in debug.
--#![recursion_limit = "256"]
-+#![recursion_limit = "512"]
+diff --git a/beacon_node/http_api/tests/tests.rs b/beacon_node/http_api/tests/tests.rs
+index 977c737fd..48daa1632 100644
+--- a/beacon_node/http_api/tests/tests.rs
++++ b/beacon_node/http_api/tests/tests.rs
+@@ -4180,6 +4180,9 @@ async fn get_validator_duties_early() {
+ }
  
- pub mod common;
- pub mod fork_tests;
+ #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++#[ignore]
++// CM modification:
++// thread 'tests::get_validator_duties_attester' panicked at 'called `Result::unwrap()` on an `Err` value: Warp(hyper::Error(Listen, Os { code: 98, kind: AddrInUse, message: "Address already in use" }))'
+ async fn get_validator_duties_attester() {
+     ApiTester::new()
+         .await
 diff --git a/common/eth2/Cargo.toml b/common/eth2/Cargo.toml
 index eca086d83..9595d8fd4 100644
 --- a/common/eth2/Cargo.toml
@@ -404,7 +362,7 @@ index 000000000..727ad9323
 +}
 \ No newline at end of file
 diff --git a/common/eth2/src/types.rs b/common/eth2/src/types.rs
-index b4218c361..3b964fc08 100644
+index 175c7db78..16458c71b 100644
 --- a/common/eth2/src/types.rs
 +++ b/common/eth2/src/types.rs
 @@ -14,6 +14,8 @@ pub use types::*;
@@ -425,7 +383,7 @@ index b4218c361..3b964fc08 100644
      #[serde(default, deserialize_with = "option_query_vec")]
      pub id: Option<Vec<ValidatorId>>,
      #[serde(default, deserialize_with = "option_query_vec")]
-@@ -980,6 +984,8 @@ pub enum EventKind<T: EthSpec> {
+@@ -983,6 +987,8 @@ pub enum EventKind<T: EthSpec> {
      LateHead(SseLateHead),
      #[cfg(feature = "lighthouse")]
      BlockReward(BlockReward),
@@ -434,7 +392,7 @@ index b4218c361..3b964fc08 100644
      PayloadAttributes(VersionedSsePayloadAttributes),
  }
  
-@@ -997,6 +1003,8 @@ impl<T: EthSpec> EventKind<T> {
+@@ -1000,6 +1006,8 @@ impl<T: EthSpec> EventKind<T> {
              EventKind::LateHead(_) => "late_head",
              #[cfg(feature = "lighthouse")]
              EventKind::BlockReward(_) => "block_reward",
@@ -443,7 +401,7 @@ index b4218c361..3b964fc08 100644
          }
      }
  
-@@ -1058,6 +1066,10 @@ impl<T: EthSpec> EventKind<T> {
+@@ -1061,6 +1069,10 @@ impl<T: EthSpec> EventKind<T> {
              "block_reward" => Ok(EventKind::BlockReward(serde_json::from_str(data).map_err(
                  |e| ServerError::InvalidServerSentEvent(format!("Block Reward: {:?}", e)),
              )?)),
@@ -454,7 +412,7 @@ index b4218c361..3b964fc08 100644
              _ => Err(ServerError::InvalidServerSentEvent(
                  "Could not parse event tag".to_string(),
              )),
-@@ -1086,6 +1098,8 @@ pub enum EventTopic {
+@@ -1089,6 +1101,8 @@ pub enum EventTopic {
      PayloadAttributes,
      #[cfg(feature = "lighthouse")]
      BlockReward,
@@ -463,7 +421,7 @@ index b4218c361..3b964fc08 100644
  }
  
  impl FromStr for EventTopic {
-@@ -1104,6 +1118,8 @@ impl FromStr for EventTopic {
+@@ -1107,6 +1121,8 @@ impl FromStr for EventTopic {
              "late_head" => Ok(EventTopic::LateHead),
              #[cfg(feature = "lighthouse")]
              "block_reward" => Ok(EventTopic::BlockReward),
@@ -472,7 +430,7 @@ index b4218c361..3b964fc08 100644
              _ => Err("event topic cannot be parsed.".to_string()),
          }
      }
-@@ -1123,6 +1139,7 @@ impl fmt::Display for EventTopic {
+@@ -1126,6 +1142,7 @@ impl fmt::Display for EventTopic {
              EventTopic::LateHead => write!(f, "late_head"),
              #[cfg(feature = "lighthouse")]
              EventTopic::BlockReward => write!(f, "block_reward"),
@@ -481,15 +439,18 @@ index b4218c361..3b964fc08 100644
      }
  }
 diff --git a/common/lockfile/src/lib.rs b/common/lockfile/src/lib.rs
-index cc622e0fb..6c1b5da24 100644
+index cc622e0fb..16a0d1b94 100644
 --- a/common/lockfile/src/lib.rs
 +++ b/common/lockfile/src/lib.rs
-@@ -123,6 +123,9 @@ mod test {
+@@ -123,6 +123,12 @@ mod test {
  
      #[test]
      #[cfg(unix)]
 +    // CM modification:
-+    // thread 'test::permission_denied_create' panicked at 'called `Result::unwrap_err()` on an `Ok` value: Lockfile { _file: File { fd: 6, path: "/tmp/.tmpmG4xdL/lockfile", read: true, write: false }, path: "/tmp/.tmpmG4xdL/lockfile", file_existed: true }', common/lockfile/src/lib.rs:136:33
++    // thread 'test::permission_denied_create' panicked at 'called `Result::unwrap_err()`
++    // on an `Ok` value:
++    // Lockfile { _file: File { fd: 6, path: "/tmp/.tmpmG4xdL/lockfile", read: true, write: false },
++    // path: "/tmp/.tmpmG4xdL/lockfile", file_existed: true }', common/lockfile/src/lib.rs:136:33
 +    #[ignore]
      fn permission_denied_create() {
          let temp = tempdir().unwrap();
@@ -546,10 +507,10 @@ index cc7bd17c5..ff0be7ac0 100644
          }
  
 diff --git a/consensus/state_processing/src/common/mod.rs b/consensus/state_processing/src/common/mod.rs
-index 8a2e2439b..0a4d01f48 100644
+index 8a2e2439b..6a3a3443f 100644
 --- a/consensus/state_processing/src/common/mod.rs
 +++ b/consensus/state_processing/src/common/mod.rs
-@@ -17,15 +17,38 @@ pub use slash_validator::slash_validator;
+@@ -17,15 +17,39 @@ pub use slash_validator::slash_validator;
  
  use safe_arith::SafeArith;
  use types::{BeaconState, BeaconStateError, EthSpec};
@@ -562,7 +523,8 @@ index 8a2e2439b..0a4d01f48 100644
 +    SlashingPenalty,
 +    SlashingWhistleblowerReward,
 +    SlashingProposerReward,
-+    Withdrawal
++    PartialWithdrawal,
++    FullWithdrawal
 +}
 +
 +#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, Copy)]
@@ -590,7 +552,7 @@ index 8a2e2439b..0a4d01f48 100644
  }
  
  /// Decrease the balance of a validator, saturating upon overflow, as per the spec.
-@@ -33,8 +56,13 @@ pub fn decrease_balance<E: EthSpec>(
+@@ -33,8 +57,13 @@ pub fn decrease_balance<E: EthSpec>(
      state: &mut BeaconState<E>,
      index: usize,
      delta: u64,
@@ -607,7 +569,7 @@ index 8a2e2439b..0a4d01f48 100644
 +    })
  }
 diff --git a/consensus/state_processing/src/common/slash_validator.rs b/consensus/state_processing/src/common/slash_validator.rs
-index d4675f5ef..017cd7b23 100644
+index d4675f5ef..2fbd1268b 100644
 --- a/consensus/state_processing/src/common/slash_validator.rs
 +++ b/consensus/state_processing/src/common/slash_validator.rs
 @@ -1,5 +1,7 @@
@@ -645,13 +607,18 @@ index d4675f5ef..017cd7b23 100644
  
      // Apply proposer and whistleblower rewards
      let proposer_index = ctxt.get_proposer_index(state, spec)? as usize;
-@@ -62,12 +66,13 @@ pub fn slash_validator<T: EthSpec>(
+@@ -62,12 +66,18 @@ pub fn slash_validator<T: EthSpec>(
          return Err(BeaconStateError::UnknownValidator(whistleblower_index).into());
      }
  
 -    increase_balance(state, proposer_index, proposer_reward)?;
 -    increase_balance(
-+    balance_updates.push(increase_balance(state, proposer_index, proposer_reward,BalanceUpdateReason::SlashingProposerReward,)?);
++    balance_updates.push(increase_balance(
++        state,
++        proposer_index,
++        proposer_reward,
++        BalanceUpdateReason::SlashingProposerReward,
++    )?);
 +    balance_updates.push(increase_balance(
          state,
          whistleblower_index,
@@ -664,7 +631,7 @@ index d4675f5ef..017cd7b23 100644
 +    Ok(balance_updates)
  }
 diff --git a/consensus/state_processing/src/per_block_processing.rs b/consensus/state_processing/src/per_block_processing.rs
-index c564b98d6..6a34ce305 100644
+index c564b98d6..134d2a9e0 100644
 --- a/consensus/state_processing/src/per_block_processing.rs
 +++ b/consensus/state_processing/src/per_block_processing.rs
 @@ -1,3 +1,4 @@
@@ -682,7 +649,7 @@ index c564b98d6..6a34ce305 100644
      let block = signed_block.message();
  
      // Verify that the `SignedBeaconBlock` instantiation matches the fork at `signed_block.slot()`.
-@@ -160,25 +162,25 @@ pub fn per_block_processing<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -160,13 +162,13 @@ pub fn per_block_processing<T: EthSpec, Payload: AbstractExecPayload<T>>(
      // previous block.
      if is_execution_enabled(state, block.body()) {
          let payload = block.body().execution_payload()?;
@@ -697,15 +664,9 @@ index c564b98d6..6a34ce305 100644
 +    balance_updates.append( &mut process_operations(state, block.body(), verify_signatures, ctxt, spec)?);
  
      if let Ok(sync_aggregate) = block.body().sync_aggregate() {
--        process_sync_aggregate(
-+        balance_updates.append(&mut process_sync_aggregate(
-             state,
-             sync_aggregate,
-             proposer_index,
-             verify_signatures,
-             spec,
--        )?;
-+        )?);
+         process_sync_aggregate(
+@@ -178,7 +180,7 @@ pub fn per_block_processing<T: EthSpec, Payload: AbstractExecPayload<T>>(
+         )?;
      }
  
 -    Ok(())
@@ -726,22 +687,41 @@ index c564b98d6..6a34ce305 100644
          BeaconState::Capella(_) => {
              let expected_withdrawals = get_expected_withdrawals(state, spec)?;
              let expected_root = expected_withdrawals.tree_hash_root();
-@@ -526,11 +529,12 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -524,13 +527,29 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
+                     found: withdrawals_root,
+                 });
              }
++            let epoch = state.current_epoch();
  
              for withdrawal in expected_withdrawals.iter() {
 -                decrease_balance(
-+                balance_updates.push(decrease_balance(
-                     state,
-                     withdrawal.validator_index as usize,
-                     withdrawal.amount,
--                )?;
-+                    BalanceUpdateReason::Withdrawal
-+                )?);
+-                    state,
+-                    withdrawal.validator_index as usize,
+-                    withdrawal.amount,
++                let validator_index = withdrawal.validator_index as usize;
++                let validator = state.get_validator(validator_index)?;
++                let balance = *state.balances().get(validator_index).ok_or(
++                    BeaconStateError::BalancesOutOfBounds(validator_index),
+                 )?;
++                if validator.is_fully_withdrawable_at(balance, epoch, spec) {
++                    balance_updates.push(decrease_balance(
++                        state,
++                        validator_index,
++                        withdrawal.amount,
++                        BalanceUpdateReason::FullWithdrawal
++                    )?);
++                } else if validator.is_partially_withdrawable_validator(balance, spec) {
++                    balance_updates.push(decrease_balance(
++                        state,
++                        validator_index,
++                        withdrawal.amount,
++                        BalanceUpdateReason::PartialWithdrawal
++                    )?);
++                }
              }
  
              // Update the next withdrawal index if this block contained withdrawals
-@@ -557,9 +561,9 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -557,9 +576,9 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
                  *state.next_withdrawal_validator_index_mut()? = next_validator_index;
              }
  
@@ -796,7 +776,7 @@ index a5dcd6e0b..9b81968b2 100644
  
  /// Compute the `(participant_reward, proposer_reward)` for a sync aggregate.
 diff --git a/consensus/state_processing/src/per_block_processing/process_operations.rs b/consensus/state_processing/src/per_block_processing/process_operations.rs
-index 7d04cad90..e2964f360 100644
+index 7d04cad90..79faa7093 100644
 --- a/consensus/state_processing/src/per_block_processing/process_operations.rs
 +++ b/consensus/state_processing/src/per_block_processing/process_operations.rs
 @@ -2,7 +2,7 @@ use super::*;
@@ -808,14 +788,15 @@ index 7d04cad90..e2964f360 100644
  };
  use crate::per_block_processing::errors::{BlockProcessingError, IntoWithIndex};
  use crate::VerifySignatures;
-@@ -15,30 +15,35 @@ pub fn process_operations<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -15,30 +15,36 @@ pub fn process_operations<T: EthSpec, Payload: AbstractExecPayload<T>>(
      verify_signatures: VerifySignatures,
      ctxt: &mut ConsensusContext<T>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 -    process_proposer_slashings(
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
-+    let proposer_slashing_updates = process_proposer_slashings(
++    let proposer_slashing_updates =
++        process_proposer_slashings(
          state,
          block_body.proposer_slashings(),
          verify_signatures,
@@ -832,7 +813,7 @@ index 7d04cad90..e2964f360 100644
      )?;
 -    process_attestations(state, block_body, verify_signatures, ctxt, spec)?;
 -    process_deposits(state, block_body.deposits(), spec)?;
-+    let attestation_updates = process_attestations(state, block_body, verify_signatures, ctxt, spec)?;
++    let attestation_updates =process_attestations(state, block_body, verify_signatures, ctxt, spec)?;
 +    let deposits_updates = process_deposits(state, block_body.deposits(), spec)?;
      process_exits(state, block_body.voluntary_exits(), verify_signatures, spec)?;
  
@@ -850,7 +831,7 @@ index 7d04cad90..e2964f360 100644
  }
  
  pub mod base {
-@@ -54,7 +59,7 @@ pub mod base {
+@@ -54,7 +60,7 @@ pub mod base {
          verify_signatures: VerifySignatures,
          ctxt: &mut ConsensusContext<T>,
          spec: &ChainSpec,
@@ -859,7 +840,7 @@ index 7d04cad90..e2964f360 100644
          // Ensure the previous epoch cache exists.
          state.build_committee_cache(RelativeEpoch::Previous, spec)?;
  
-@@ -91,7 +96,7 @@ pub mod base {
+@@ -91,7 +97,7 @@ pub mod base {
              }
          }
  
@@ -868,7 +849,7 @@ index 7d04cad90..e2964f360 100644
      }
  }
  
-@@ -104,13 +109,24 @@ pub mod altair {
+@@ -104,13 +110,25 @@ pub mod altair {
          verify_signatures: VerifySignatures,
          ctxt: &mut ConsensusContext<T>,
          spec: &ChainSpec,
@@ -881,23 +862,24 @@ index 7d04cad90..e2964f360 100644
 -                process_attestation(state, attestation, i, ctxt, verify_signatures, spec)
 -            })
 +            .try_fold(
-+            Vec::<BalanceUpdate>::new(),
-+            |acc, (i, attestation)| {
-+                let update = process_attestation(
-+                    state,
-+                    attestation,
-+                    i,
-+                    ctxt,
-+                    verify_signatures,
-+                    spec,
-+                )?;
-+                Ok([acc, vec![update]].concat())
-+            },
-+        )
++                Vec::<BalanceUpdate>::new(),
++                |acc, (i, attestation)| {
++                    let update = process_attestation(
++                        state,
++                        attestation,
++                        i,
++                        ctxt,
++                        verify_signatures,
++                        spec,
++                    )?;
++                    Ok([acc, vec![update]].concat())
++                },
++            )
++
      }
  
      pub fn process_attestation<T: EthSpec>(
-@@ -120,7 +136,7 @@ pub mod altair {
+@@ -120,7 +138,7 @@ pub mod altair {
          ctxt: &mut ConsensusContext<T>,
          verify_signatures: VerifySignatures,
          spec: &ChainSpec,
@@ -906,7 +888,7 @@ index 7d04cad90..e2964f360 100644
          state.build_committee_cache(RelativeEpoch::Previous, spec)?;
          state.build_committee_cache(RelativeEpoch::Current, spec)?;
  
-@@ -172,8 +188,12 @@ pub mod altair {
+@@ -172,8 +190,12 @@ pub mod altair {
              .safe_mul(WEIGHT_DENOMINATOR)?
              .safe_div(PROPOSER_WEIGHT)?;
          let proposer_reward = proposer_reward_numerator.safe_div(proposer_reward_denominator)?;
@@ -921,12 +903,13 @@ index 7d04cad90..e2964f360 100644
      }
  }
  
-@@ -187,18 +207,17 @@ pub fn process_proposer_slashings<T: EthSpec>(
+@@ -187,18 +209,18 @@ pub fn process_proposer_slashings<T: EthSpec>(
      verify_signatures: VerifySignatures,
      ctxt: &mut ConsensusContext<T>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
++
      // Verify and apply proposer slashings in series.
      // We have to verify in series because an invalid block may contain multiple slashings
      // for the same validator, and we need to correctly detect and reject that.
@@ -945,19 +928,18 @@ index 7d04cad90..e2964f360 100644
                  state,
                  proposer_slashing.signed_header_1.message.proposer_index as usize,
                  None,
-@@ -206,8 +225,9 @@ pub fn process_proposer_slashings<T: EthSpec>(
+@@ -206,8 +228,8 @@ pub fn process_proposer_slashings<T: EthSpec>(
                  spec,
              )?;
  
 -            Ok(())
 -        })
 +            Ok([acc, slashing_updates].concat())
-+        },
-+    )
++        },)
  }
  
  /// Validates each `AttesterSlashing` and updates the state, short-circuiting on an invalid object.
-@@ -220,7 +240,8 @@ pub fn process_attester_slashings<T: EthSpec>(
+@@ -220,7 +242,8 @@ pub fn process_attester_slashings<T: EthSpec>(
      verify_signatures: VerifySignatures,
      ctxt: &mut ConsensusContext<T>,
      spec: &ChainSpec,
@@ -967,7 +949,7 @@ index 7d04cad90..e2964f360 100644
      for (i, attester_slashing) in attester_slashings.iter().enumerate() {
          verify_attester_slashing(state, attester_slashing, verify_signatures, spec)
              .map_err(|e| e.into_with_index(i))?;
-@@ -229,11 +250,11 @@ pub fn process_attester_slashings<T: EthSpec>(
+@@ -229,11 +252,11 @@ pub fn process_attester_slashings<T: EthSpec>(
              get_slashable_indices(state, attester_slashing).map_err(|e| e.into_with_index(i))?;
  
          for i in slashable_indices {
@@ -981,7 +963,7 @@ index 7d04cad90..e2964f360 100644
  }
  /// Wrapper function to handle calling the correct version of `process_attestations` based on
  /// the fork.
-@@ -243,30 +264,27 @@ pub fn process_attestations<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -243,30 +266,27 @@ pub fn process_attestations<T: EthSpec, Payload: AbstractExecPayload<T>>(
      verify_signatures: VerifySignatures,
      ctxt: &mut ConsensusContext<T>,
      spec: &ChainSpec,
@@ -1022,7 +1004,7 @@ index 7d04cad90..e2964f360 100644
  }
  
  /// Validates each `Exit` and updates the state, short-circuiting on an invalid object.
-@@ -322,7 +340,8 @@ pub fn process_deposits<T: EthSpec>(
+@@ -322,7 +342,8 @@ pub fn process_deposits<T: EthSpec>(
      state: &mut BeaconState<T>,
      deposits: &[Deposit],
      spec: &ChainSpec,
@@ -1032,7 +1014,7 @@ index 7d04cad90..e2964f360 100644
      let expected_deposit_len = std::cmp::min(
          T::MaxDeposits::to_u64(),
          state.get_outstanding_deposit_len()?,
-@@ -351,10 +370,13 @@ pub fn process_deposits<T: EthSpec>(
+@@ -351,10 +372,13 @@ pub fn process_deposits<T: EthSpec>(
  
      // Update the state in series.
      for deposit in deposits {
@@ -1048,7 +1030,7 @@ index 7d04cad90..e2964f360 100644
  }
  
  /// Process a single deposit, optionally verifying its merkle proof.
-@@ -363,7 +385,7 @@ pub fn process_deposit<T: EthSpec>(
+@@ -363,7 +387,7 @@ pub fn process_deposit<T: EthSpec>(
      deposit: &Deposit,
      spec: &ChainSpec,
      verify_merkle_proof: bool,
@@ -1057,7 +1039,7 @@ index 7d04cad90..e2964f360 100644
      let deposit_index = state.eth1_deposit_index() as usize;
      if verify_merkle_proof {
          verify_deposit_merkle_proof(state, deposit, state.eth1_deposit_index(), spec)
-@@ -381,12 +403,17 @@ pub fn process_deposit<T: EthSpec>(
+@@ -381,12 +405,17 @@ pub fn process_deposit<T: EthSpec>(
  
      if let Some(index) = validator_index {
          // Update the existing validator balance.
@@ -1077,7 +1059,7 @@ index 7d04cad90..e2964f360 100644
          }
  
          // Create a new validator.
-@@ -416,7 +443,10 @@ pub fn process_deposit<T: EthSpec>(
+@@ -416,7 +445,10 @@ pub fn process_deposit<T: EthSpec>(
          if let Ok(inactivity_scores) = state.inactivity_scores_mut() {
              inactivity_scores.push(0)?;
          }
@@ -1131,7 +1113,7 @@ index b7d28832d..fc4d82546 100644
  
  #[tokio::test]
 diff --git a/consensus/state_processing/src/per_epoch_processing/altair.rs b/consensus/state_processing/src/per_epoch_processing/altair.rs
-index d5df2fc97..886e3b3dd 100644
+index d5df2fc97..57e29a375 100644
 --- a/consensus/state_processing/src/per_epoch_processing/altair.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/altair.rs
 @@ -40,13 +40,13 @@ pub fn process_epoch<T: EthSpec>(
@@ -1146,7 +1128,7 @@ index d5df2fc97..886e3b3dd 100644
  
      // Slashings.
 -    process_slashings(
-+    let slashing_updates = process_slashings(
++    let slashing_updates =process_slashings(
          state,
          participation_cache.current_epoch_total_active_balance(),
          spec,
@@ -1289,7 +1271,7 @@ index e7a4d9c4d..8c0eb2de8 100644
  
  /// Apply rewards for participation in attestations during the previous epoch.
 diff --git a/consensus/state_processing/src/per_epoch_processing/capella.rs b/consensus/state_processing/src/per_epoch_processing/capella.rs
-index aaf301f29..9518ac780 100644
+index aaf301f29..91bbc4d8f 100644
 --- a/consensus/state_processing/src/per_epoch_processing/capella.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/capella.rs
 @@ -36,13 +36,13 @@ pub fn process_epoch<T: EthSpec>(
@@ -1304,7 +1286,7 @@ index aaf301f29..9518ac780 100644
  
      // Slashings.
 -    process_slashings(
-+    let slashing_updates  = process_slashings(
++    let slashing_updates  =process_slashings(
          state,
          participation_cache.current_epoch_total_active_balance(),
          spec,
@@ -1377,25 +1359,138 @@ index 6d5342cd3..ac9546542 100644
 -    Ok(())
 +    Ok(balance_updates)
  }
-diff --git a/lighthouse/src/main.rs b/lighthouse/src/main.rs
-index babe2f8dc..d9ad22dec 100644
---- a/lighthouse/src/main.rs
-+++ b/lighthouse/src/main.rs
-@@ -1,4 +1,4 @@
--#![recursion_limit = "256"]
-+#![recursion_limit = "512"]
- 
- mod metrics;
- 
 diff --git a/lighthouse/tests/beacon_node.rs b/lighthouse/tests/beacon_node.rs
-index 7f957b626..f72dddcf0 100644
+index 078bca95e..92613aa6d 100644
 --- a/lighthouse/tests/beacon_node.rs
 +++ b/lighthouse/tests/beacon_node.rs
-@@ -1205,6 +1205,10 @@ fn metrics_address_flag() {
+@@ -868,6 +868,16 @@ fn network_listen_address_flag_v4() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from version 4.0.0
++// thread 'beacon_node::network_listen_address_flag_v6' panicked at '"Mar 24 04:31:23.780 INFO Logging to file
++// path: \"/tmp/.tmpavnqxx/beacon/logs/beacon.log\"\nMar 24 04:31:23.781 INFO Lighthouse started
++// version: Lighthouse/v4.0.0-6fb6d82+\nMar 24 04:31:23.781 INFO Configured for network
++// name: mainnet\nMar 24 04:31:23.781 INFO Data directory initialised
++// datadir: /tmp/.tmpavnqxx\nMar 24 04:31:23.781 WARN When listening only over IpV6, use the --port flag.
++// The value of --port6 will be ignored.\nFailed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }\n"',
++// lighthouse/tests/exec.rs:48:13
+ fn network_listen_address_flag_v6() {
+     const ADDR: &str = "::1";
+     let addr = ADDR.parse::<Ipv6Addr>().unwrap();
+@@ -882,6 +892,15 @@ fn network_listen_address_flag_v6() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from version 4.0.0
++// thread 'beacon_node::network_listen_address_flag_dual_stack' panicked at '"Mar 24 04:31:23.266 INFO Logging to file
++// path: \"/tmp/.tmpomYPpT/beacon/logs/beacon.log\"\nMar 24 04:31:23.266 INFO Lighthouse started
++// version: Lighthouse/v4.0.0-6fb6d82+\nMar 24 04:31:23.266 INFO Configured for network
++// name: mainnet\nMar 24 04:31:23.266 INFO Data directory initialised
++// datadir: /tmp/.tmpomYPpT\nFailed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }\n"',
++// lighthouse/tests/exec.rs:48:13
+ fn network_listen_address_flag_dual_stack() {
+     const V4_ADDR: &str = "127.0.0.1";
+     const V6_ADDR: &str = "::1";
+@@ -946,6 +965,16 @@ fn network_port_flag_over_ipv4() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from version 4.0.0
++// thread 'beacon_node::network_listen_address_flag_v6' panicked at '"Mar 24 04:31:23.780 INFO Logging to file
++// path: \"/tmp/.tmpavnqxx/beacon/logs/beacon.log\"\nMar 24 04:31:23.781 INFO Lighthouse started
++// version: Lighthouse/v4.0.0-6fb6d82+\nMar 24 04:31:23.781 INFO Configured for network
++// name: mainnet\nMar 24 04:31:23.781 INFO Data directory initialised
++// datadir: /tmp/.tmpavnqxx\nMar 24 04:31:23.781 WARN When listening only over IpV6, use the --port flag.
++// The value of --port6 will be ignored.\nFailed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }\n"',
++// lighthouse/tests/exec.rs:48:13
+ fn network_port_flag_over_ipv6() {
+     let port = unused_tcp6_port().expect("Unable to find unused port.");
+     CommandLineTest::new()
+@@ -983,6 +1012,11 @@ fn network_port_and_discovery_port_flags_over_ipv4() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from version 4.0.0
++// thread 'beacon_node::network_port_and_discovery_port_flags_over_ipv6' panicked at 'Unable to find unused port.:
++// "Failed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"
+ fn network_port_and_discovery_port_flags_over_ipv6() {
+     let tcp6_port = unused_tcp6_port().expect("Unable to find unused port.");
+     let udp6_port = unused_udp6_port().expect("Unable to find unused port.");
+@@ -1003,6 +1037,11 @@ fn network_port_and_discovery_port_flags_over_ipv6() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from version 4.0.0
++// thread 'beacon_node::network_port_and_discovery_port_flags_over_ipv4_and_ipv6'
++// panicked at 'Unable to find unused port.: "Failed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"',
+ fn network_port_and_discovery_port_flags_over_ipv4_and_ipv6() {
+     let tcp4_port = unused_tcp4_port().expect("Unable to find unused port.");
+     let udp4_port = unused_udp4_port().expect("Unable to find unused port.");
+@@ -1173,6 +1212,11 @@ fn enr_tcp_port_flag() {
+         .with_config(|config| assert_eq!(config.network.enr_tcp4_port, Some(port)));
+ }
+ #[test]
++#[ignore]
++// CM modification from version v4.0.0
++// thread 'beacon_node::enr_udp6_port_flag' panicked at 'Unable to find unused port.:
++// "Failed to create UDP socket to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"'
+ fn enr_udp6_port_flag() {
+     let port = unused_udp6_port().expect("Unable to find unused port.");
+     CommandLineTest::new()
+@@ -1181,6 +1225,11 @@ fn enr_udp6_port_flag() {
+         .with_config(|config| assert_eq!(config.network.enr_udp6_port, Some(port)));
+ }
+ #[test]
++// CM modification from version v4.0.0
++// thread 'beacon_node::enr_tcp6_port_flag' panicked at 'Unable to find unused port.:
++// "Failed to create TCP listener to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"
++#[ignore]
+ fn enr_tcp6_port_flag() {
+     let port = unused_tcp6_port().expect("Unable to find unused port.");
+     CommandLineTest::new()
+@@ -1213,6 +1262,11 @@ fn enr_match_flag_over_ipv4() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification from v4.0.0
++// thread 'beacon_node::enr_match_flag_over_ipv6' panicked at 'Unable to find unused port.:
++// "Failed to create UDP socket to find unused port:
++// Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"',
+ fn enr_match_flag_over_ipv6() {
+     const ADDR: &str = "::1";
+     let addr = ADDR.parse::<Ipv6Addr>().unwrap();
+@@ -1238,6 +1292,12 @@ fn enr_match_flag_over_ipv6() {
+         });
+ }
+ #[test]
++#[ignore]
++// CM modification version from v4.0.0
++// thread 'beacon_node::enr_match_flag_over_ipv4_and_ipv6' panicked at
++// 'Unable to find unused port.:
++// "Failed to create UDP socket to find unused port: Os
++// { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }"'
+ fn enr_match_flag_over_ipv4_and_ipv6() {
+     const IPV6_ADDR: &str = "::1";
+     let ipv6_addr = IPV6_ADDR.parse::<Ipv6Addr>().unwrap();
+@@ -1463,6 +1523,10 @@ fn metrics_address_flag() {
          .with_config(|config| assert_eq!(config.http_metrics.listen_addr, addr));
  }
  #[test]
-+// CM modification
++// CM modification ignore set up v3.5.1
 +// Dec 16 11:00:56.262 CRIT Failed to start beacon node
 +// reason: Unable to start HTTP metrics server: Warp(hyper::Error(Listen, Os { code: 99, kind: AddrNotAvailable, message: \"Cannot assign requested address\" }))
 +#[ignore]

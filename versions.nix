@@ -3,7 +3,7 @@
   bitcoin = [ "0.21.1" ];
   bitcoin-cash = [ "24.0.0" ];
   bitcoin-gold = [ "0.17.3" ];
-  bitcoin-sv = [ "1.0.13" ];
+  bitcoin-sv = [ "1.0.13" "1.0.14" ];
   bitcoin-zmce = [ "22.0" "23.0" ];
   coregeth = [ "1.12.7" "1.12.8" "1.12.10" ];
   cosmos-rosetta = [ "1.0.0" ];

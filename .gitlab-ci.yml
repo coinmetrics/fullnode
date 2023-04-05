@@ -64,6 +64,16 @@ publish algorand:
   variables:
     FULLNODE: algorand
 
+build algorand-indexer:
+  extends: .generic-build
+  variables:
+    FULLNODE: algorand-indexer
+
+publish algorand-indexer:
+  extends: .generic-publish
+  variables:
+    FULLNODE: algorand-indexer
+
 build bitcoin:
   extends: .generic-build
   variables:

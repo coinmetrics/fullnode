@@ -1,5 +1,6 @@
 {
   algorand = [ "3.15.0" ];
+  algorand-indexer = [ "2.15.3" ];
   bitcoin = [ "0.21.1" ];
   bitcoin-cash = [ "24.0.0" ];
   bitcoin-gold = [ "0.17.3" ];

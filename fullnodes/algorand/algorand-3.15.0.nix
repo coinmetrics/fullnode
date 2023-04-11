@@ -16,7 +16,7 @@ buildGo118Module rec {
   pname = "algorand";
   version = "3.15.0";
 
-  outputs = [ "out" "config" ];
+  outputs = [ "out" "genesis" ];
 
   src = fetchFromGitHub {
     owner = "algorand";
@@ -98,18 +98,9 @@ buildGo118Module rec {
     mkdir -p $out/bin
     cp $GOPATH/bin/algod $out/bin
 
+    mkdir -p $genesis
+    cp -r installer/genesis/* $genesis
+
     runHook postInstall
-  '';
-
-  postInstall = ''
-    mkdir -p $config
-    cp -r installer/genesis $config
-    cp -r installer/config.json.example $config/config.json
-  '';
-
-  postFixup = ''
-    sed -i 's/"Archival": false,/"Archival": true,/g' $config/config.json
-    sed -i 's/"IsIndexerActive": false,/"IsIndexerActive": true,/g' $config/config.json
-    sed -i 's/"EndpointAddress": "127.0.0.1:0",/"EndpointAddress": "0.0.0.0:8080",/g' $config/config.json
   '';
 }

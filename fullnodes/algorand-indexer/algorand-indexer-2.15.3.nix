@@ -11,6 +11,8 @@ buildGo118Module rec {
   pname = "algorand-indexer";
   version = "2.15.3";
 
+  outputs = [ "out" "genesis" ];
+
   src = fetchFromGitHub {
     owner = "algorand";
     repo = "indexer";
@@ -57,5 +59,10 @@ buildGo118Module rec {
       mkdir -p vendor/github.com/algorand/go-algorand/crypto/libs/$OSARCHTYPE
       cp -r third_party/go-algorand/crypto/libs/$OSARCHTYPE/* vendor/github.com/algorand/go-algorand/crypto/libs/$OSARCHTYPE
     fi
+  '';
+
+  postInstall = ''
+    mkdir -p $genesis
+    cp -r third_party/go-algorand/installer/genesis/* $genesis
   '';
 }

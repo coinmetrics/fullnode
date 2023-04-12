@@ -12,14 +12,17 @@ rec {
       if [ -f "/etc/algorand/config.json" ]; then
         cp /etc/algorand/config.json config.json
       fi
-      if [ -f "/etc/algorand/algod.token" ]; then
-        cp /etc/algorand/algod.token algod.token
-      fi
-      if [ -f "/etc/algorand/algod.admin.token" ]; then
-        cp /etc/algorand/algod.admin.token algod.admin.token
-      fi
+
       if [ -f "/etc/algorand/logging.config" ]; then
         cp /etc/algorand/logging.config logging.config
+      fi
+
+      if [ -f "/etc/algorand-secrets/algod.token" ]; then
+        cp /etc/algorand-secrets/algod.token algod.token
+      fi
+
+      if [ -f "/etc/algorand-secrets/algod.admin.token" ]; then
+        cp /etc/algorand-secrets/algod.admin.token algod.admin.token
       fi
 
       ${package}/bin/algod -g "$ALGORAND_GENESIS/$ALGORAND_NETWORK/genesis.json" "$@"
@@ -44,6 +47,8 @@ rec {
       chown 1000:1000 ./${dataDir}
 
       mkdir -p ./etc/algorand
+      mkdir -p ./etc/algorand-secrets
+
       echo "root:x:0:0:root:/root:" > ./etc/passwd
       echo "root:x:0:" > ./etc/group
 

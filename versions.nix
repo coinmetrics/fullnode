@@ -8,6 +8,7 @@
   bitcoin-zmce = [ "22.0" "23.0" ];
   bsc = [ "1.1.22" ];
   coregeth = [ "1.12.8" "1.12.10" ];
+  cosmos-gaia = [ "9.0.2" ];
   cosmos-rosetta = [ "1.0.0" ];
   decred = [ "1.7.4" "1.7.5" ];
   digibyte = [ "7.17.3" ];

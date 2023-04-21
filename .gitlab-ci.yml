@@ -145,6 +145,16 @@ publish coregeth:
   variables:
     FULLNODE: coregeth
 
+build cosmos-gaia:
+  extends: .generic-build
+  variables:
+    FULLNODE: cosmos-gaia
+
+publish cosmos-gaia:
+  extends: .generic-publish
+  variables:
+    FULLNODE: cosmos-gaia
+
 build cosmos-rosetta:
   extends: .generic-build
   variables:

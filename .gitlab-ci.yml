@@ -195,6 +195,16 @@ publish elements:
   variables:
     FULLNODE: elements
 
+build erigon:
+  extends: .generic-build
+  variables:
+    FULLNODE: erigon
+
+publish erigon:
+  extends: .generic-publish
+  variables:
+    FULLNODE: erigon
+
 build geth:
   extends: .generic-build
   variables:

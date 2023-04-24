@@ -74,6 +74,16 @@ publish algorand-indexer:
   variables:
     FULLNODE: algorand-indexer
 
+build avalanchego:
+  extends: .generic-build
+  variables:
+    FULLNODE: avalanchego
+
+publish avalanchego:
+  extends: .generic-publish
+  variables:
+    FULLNODE: avalanchego
+
 build bitcoin:
   extends: .generic-build
   variables:

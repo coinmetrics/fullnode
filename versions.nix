@@ -4,7 +4,7 @@
   avalanchego = [ "1.10.0" "1.10.1" ];
   avalanche-rosetta = [ "0.1.30" ];
   bitcoin = [ "0.21.1" ];
-  bitcoin-cash = [ "24.0.0" ];
+  bitcoin-cash = [ "26.0.0" ];
   bitcoin-gold = [ "0.17.3" ];
   bitcoin-sv = [ "1.0.13" "1.0.14" ];
   bitcoin-zmce = [ "22.0" "23.0" ];

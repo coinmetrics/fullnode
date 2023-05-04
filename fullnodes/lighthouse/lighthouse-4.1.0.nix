@@ -135,6 +135,8 @@ rustPlatform.buildRustPackage rec {
     updateScript = nix-update-script { };
   };
 
+  enableParallelBuilding = true;
+
   meta = with lib; {
     description = "Ethereum consensus client in Rust";
     homepage = "https://lighthouse.sigmaprime.io/";

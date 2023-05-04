@@ -38,6 +38,8 @@ rustPlatform.buildRustPackage rec {
   # We can't run the test suite since we didn't compile the WASM runtimes.
   doCheck = false;
 
+  enableParallelBuilding = true;
+
   meta = with lib; {
     description = "Polkadot Node Implementation";
     homepage = "https://polkadot.network";

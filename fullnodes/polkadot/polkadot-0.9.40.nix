@@ -16,9 +16,14 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-xpor2sWdYD9WTtmPuxvC9MRRLPPMk8yHlD7RwtSijqQ=";
   };
 
-  #cargoHash = "sha256-0000000000000000000000000000000000000000000=";
-  cargoHash = "sha256-MHEtlPxcRp1ZwDW9/K0Ew37+qcFAk33vK6Lyxqs19tI=";
-
+  cargoLock = {
+    lockFile = ./Cargo-0.9.40.lock;
+    #outputHashes = lib.fakeHash;
+    outputHashes = {
+        "binary-merkle-tree-4.0.0-dev" = "sha256-YxCAFrLWTmGjTFzNkyjE+DNs2cl4IjAlB7qz0KPN1vE=";
+        "sub-tokens-0.1.0" = "sha256-GvhgZhOIX39zF+TbQWtTCgahDec4lQjH+NqamLFLUxM=";
+    };
+  };
   nativeBuildInputs = [ clang ];
 
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
@@ -32,6 +37,8 @@ rustPlatform.buildRustPackage rec {
 
   # We can't run the test suite since we didn't compile the WASM runtimes.
   doCheck = false;
+
+  enableParallelBuilding = true;
 
   meta = with lib; {
     description = "Polkadot Node Implementation";

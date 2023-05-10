@@ -1,7 +1,5 @@
 { autoreconfHook
-, bintools
 , boost
-, cargo
 , coreutils
 , curl
 , cxx-rs
@@ -12,10 +10,12 @@
 , lib
 , libevent
 , libsodium
+, llvmPackages
 , makeWrapper
+, overrideCC
+, pkg-config
 , rust
 , rustPlatform
-, pkg-config
 , Security
 , stdenv
 , testers
@@ -26,7 +26,39 @@
 , zeromq
 }:
 
-rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
+let
+  cpu = stdenv.targetPlatform.parsed.cpu.name;
+
+  clangStdenv = if stdenv.isDarwin
+    then llvmPackages.libcxxStdenv
+    else overrideCC stdenv (llvmPackages.libcxxClang.override (old: {
+      bintools = llvmPackages.bintools;
+
+      nixSupport.cc-cflags = (old.nixSupport.cc-cflags or []) ++ [
+        "-rtlib=compiler-rt"
+        "-Wno-unused-command-line-argument"
+      ];
+
+      nixSupport.cc-ldflags = (old.nixSupport.cc-ldflags or []) ++ [
+        "${llvmPackages.compiler-rt}/lib/linux/libclang_rt.builtins-${cpu}.a"
+      ];
+
+      nixSupport.libcxx-cxxflags = (old.nixSupport.libcxx-cxxflags or []) ++ [
+        "-unwindlib=libunwind"
+      ];
+
+      # https://github.com/NixOS/nixpkgs/issues/201591
+      nixSupport.libcxx-ldflags = (old.nixSupport.libcxx-ldflags or []) ++ [
+        "-L${llvmPackages.libunwind}/lib"
+        "-lunwind"
+      ];
+    }));
+
+  boostWithClang = boost.override { stdenv = clangStdenv; };
+
+  dbWithClang = db.override { stdenv = clangStdenv; };
+in
+rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
   pname = "zcash";
   version = "5.5.0";
 
@@ -37,34 +69,35 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     hash = "sha256-USot1fnE6kzyI7DG/pNeiXYAQ5WJPBD9bfv9T4pG/Fw=";
   };
 
-  prePatch = lib.optionalString stdenv.isAarch64 ''
+  cargoLock = {
+    lockFile = ./. + "/${version}-Cargo.lock";
+  };
+
+  prePatch = lib.optionalString clangStdenv.isAarch64 ''
     substituteInPlace .cargo/config.offline \
       --replace "[target.aarch64-unknown-linux-gnu]" "" \
       --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
   '';
 
-  cargoHash = "sha256-XGRBBLznlkjSIG2Lb7rIyUeHyNuMbi18sgYm6AAxHjQ=";
-
   nativeBuildInputs = [
     autoreconfHook
-    bintools
-    cargo
     cxx-rs
     git
     hexdump
     makeWrapper
     pkg-config
+    rustPlatform.rust.cargo
   ];
 
   buildInputs = [
-    boost
-    db
+    boostWithClang
+    dbWithClang
     libevent
     libsodium
     tl-expected
     utf8cpp
     zeromq
-  ] ++ lib.optionals stdenv.isDarwin [
+  ] ++ lib.optionals clangStdenv.isDarwin [
     Security
   ];
 
@@ -84,7 +117,6 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
   preConfigure = ''
     export CFLAGS="-pipe -O3"
     export CXXFLAGS="-pipe -O3 -I${lib.getDev utf8cpp}/include/utf8cpp -I${lib.getDev cxx-rs}/include"
-    export LDFLAGS="-fuse-ld=lld"
   '';
 
   NIX_HARDENING_ENABLE = "";
@@ -94,8 +126,8 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     "--disable-tests"
     "--disable-bench"
     "--disable-mining"
-    "--with-boost-libdir=${lib.getLib boost}/lib"
-    "RUST_TARGET=${rust.toRustTargetSpec stdenv.hostPlatform}"
+    "--with-boost-libdir=${lib.getLib boostWithClang}/lib"
+    "RUST_TARGET=${rust.toRustTargetSpec clangStdenv.hostPlatform}"
   ];
 
   enableParallelBuilding = true;
@@ -121,6 +153,6 @@ rustPlatform.buildRustPackage.override { inherit stdenv; } rec {
     license = licenses.mit;
 
     # https://github.com/zcash/zcash/issues/4405
-    broken = stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isDarwin;
+    broken = clangStdenv.hostPlatform.isAarch64 && clangStdenv.hostPlatform.isDarwin;
   };
 }

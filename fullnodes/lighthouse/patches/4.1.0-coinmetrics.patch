@@ -537,10 +537,10 @@ index cc7bd17c5..ff0be7ac0 100644
          }
  
 diff --git a/consensus/state_processing/src/common/mod.rs b/consensus/state_processing/src/common/mod.rs
-index 8a2e2439b..4317293a7 100644
+index 8a2e2439b..93561e5dd 100644
 --- a/consensus/state_processing/src/common/mod.rs
 +++ b/consensus/state_processing/src/common/mod.rs
-@@ -17,24 +17,60 @@ pub use slash_validator::slash_validator;
+@@ -17,24 +17,61 @@ pub use slash_validator::slash_validator;
  
  use safe_arith::SafeArith;
  use types::{BeaconState, BeaconStateError, EthSpec};
@@ -593,10 +593,10 @@ index 8a2e2439b..4317293a7 100644
 +    reason: BalanceUpdateReason,
 +) ->  Result<BalanceUpdate, BeaconStateError> {
      let balance = state.get_balance_mut(index)?;
--    *balance = balance.saturating_sub(delta);
--    Ok(())
 +    let previous_balance: u64 = *balance;
-+    let new_balance: u64 = balance.saturating_sub(delta);
+     *balance = balance.saturating_sub(delta);
+-    Ok(())
++    let new_balance: u64 = *balance;
 +    // Since it's a saturating substraction, the real delta may differ from the provided delta.
 +    // We noticed this when penalties were substracted from a withdrawn validator.
 +    let actual_delta = (new_balance as i64) - (previous_balance as i64);

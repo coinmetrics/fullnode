@@ -33,6 +33,8 @@ stdenv.mkDerivation rec {
     ++ optionals (!withWallet) [ "--disable-wallet" ]
     ++ optionals (!withZmq) [ "--disable-zmq" ];
 
+  enableParallelBuilding = true;
+
   meta = {
     description = "Wow, such coin, much shiba, very rich";
     longDescription = ''

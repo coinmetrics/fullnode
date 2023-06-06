@@ -3,7 +3,6 @@ buildGoModule rec {
   pname = "geth";
   version = "1.12.0";
 
-  #vendorHash = "sha256-0000000000000000000000000000000000000000000=";
   vendorHash = "sha256-8EnySIl6M0iHRTBv6H3a8/C088yoMJk26/fpV5p7nYw=";
 
   src = fetchFromGitHub {

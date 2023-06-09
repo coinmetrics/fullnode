@@ -296,6 +296,16 @@ publish monero:
   variables:
     FULLNODE: monero
 
+build neo:
+  extends: .generic-build
+  variables:
+    FULLNODE: neo
+
+publish neo:
+  extends: .generic-publish
+  variables:
+    FULLNODE: neo
+
 build omnicore:
   extends: .generic-build
   variables:

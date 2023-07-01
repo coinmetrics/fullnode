@@ -185,6 +185,16 @@ publish cosmos-rosetta:
   variables:
     FULLNODE: cosmos-rosetta
 
+build dash:
+  extends: .generic-build
+  variables:
+    FULLNODE: dash
+
+publish dash:
+  extends: .generic-publish
+  variables:
+    FULLNODE: dash
+
 build decred:
   extends: .generic-build
   variables:

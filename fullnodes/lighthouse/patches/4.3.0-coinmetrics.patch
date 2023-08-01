@@ -256,10 +256,10 @@ index 27bcc4d8a..e06adc13c 100644
                  .uor(get_lighthouse_merge_readiness)
 diff --git a/beacon_node/http_api/src/traces.rs b/beacon_node/http_api/src/traces.rs
 new file mode 100644
-index 000000000..4aaaf0693
+index 000000000..c369146bb
 --- /dev/null
 +++ b/beacon_node/http_api/src/traces.rs
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,137 @@
 +use beacon_chain::{BeaconChain, BeaconChainError, BeaconChainTypes, WhenSlotSkipped};
 +use eth2::lighthouse::Trace;
 +use slog::{warn, Logger};
@@ -281,14 +281,37 @@ index 000000000..4aaaf0693
 +        return Err(custom_bad_request(format!("invalid slot: {}", slot)));
 +    }
 +
-+    let end_block_root = chain
++    // We want the block root of the block at the given slot, and if this slot is missed, the root of the next block.
++    // We start with the current slot and end at the final slot.
++    // This means this call fails if the current slot is missed.
++    let last_slot: Slot = chain.slot().map_err(beacon_chain_error)?;
++
++    let next_slot_with_block_option: Option<u64> = (slot.as_u64()..last_slot.as_u64())
++        .find(|s| {
++            match chain.block_root_at_slot(Slot::new(*s), WhenSlotSkipped::None) {
++                Err(_) => false,
++                Ok(root) => root.is_some()
++            }
++        });
++
++    let next_slot_with_block = match next_slot_with_block_option {
++        // if there's no block following this slot, we return a 404
++        None => return Err(warp::reject::not_found()),
++        Some(x) => x
++    };
++
++    let block_root: Hash256 = chain.block_root_at_slot(Slot::new(next_slot_with_block), WhenSlotSkipped::None)
++        .expect(format!("Could not block root for slot {}", next_slot_with_block).as_str())
++        .expect(format!("Could not block root for slot {}", next_slot_with_block).as_str());
++
++    let replay_end_block_root = chain
 +        .block_root_at_slot(slot, WhenSlotSkipped::Prev)
 +        .map_err(beacon_chain_error)?
 +        .ok_or_else(|| custom_bad_request(format!("block at slot {} unknown", slot)))?;
 +
 +    let blocks = chain
 +        .store
-+        .load_blocks_to_replay(slot, slot, end_block_root)
++        .load_blocks_to_replay(slot, slot, replay_end_block_root)
 +        .map_err(|e| beacon_chain_error(e.into()))?;
 +
 +    let state_root = chain
@@ -368,23 +391,6 @@ index 000000000..4aaaf0693
 +    }
 +
 +    drop(block_replayer);
-+
-+    // We want the block root of the block at the given slot, and if the slot if missed the root of the next block
-+    // We start with the current slot and end at the final slot
-+    let last_slot: Slot = chain.slot().map_err(beacon_chain_error)?;
-+
-+    let next_slot_with_block: u64 = (slot.as_u64()..last_slot.as_u64())
-+        .find(|s| {
-+            match chain.block_root_at_slot(Slot::new(*s), WhenSlotSkipped::None) {
-+                Err(_) => false,
-+                Ok(root) => root.is_some()
-+            }
-+        })
-+        .expect(format!("Could not find a slot with block in slots [{}, {}]", slot, last_slot).as_str());
-+
-+    let block_root: Hash256 = chain.block_root_at_slot(Slot::new(next_slot_with_block), WhenSlotSkipped::None)
-+        .expect(format!("Could not block root for slot {}", next_slot_with_block).as_str())
-+        .expect(format!("Could not block root for slot {}", next_slot_with_block).as_str());
 +
 +    Ok(Trace {
 +        block_root: block_root,

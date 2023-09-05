@@ -2,14 +2,14 @@
 , unbound, zeromq }:
 stdenv.mkDerivation rec {
   pname = "monero";
-  version = "0.18.2.0";
+  version = "0.18.2.2";
 
   src = fetchFromGitHub {
     owner = "monero-project";
     repo = "monero";
     rev = "refs/tags/v${version}";
     fetchSubmodules = true;
-    hash = "sha256-iulksf3uZNj+5oc60KDNyPs67wgoteHfVhhdCv6sgUw=";
+    hash = "sha256-pKHey692qoHvsAcwaJqKnmcQobr6t/GAUdnaLlx+JkI=";
   };
 
   nativeBuildInputs = [ cmake ninja pkg-config ];

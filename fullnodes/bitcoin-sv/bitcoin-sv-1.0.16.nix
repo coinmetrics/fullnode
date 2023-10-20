@@ -2,18 +2,18 @@
 
 stdenv.mkDerivation rec {
   pname = "bitcoin-sv";
-  version = "1.0.13";
+  version = "1.0.16";
 
   src = fetchFromGitHub {
     owner = "bitcoin-sv";
     repo = "bitcoin-sv";
     rev = "v${version}";
-    hash = "sha256-n6qXTmsX3y23nntnRk0R/BwPQ/jerJkbFZk3ihbPpbY=";
+    hash = "sha256-tdODljQ2/LjTdq6j7n3C9kk5+JbMTFayGos9vkk5Uyc=";
   };
 
-  patches = [
-    ./patches/000-fix-missing-includes.patch
-  ];
+  # patches = [
+  #   ./patches/000-fix-missing-includes.patch
+  # ];
 
   nativeBuildInputs = [ pkg-config autoreconfHook ];
 

@@ -22,7 +22,7 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "4.3.0";
+  version = "4.5.0";
 
   # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
@@ -32,30 +32,30 @@ rustPlatform.buildRustPackage rec {
     owner = "sigp";
     repo = "lighthouse";
     rev = "v${version}";
-    hash = "sha256-KYivfUsxsCgD20s0jg6MMGl5e0eiuF7KU80BLuwdVIM=";
+    hash = "sha256-UUOvTxOQXT1zfhDYEL/J6moHAyejZn7GyGS/XBmXxRQ=";
   };
 
   patches = [
     ./patches/use-system-sqlite.patch
-    ./patches/4.3.0-coinmetrics.patch
+    ./patches/4.5.0-coinmetrics.patch
   ];
 
   postPatch = ''
-    cp ${./4.3.0-Cargo.lock} Cargo.lock
+    cp ${./4.5.0-Cargo.lock} Cargo.lock
   '';
 
   cargoLock = {
-    lockFile = ./4.3.0-Cargo.lock;
+    lockFile = ./4.5.0-Cargo.lock;
     outputHashes = {
-      "amcl-0.3.0" = "sha256-Mj4dXTlGVSleFfuTKgVDQ7S3jANMsdtVE5L90WGxA4U=";
-      "arbitrary-1.3.0" = "sha256-BMxcBfxBRf+Kb0Tz55jtFbwokSeD2GPtB+KV8Wbne0g=";
-      "beacon-api-client-0.1.0" = "sha256-fI8qST6HZrchg7yr/nVtRNrsW3f5ONSX+mGRYW+iiqA=";
-      "ethereum-consensus-0.1.1" = "sha256-aBrZ786Me0BWpnncxQc5MT3r+O0yLQhqGKFBiNTdqSA=";
+      "amcl-0.3.0" = "sha256-kc8k/ls4W0TwFBsRcyyotyz8ZBEjsZXHeJnJtsnW/LM=";
+      "anvil-rpc-0.1.0" = "sha256-L38OioxnWEn94g3GJT4j3U1cJZ8jQDHp8d1QOHaVEuU=";
+      "beacon-api-client-0.1.0" = "sha256-Z0CoPxZzl2bjb8vgmHWxq2orMawhMMs7beKGopilKjE=";
+      "ethereum-consensus-0.1.1" = "sha256-biTrw3yMJUo9+56QK5RGWXLCoPPZEWp18SCs+Y9QWg4=";
       "libmdbx-0.1.4" = "sha256-NMsR/Wl1JIj+YFPyeMMkrJFfoS07iEAKEQawO89a+/Q=";
       "lmdb-rkv-0.14.0" = "sha256-sxmguwqqcyOlfXOZogVz1OLxfJPo+Q0+UjkROkbbOCk=";
-      "mev-rs-0.2.1" = "sha256-n3ns1oynw5fKQtp/CQHER41+C1EmLCVEBqggkHc3or4=";
-      "ssz-rs-0.8.0" = "sha256-k1JLu+jZrSqUyHou76gbJeA5CDWwdL0fPkek3Vzl4Gs=";
-      "warp-0.3.2" = "sha256-m9lkEgeSs0yEc+6N6DG7IfQY/evkUMoNyst2hMUR//c=";
+      "mev-rs-0.3.0" = "sha256-LCO0GTvWTLcbPt7qaSlLwlKmAjt3CIHVYTT/JRXpMEo=";
+      "testcontainers-0.14.0" = "sha256-mSsp21G7MLEtFROWy88Et5s07PO0tjezovCGIMh+/oQ=";
+      "warp-0.3.5" = "sha256-d5e6ASdL7+Dl3KsTNOb9B5RHpStrupOKsbGWsdu9Jfk=";
     };
   };
 

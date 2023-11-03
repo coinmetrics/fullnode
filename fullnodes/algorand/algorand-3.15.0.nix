@@ -1,7 +1,7 @@
 { autoconf
 , automake
 , boost
-, buildGo118Module
+, buildGoModule
 , curl
 , expect
 , fetchFromGitHub
@@ -12,7 +12,7 @@
 , stdenv
 , which
 }:
-buildGo118Module rec {
+buildGoModule rec {
   pname = "algorand";
   version = "3.15.0";
 

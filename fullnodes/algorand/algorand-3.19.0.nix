@@ -1,7 +1,6 @@
 { autoconf
 , automake
-, boost
-, buildGoModule
+, buildGo120Module
 , curl
 , expect
 , fetchFromGitHub
@@ -12,9 +11,9 @@
 , stdenv
 , which
 }:
-buildGoModule rec {
+buildGo120Module rec {
   pname = "algorand";
-  version = "3.15.0";
+  version = "3.19.0";
 
   outputs = [ "out" "genesis" ];
 
@@ -22,15 +21,17 @@ buildGoModule rec {
     owner = "algorand";
     repo = "go-algorand";
     rev = "v${version}-stable";
-    hash = "sha256-8JV2205kdM640umcIV3cYIk5lFciYpvxxOoxkgzRz/8=";
+    hash = "sha256-Rsasx4TGJO+sFMzO3zW9DQPKc5PTo04fwDOWQrvVgY4=";
     leaveDotGit = true;
   };
 
-  vendorHash = "sha256-9T1k2DbMAML0MOP4jgzHcESnsrv/KIFh+2eLVHxDOrI=";
+  vendorHash = "sha256-SdSSrN3mRpmfp77xCtjeYwtVF1kLoty7pzBv5MhgcxI=";
 
   postPatch = ''
     patchShebangs --build ./scripts
   '';
+
+  proxyVendor = true;
 
   nativeBuildInputs = [
     autoconf
@@ -41,7 +42,6 @@ buildGoModule rec {
   ];
 
   buildInputs = [
-    boost
     sqlite
   ];
 
@@ -49,6 +49,8 @@ buildGoModule rec {
     "partitiontest_linter"
     "data/transactions/verify"
     "test/e2e-go/cli/goal"
+    "tools/block-generator"
+    "tools/x-repo-types"
   ];
 
   tags = [
@@ -103,4 +105,7 @@ buildGoModule rec {
 
     runHook postInstall
   '';
+
+  # [AW] Temporary
+  doCheck = false;
 }

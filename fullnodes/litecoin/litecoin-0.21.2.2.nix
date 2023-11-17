@@ -1,5 +1,13 @@
-{ autoreconfHook, boost17x, db48, fetchFromGitHub, fmt, libevent, openssl
-, pkg-config, stdenv, zeromq }:
+{ autoreconfHook
+, boost177
+, db48
+, fetchFromGitHub
+, fmt
+, libevent
+, openssl
+, pkg-config
+, stdenv
+, zeromq }:
 stdenv.mkDerivation rec {
   pname = "litecoin";
   version = "0.21.2.2";
@@ -13,10 +21,10 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 
-  buildInputs = [ boost17x db48 fmt libevent openssl zeromq ];
+  buildInputs = [ boost177 db48 fmt libevent openssl zeromq ];
 
   configureFlags = [
-    "--with-boost-libdir=${boost17x.out}/lib"
+    "--with-boost-libdir=${boost177.out}/lib"
     "--disable-shared"
     "--disable-wallet"
     "--disable-bench"

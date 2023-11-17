@@ -1,4 +1,10 @@
-{ autoreconfHook, boost17x, db48, fetchFromGitHub, libevent, openssl, pkg-config
+{ autoreconfHook
+, boost177
+, db48
+, fetchFromGitHub
+, libevent
+, openssl
+, pkg-config
 , stdenv }:
 stdenv.mkDerivation rec {
   pname = "omnicore";
@@ -13,10 +19,10 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 
-  buildInputs = [ boost17x db48 libevent openssl ];
+  buildInputs = [ boost177 db48 libevent openssl ];
 
   configureFlags = [
-    "--with-boost-libdir=${boost17x.out}/lib"
+    "--with-boost-libdir=${boost177.out}/lib"
     "--disable-shared"
     "--disable-bench"
     "--disable-tests"

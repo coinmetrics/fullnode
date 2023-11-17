@@ -1,7 +1,6 @@
 { pkgs, version }:
 rec {
   package = pkgs.callPackage (./. + "/dogecoin-${version}.nix") {
-    withGui = false;
     withUpnp = false;
     withUtils = false;
     withWallet = false;

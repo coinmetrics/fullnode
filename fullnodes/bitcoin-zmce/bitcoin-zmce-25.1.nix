@@ -25,11 +25,11 @@
 
 with lib;
 let
-  version = "22.0";
+  version = "25.1";
   majorVersion = versions.major version;
   desktop = fetchurl {
     url = "https://raw.githubusercontent.com/bitcoin-core/packaging/${majorVersion}.x/debian/bitcoin-qt.desktop";
-    sha256 = "0cpna0nxcd1dw3nnzli36nf9zj28d2g9jf5y0zl9j18lvanvniha";
+    sha256 = "0Cpna0nxcd1dw3nnzli36nf9zj28d2g9jf5y0zl9j18lvanvniha";
   };
 in
 stdenv.mkDerivation rec {
@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
       "https://bitcoincore.org/bin/bitcoin-core-${version}/bitcoin-${version}.tar.gz"
       "https://bitcoin.org/bin/bitcoin-core-${version}/bitcoin-${version}.tar.gz"
     ];
-    sha256 = "sha256-0OnQibVwSLFVXvp81aY6ftBCSCBF9vM0ArHfQlv5YTs=";
+    sha256 = "sha256-vsKlmNjfqMI2W3fxMBKnM+yEuMMDhjQ7esGZbpARmMk=";
   };
 
   nativeBuildInputs =
@@ -56,7 +56,7 @@ stdenv.mkDerivation rec {
     ++ optionals withGui [ qrencode qtbase qttools ];
 
   patches = [
-    ./patches/v22.0-zmce.patch
+    ./patches/v25.1-zmce.patch
   ];
 
   postInstall = optionalString withGui ''

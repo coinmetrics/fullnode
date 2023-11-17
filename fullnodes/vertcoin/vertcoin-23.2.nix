@@ -1,22 +1,28 @@
-{ autoreconfHook, boost17x, fetchFromGitHub, gmp, libevent, openssl, pkg-config
+{ autoreconfHook
+, boost177
+, fetchFromGitHub
+, gmp
+, libevent
+, openssl
+, pkg-config
 , stdenv }:
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "vertcoin";
-  version = "0.18.0";
+  version = "23.2";
 
   src = fetchFromGitHub {
     owner = "vertcoin-project";
     repo = "vertcoin-core";
-    rev = "2bd6dba7a822400581d5a6014afd671fb7e61f36";
-    sha256 = "sha256-ua9xXA+UQHGVpCZL0srX58DDUgpfNa+AAIKsxZbhvMk=";
+    rev = "v${version}";
+    hash = "sha256-IhTNVKsvTAfnB1OT68uPMnbqSrZJfHPKWg3tnFsOGfk=";
   };
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 
-  buildInputs = [ boost17x gmp libevent openssl ];
+  buildInputs = [ boost177 gmp libevent openssl ];
 
   configureFlags = [
-    "--with-boost-libdir=${boost17x.out}/lib"
+    "--with-boost-libdir=${boost177.out}/lib"
     "--disable-shared"
     "--disable-wallet"
     "--disable-bench"

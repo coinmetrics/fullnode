@@ -1,5 +1,13 @@
-{ boost17x, cmake, fetchFromGitHub, libsodium, ninja, openssl, pkg-config, stdenv
-, unbound, zeromq }:
+{ boost177
+, cmake
+, fetchFromGitHub
+, libsodium
+, ninja
+, openssl
+, pkg-config
+, stdenv
+, unbound
+, zeromq }:
 stdenv.mkDerivation rec {
   pname = "monero";
   version = "0.18.2.2";
@@ -23,9 +31,7 @@ stdenv.mkDerivation rec {
 
   configurePhase = "cmakeConfigurePhase";
 
-  buildInputs = [ boost17x libsodium openssl unbound zeromq ];
-
-  doCheck = false;
+  buildInputs = [ boost177 libsodium openssl unbound zeromq ];
 
   enableParallelBuilding = true;
 }

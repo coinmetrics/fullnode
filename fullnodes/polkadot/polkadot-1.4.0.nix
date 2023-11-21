@@ -7,27 +7,30 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "polkadot";
-  version = "0.9.42";
+  version = "1.4.0";
 
   src = fetchFromGitHub {
     owner = "paritytech";
-    repo = "polkadot";
+    repo = "polkadot-sdk";
     rev = "v${version}";
-    hash = "sha256-73YvkpYoRcM9cvEICjqddxT/gJDcEVfP7QrSSyT92JY=";
+    hash = "sha256-UwkCT+p/mof6UVfmipj/RAs0y/7TkOb5UIBGdhPrbrQ=";
   };
 
   cargoLock = {
-    lockFile = ./Cargo-0.9.42.lock;
+    lockFile = ./Cargo-1.4.0.lock;
     outputHashes = {
-      "binary-merkle-tree-4.0.0-dev" = "sha256-PEPmG+39YqPQOzT8u1SNTCrVwNWErifBCVz+l8TvdyE=";
-      "sub-tokens-0.1.0" = "sha256-GvhgZhOIX39zF+TbQWtTCgahDec4lQjH+NqamLFLUxM=";
+      "ark-secret-scalar-0.0.2" = "sha256-rnU9+rf0POv4GuxKUp9Wv4/eNXi5gfGq+XhJLxpmSzU=";
+      "common-0.1.0" = "sha256-ru++KG2ZZqa/wDGnKF/VfWnazHRSpOAD0WYb7rHlpCU=";
+      "fflonk-0.1.0" = "sha256-MNvlePHQdY8DiOq6w7Hc1pgn7G58GDTeghCKHJdUy7E=";
+      "simple-mermaid-0.1.0" = "sha256-IekTldxYq+uoXwGvbpkVTXv2xrcZ0TQfyyE2i2zH+6w=";
+      "sp-ark-bls12-381-0.4.2" = "sha256-nNr0amKhSvvI9BlsoP+8v6Xppx/s7zkf0l9Lm3DW8w8=";
+      "sp-crypto-ec-utils-0.4.1" = "sha256-cv2mr5K6mAKiACVzS7mPOIpoyt8iUfGZXsqVuiGXbL0=";
     };
   };
 
-  nativeBuildInputs = [ clang ];
+  nativeBuildInputs = [ clang protobuf ];
 
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
-  PROTOC = "${protobuf}/bin/protoc";
 
   # NOTE: We don't build the WASM runtimes since this would require a more
   # complicated rust environment setup and this is only needed for developer

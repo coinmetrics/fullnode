@@ -15,7 +15,7 @@ stdenv.mkDerivation rec {
     owner = "DigiByte-Core";
     repo = "digibyte";
     rev = "v${version}";
-    sha256 = "0hzsjf70ksbh3f9gp1fpg7b98liymiyf51n6sv0cgnwxd85jgz6c";
+    hash = "sha256-zPwnC2qd28fA1saG4nysPlKU1nnXhfuSG3DpCY6T+kM=";
   };
 
   patches = [

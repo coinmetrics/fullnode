@@ -1,10 +1,48 @@
+diff --git a/src/bench/block_assemble.cpp b/src/bench/block_assemble.cpp
+index 937fa3413..4cab0c514 100644
+--- a/src/bench/block_assemble.cpp
++++ b/src/bench/block_assemble.cpp
+@@ -19,6 +19,7 @@
+ 
+ #include <boost/thread.hpp>
+ 
++#include <array>
+ #include <list>
+ #include <vector>
+ 
+diff --git a/src/httpserver.cpp b/src/httpserver.cpp
+index bec5bcee5..6b1e62704 100644
 --- a/src/httpserver.cpp
 +++ b/src/httpserver.cpp
 @@ -15,6 +15,7 @@
  #include <ui_interface.h>
-
+ 
  #include <memory>
 +#include <deque>
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
+diff --git a/src/net_processing.cpp b/src/net_processing.cpp
+index 6165ef990..04d9c0664 100644
+--- a/src/net_processing.cpp
++++ b/src/net_processing.cpp
+@@ -30,6 +30,7 @@
+ #include <utilmoneystr.h>
+ #include <utilstrencodings.h>
+ 
++#include <array>
+ #include <memory>
+ 
+ #if defined(NDEBUG)
+diff --git a/src/test/cuckoocache_tests.cpp b/src/test/cuckoocache_tests.cpp
+index 1050ac2c1..26431881c 100644
+--- a/src/test/cuckoocache_tests.cpp
++++ b/src/test/cuckoocache_tests.cpp
+@@ -6,6 +6,7 @@
+ #include <cuckoocache.h>
+ #include <script/sigcache.h>
+ #include <test/test_digibyte.h>
++#include <deque>
+ #include <random.h>
+ #include <thread>
+ 

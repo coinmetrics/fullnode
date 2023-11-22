@@ -3,13 +3,13 @@
 
 stdenv.mkDerivation rec {
   name = "bitcoin-cash-node";
-  version = "26.0.0";
+  version = "26.1.0";
 
   src = fetchFromGitLab {
     owner = "bitcoin-cash-node";
     repo = "bitcoin-cash-node";
     rev = "v${version}";
-    sha256 = "sha256-7nITvkN6z/LVcHaFZzuyYQV3OAcemNkkqFnbQWDB+Gc=";
+    hash = "sha256-3Qqlld4c1xgoeEicRgS6uhVGGRfwlnOFmV0XKs08Y2I=";
   };
 
   nativeBuildInputs = [ cmake python3 pkg-config help2man ninja ];

@@ -1,43 +1,36 @@
---- a/src/httpserver.cpp
-+++ b/src/httpserver.cpp
-@@ -14,6 +14,7 @@
- #include <ui_interface.h>
-
- #include <memory>
-+#include <deque>
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
---- a/src/validation.cpp
-+++ b/src/validation.cpp
-@@ -15,6 +15,7 @@
- #include <consensus/tx_verify.h>
- #include <consensus/validation.h>
- #include <cuckoocache.h>
-+#include <functional>
- #include <hash.h>
- #include <index/txindex.h>
- #include <policy/fees.h>
-@@ -53,6 +54,8 @@
-
- #define MICRO 0.000001
- #define MILLI 0.001
-+
-+using namespace std::placeholders;
-
- /**
-  * Global state
---- a/src/validationinterface.cpp
-+++ b/src/validationinterface.cpp
-@@ -15,8 +15,11 @@
+diff --git a/src/bench/block_assemble.cpp b/src/bench/block_assemble.cpp
+index 78f74e1f8..f70872652 100644
+--- a/src/bench/block_assemble.cpp
++++ b/src/bench/block_assemble.cpp
+@@ -19,6 +19,7 @@
+ 
+ #include <boost/thread.hpp>
+ 
++#include <array>
  #include <list>
- #include <atomic>
- #include <future>
-+#include <functional>
-
- #include <boost/signals2/signal.hpp>
-+
-+using namespace std::placeholders;
-
- struct MainSignalsInstance {
-     boost::signals2::signal<void (const CBlockIndex *, const CBlockIndex *, bool fInitialDownload)> UpdatedBlockTip;
+ #include <vector>
+ 
+diff --git a/src/net_processing.cpp b/src/net_processing.cpp
+index 39f8a30d5..ceca45861 100644
+--- a/src/net_processing.cpp
++++ b/src/net_processing.cpp
+@@ -29,6 +29,7 @@
+ #include <utilmoneystr.h>
+ #include <utilstrencodings.h>
+ 
++#include <array>
+ #include <memory>
+ 
+ #if defined(NDEBUG)
+diff --git a/src/test/cuckoocache_tests.cpp b/src/test/cuckoocache_tests.cpp
+index ec7aba34c..3c57edbfd 100644
+--- a/src/test/cuckoocache_tests.cpp
++++ b/src/test/cuckoocache_tests.cpp
+@@ -5,6 +5,7 @@
+ #include <cuckoocache.h>
+ #include <script/sigcache.h>
+ #include <test/test_bitcoin.h>
++#include <deque>
+ #include <random.h>
+ #include <thread>
+ 

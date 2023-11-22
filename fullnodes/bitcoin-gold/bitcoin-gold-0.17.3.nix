@@ -1,5 +1,7 @@
-{ lib, stdenv
+{ lib
+, stdenv
 , fetchFromGitHub
+, fetchpatch
 , openssl
 , boost
 , libb2
@@ -57,6 +59,11 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   patches = [
+    (fetchpatch {
+      name = "fix-nix-build-errors";
+      url = "https://github.com/BTCGPU/BTCGPU/commit/462177b946dd28cb8e344095c3e328322807d42d.patch";
+      hash = "sha256-0ZyJz2yHvwibBuCK53LCqs51Jy1l2pIiAR8iJKz0zNE=";
+    })
     ./patches/build-fix.patch
   ];
 

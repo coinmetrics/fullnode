@@ -1,16 +1,18 @@
-{ buildGoModule, fetchFromGitHub }:
-buildGoModule rec {
+{ buildGo120Module
+, fetchFromGitHub
+}:
+buildGo120Module rec {
   pname = "erigon";
-  version = "2.43.0";
+  version = "2.54.0";
 
   src = fetchFromGitHub {
     owner = "ledgerwatch";
     repo = "erigon";
     rev = "refs/tags/v${version}";
-    hash = "sha256-vPGFaQ7vROuZi57GBZQH+wRE8qoIMRHfSyEGqPvf/rY=";
+    hash = "sha256-sBW+hl44fC0Kz9tjRfweLIAVa23eLy6l1n8feaybgjs=";
   };
 
-  vendorSha256 = "sha256-unGca8GefwGRTe3+/phM4ZlaL40rRp9CKFCA5jzj0Zk=";
+  vendorHash = "sha256-Ft0poTFbj5LyEaRL2Zw+Kp+lUKAxobAXt4PFWuoOAA0=";
 
   libsecp256k1-src = fetchFromGitHub {
     owner = "ledgerwatch";
@@ -22,8 +24,8 @@ buildGoModule rec {
   blst-src = fetchFromGitHub {
     owner = "supranational";
     repo = "blst";
-    rev = "refs/tags/v0.3.10";
-    hash = "sha256-xero1aTe2v4IhWIJaEDUsVDOfE77dOV5zKeHWntHogY=";
+    rev = "refs/tags/v0.3.11";
+    hash = "sha256-oqljy+ZXJAXEB/fJtmB8rlAr4UXM+Z2OkDa20gpILNA=";
   };
 
   subPackages = [

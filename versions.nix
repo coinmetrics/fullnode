@@ -6,7 +6,7 @@
   bitcoin = [ "0.21.1" ];
   bitcoin-cash = [ "26.1.0" ];
   bitcoin-gold = [ "0.17.3" ];
-  bitcoin-sv = [ "1.0.14" "1.0.16" ];
+  bitcoin-sv = [ "1.0.16" ];
   bitcoin-zmce = [ "23.0" "25.1" ];
   bsc = [ "1.2.9" "1.2.10" ];
   coregeth = [ "1.12.13" "1.12.15" ];

@@ -5,6 +5,7 @@
 , cxx-rs
 , db
 , fetchFromGitHub
+, fetchpatch
 , git
 , hexdump
 , lib
@@ -54,23 +55,33 @@ let
       ];
     }));
 
-  boostWithClang = boost.override { stdenv = clangStdenv; };
+  boost' = (boost.override {
+    stdenv = clangStdenv;
+  }).overrideAttrs (old: {
+    patches = old.patches ++ [
+      (fetchpatch {
+        url = "https://raw.githubusercontent.com/zcash/zcash/v5.7.0/depends/patches/boost/6753-signals2-function-fix.patch";
+        stripLen = 0;
+        sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
+      })
+    ];
+  });
 
-  dbWithClang = db.override { stdenv = clangStdenv; };
+  db' = db.override { stdenv = clangStdenv; };
 in
 rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
   pname = "zcash";
-  version = "5.5.0";
+  version = "5.7.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-USot1fnE6kzyI7DG/pNeiXYAQ5WJPBD9bfv9T4pG/Fw=";
+    hash = "sha256-iQH3a2D7/ut2kC2NfXRj7VG60PqQduvBOAMl+thotM8=";
   };
 
   cargoLock = {
-    lockFile = ./. + "/${version}-Cargo.lock";
+    lockFile = ./5.7.0-Cargo.lock;
   };
 
   prePatch = lib.optionalString clangStdenv.isAarch64 ''
@@ -86,12 +97,11 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     hexdump
     makeWrapper
     pkg-config
-    rustPlatform.rust.cargo
   ];
 
   buildInputs = [
-    boostWithClang
-    dbWithClang
+    boost'
+    db'
     libevent
     libsodium
     tl-expected
@@ -115,18 +125,17 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
   '';
 
   preConfigure = ''
-    export CFLAGS="-pipe -O3"
-    export CXXFLAGS="-pipe -O3 -I${lib.getDev utf8cpp}/include/utf8cpp -I${lib.getDev cxx-rs}/include"
+    export CFLAGS="-pipe -O3 -Wno-unknown-warning-option"
+    export CXXFLAGS="-pipe -O3 -Wno-unknown-warning-option -I${lib.getDev utf8cpp}/include/utf8cpp -I${lib.getDev cxx-rs}/include"
   '';
 
-  NIX_HARDENING_ENABLE = "";
+  hardeningEnable = [ ];
   dontDisableStatic = true;
 
   configureFlags = [
     "--disable-tests"
     "--disable-bench"
-    "--disable-mining"
-    "--with-boost-libdir=${lib.getLib boostWithClang}/lib"
+    "--with-boost-libdir=${lib.getLib boost'}/lib"
     "RUST_TARGET=${rust.toRustTargetSpec clangStdenv.hostPlatform}"
   ];
 
@@ -153,6 +162,6 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     license = licenses.mit;
 
     # https://github.com/zcash/zcash/issues/4405
-    broken = clangStdenv.hostPlatform.isAarch64 && clangStdenv.hostPlatform.isDarwin;
+    broken = with clangStdenv.hostPlatform; isAarch64 && isDarwin;
   };
 }

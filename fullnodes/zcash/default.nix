@@ -3,12 +3,9 @@ with pkgs; rec {
   package = callPackage (./. + "/zcash-${version}.nix") rec {
     inherit (darwin.apple_sdk.frameworks) Security;
 
-    boost = boost182;
+    boost = boost183;
     db = db62;
-
-    # Zcash calls for LLVM 15 to be used, but it is currently broken.
-    # See: https://github.com/NixOS/nixpkgs/issues/214524
-    llvmPackages = llvmPackages_14;
+    llvmPackages = llvmPackages_15;
   };
 
   imageConfig = {

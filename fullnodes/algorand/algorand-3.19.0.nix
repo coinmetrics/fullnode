@@ -21,8 +21,7 @@ buildGo120Module rec {
     owner = "algorand";
     repo = "go-algorand";
     rev = "v${version}-stable";
-    hash = "sha256-Rsasx4TGJO+sFMzO3zW9DQPKc5PTo04fwDOWQrvVgY4=";
-    leaveDotGit = true;
+    hash = "sha256-M9tUvZQzCvsN7+1WeDZHTkg0jCtVx7wkJGtU0JaPDK4=";
   };
 
   vendorHash = "sha256-SdSSrN3mRpmfp77xCtjeYwtVF1kLoty7pzBv5MhgcxI=";

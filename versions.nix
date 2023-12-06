@@ -9,7 +9,7 @@
   bitcoin-sv = [ "1.0.16" ];
   bitcoin-zmce = [ "23.0" "25.1" ];
   bsc = [ "1.2.9" "1.2.10" ];
-  coregeth = [ "1.12.13" "1.12.15" ];
+  coregeth = [ "1.12.17" ];
   cosmos-gaia = [ "9.0.2" ];
   cosmos-rosetta = [ "1.0.0" ];
   dash = [ "19.2.0" "19.3.0" ];

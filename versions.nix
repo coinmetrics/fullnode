@@ -1,5 +1,5 @@
 {
-  algorand = [ "3.19.0" ];
+  algorand = [ "3.19.0" "3.20.1" ];
   algorand-indexer = [ "2.15.4" "3.3.0" ];
   avalanchego = [ "1.10.16" ];
   avalanche-rosetta = [ "0.1.38" ];

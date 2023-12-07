@@ -1,6 +1,9 @@
 { pkgs, version }:
 rec {
-  package = pkgs.callPackage (./. + "/algorand-${version}.nix") {};
+  package = pkgs.callPackage (./. + "/algorand-${version}.nix") {
+    # "The version of quic-go you're using can't be built on Go 1.21 yet."
+    buildGoModule = pkgs.buildGo120Module;
+  };
   dataDir = "/var/lib/algorand";
 
   entrypoint = pkgs.writeShellApplication {

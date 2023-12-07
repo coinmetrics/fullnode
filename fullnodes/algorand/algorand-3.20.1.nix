@@ -13,20 +13,18 @@
 }:
 buildGoModule rec {
   pname = "algorand";
-  version = "3.19.0";
+  version = "3.20.1";
 
   outputs = [ "out" "genesis" ];
 
   src = fetchFromGitHub {
     owner = "algorand";
     repo = "go-algorand";
-    # For reasons unknown, the hash keeps changing.
-    # rev = "v${version}-stable";
-    rev = "7037cb3b4ee63d722c9d96eebcf97b9039e18e1c";
-    hash = "sha256-ahctCwvwrWeruHMmBQ0hw/a2ii9ggGyXNtTsAznGhDg=";
+    rev = "v${version}-stable";
+    hash = "sha256-ZwhnYYh4q4PU+AROhZh52qsR4NzNNW6dA3yQKAgggJw=";
   };
 
-  vendorHash = "sha256-SdSSrN3mRpmfp77xCtjeYwtVF1kLoty7pzBv5MhgcxI=";
+  vendorHash = "sha256-Ksa8nXIfFilEpDxyO6zkihzrksXG1EQprViHOi23cEI=";
 
   postPatch = ''
     patchShebangs --build ./scripts
@@ -107,6 +105,8 @@ buildGoModule rec {
     runHook postInstall
   '';
 
-  # [AW] Temporary
+  # Disabled due to many failures:
+  # level=warning msg="db.LoggedRetry: 85 retries (last err: database table is locked: acctrounds)"
+  # file=dbutil.go function=github.com/algorand/go-algorand/util/db.LoggedRetry line=171
   doCheck = false;
 }

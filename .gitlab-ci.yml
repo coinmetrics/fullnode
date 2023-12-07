@@ -104,16 +104,6 @@ publish avalanche-rosetta:
   variables:
     FULLNODE: avalanche-rosetta
 
-build bitcoin:
-  extends: .generic-build
-  variables:
-    FULLNODE: bitcoin
-
-publish bitcoin:
-  extends: .generic-publish
-  variables:
-    FULLNODE: bitcoin
-
 build bitcoin-cash:
   extends: .generic-build
   variables:

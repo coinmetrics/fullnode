@@ -356,6 +356,16 @@ publish polkadot:
   variables:
     FULLNODE: polkadot
 
+build polygon-bor:
+  extends: .generic-build
+  variables:
+    FULLNODE: polygon-bor
+
+publish polygon-bor:
+  extends: .generic-publish
+  variables:
+    FULLNODE: polygon-bor
+
 build vertcoin:
   extends: .generic-build
   variables:

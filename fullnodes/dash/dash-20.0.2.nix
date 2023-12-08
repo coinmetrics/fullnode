@@ -13,13 +13,13 @@
 
 stdenv.mkDerivation rec {
   pname = "dash";
-  version = "19.2.0";
+  version = "20.0.2";
 
   src = fetchFromGitHub {
     owner = "dashpay";
     repo = "dash";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-/uj7j7KHQg+Dyj+t+UpFp4wY3ItdI54jkWVYjZEuSUs=";
+    rev = "v${version}";
+    hash = "sha256-Its3z5UFg3LuLIcBSlQ3vuGvi0hHIlO4DsS2gz+nhBA=";
   };
 
   nativeBuildInputs = [

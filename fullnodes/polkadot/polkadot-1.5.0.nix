@@ -1,5 +1,6 @@
 { clang
 , fetchFromGitHub
+, git
 , lib
 , llvmPackages
 , protobuf
@@ -7,27 +8,42 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "polkadot";
-  version = "VERSION";
+  version = "1.5.0";
 
   src = fetchFromGitHub {
     owner = "paritytech";
-    repo = "polkadot";
-    rev = "v${version}";
-    #hash = "TODO";
+    repo = "polkadot-sdk";
+    rev = "polkadot-v${version}";
+    hash = "sha256-xyl2iVS9R1QfCiFX918MNsaXDigVOnPaieRuXZ953fo=";
   };
 
+  patches = [
+    ./patches/fix-cargo-config.patch
+  ];
+
+  postPatch = ''
+    cp ${./Cargo-1.5.0.lock} Cargo.lock
+  '';
+
   cargoLock = {
-    lockFile = ./Cargo-VERSION.lock;
+    lockFile = ./Cargo-1.5.0.lock;
     outputHashes = {
-        "binary-merkle-tree-4.0.0-dev" = lib.fakeHash;
-        "sub-tokens-0.1.0" = lib.fakeHash;
+      "ark-secret-scalar-0.0.2" = "sha256-ytwKeUkiXIcwJLo9wpWSIjL4LBZJDbeED5Yqxso9l74=";
+      "common-0.1.0" = "sha256-9vTJNKsL6gK8MM8dUKrShEvL9Ac9YQg1q8iVE9+deak=";
+      "fflonk-0.1.0" = "sha256-PC7eJEOo/RN9Gk27CcTIyGMA9XZeFAJkO2FK02JVzN0=";
+      "simple-mermaid-0.1.0" = "sha256-IekTldxYq+uoXwGvbpkVTXv2xrcZ0TQfyyE2i2zH+6w=";
+      "sp-ark-bls12-381-0.4.2" = "sha256-nNr0amKhSvvI9BlsoP+8v6Xppx/s7zkf0l9Lm3DW8w8=";
+      "sp-crypto-ec-utils-0.4.1" = "sha256-/Sw1ZM/JcJBokFE4y2mv/P43ciTL5DEm0PDG0jZvMkI=";
     };
   };
 
-  nativeBuildInputs = [ clang ];
+  nativeBuildInputs = [
+    clang
+    git
+    protobuf
+  ];
 
   LIBCLANG_PATH = "${llvmPackages.libclang.lib}/lib";
-  PROTOC = "${protobuf}/bin/protoc";
 
   # NOTE: We don't build the WASM runtimes since this would require a more
   # complicated rust environment setup and this is only needed for developer

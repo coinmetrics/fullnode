@@ -30,5 +30,5 @@
   polkadot = [ "1.5.0" ];
   polygon-bor = [ "1.2.0" ];
   vertcoin = [ "23.2" ];
-  zcash = [ "5.7.0" ];
+  zcash = [ "5.7.0" "5.8.0" ];
 }

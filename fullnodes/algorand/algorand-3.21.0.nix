@@ -21,7 +21,7 @@ buildGoModule rec {
     owner = "algorand";
     repo = "go-algorand";
     rev = "v${version}-stable";
-    hash = "sha256-ZwhnYYh4q4PU+AROhZh52qsR4NzNNW6dA3yQKAgggJw=";
+    hash = "sha256-nLbBJhSlNBhCp1lMm00Zcl6N+HZ0dNrGw6CBYHw2LT0=";
   };
 
   vendorHash = "sha256-Ksa8nXIfFilEpDxyO6zkihzrksXG1EQprViHOi23cEI=";

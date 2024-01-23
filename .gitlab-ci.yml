@@ -275,6 +275,16 @@ publish grin:
   variables:
     FULLNODE: grin
 
+build leap:
+  extends: .generic-build
+  variables:
+    FULLNODE: leap
+
+publish leap:
+  extends: .generic-publish
+  variables:
+    FULLNODE: leap
+
 build lighthouse:
   extends: .generic-build
   variables:

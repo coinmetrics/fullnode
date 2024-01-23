@@ -1,0 +1,56 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c12a7417..4ac08a8e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -56,9 +56,9 @@ option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
+ option(SILKWORM_FUZZER "Build instrumentation for fuzzers" OFF)
+ option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
+ 
+-if(NOT SILKWORM_HAS_PARENT)
+-  include(cmake/conan.cmake)
+-endif()
++#if(NOT SILKWORM_HAS_PARENT)
++#  include(cmake/conan.cmake)
++#endif()
+ 
+ set_property(
+   DIRECTORY
+diff --git a/cmd/CMakeLists.txt b/cmd/CMakeLists.txt
+index 34ceb71f..cb568689 100644
+--- a/cmd/CMakeLists.txt
++++ b/cmd/CMakeLists.txt
+@@ -67,7 +67,7 @@ if(NOT SILKWORM_CORE_ONLY)
+   set(RPCDAEMON_CMD_SRC rpcdaemon.cpp common/rpcdaemon_options.cpp common/rpcdaemon_options.hpp)
+   set(RPCDAEMON_LIBRARIES silkworm_rpcdaemon absl::flags_parse cmd_common)
+   if(SILKWORM_USE_MIMALLOC)
+-    list(APPEND RPCDAEMON_LIBRARIES mimalloc::mimalloc)
++    list(APPEND RPCDAEMON_LIBRARIES mimalloc)
+   endif()
+ 
+   add_executable(rpcdaemon "${RPCDAEMON_CMD_SRC}")
+diff --git a/silkworm/interfaces/generate_grpc.cmake b/silkworm/interfaces/generate_grpc.cmake
+index 87b656f9..a4ad6180 100644
+--- a/silkworm/interfaces/generate_grpc.cmake
++++ b/silkworm/interfaces/generate_grpc.cmake
+@@ -76,6 +76,8 @@ set(TYPES_SOURCES_SYMLINK "${OUT_PATH_SYMLINK}/types/types.pb.cc" "${OUT_PATH_SY
+ 
+ create_symlink_target(generate_types_proto_symlink "${OUT_PATH_SYMLINK}/types" "${OUT_PATH}/types")
+ 
++file(MAKE_DIRECTORY "${OUT_PATH}")
++
+ add_custom_command(
+   OUTPUT ${TYPES_SOURCES_SYMLINK}
+   COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
+diff --git a/silkworm/sentry/discovery/node_db/CMakeLists.txt b/silkworm/sentry/discovery/node_db/CMakeLists.txt
+index a214b43f..d3f13b2d 100644
+--- a/silkworm/sentry/discovery/node_db/CMakeLists.txt
++++ b/silkworm/sentry/discovery/node_db/CMakeLists.txt
+@@ -22,7 +22,7 @@ include("${SILKWORM_MAIN_DIR}/cmake/common/targets.cmake")
+ silkworm_library(
+   silkworm_sentry_node_db
+   PUBLIC silkworm_core silkworm_infra silkworm_sentry_common silkworm_sentry_discovery_common
+-  PRIVATE Boost::headers SQLiteCpp::SQLiteCpp
++  PRIVATE Boost::headers SQLiteCpp
+ )
+ 
+ target_link_libraries(silkworm_sentry_node_db_test INTERFACE silkworm_infra_test_util)

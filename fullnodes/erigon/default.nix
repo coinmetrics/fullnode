@@ -1,6 +1,9 @@
 { pkgs, version }:
 rec {
-  package = pkgs.callPackage (./. + "/erigon-${version}.nix") {};
+  package = pkgs.callPackage (./. + "/erigon-${version}.nix") {
+    boost = pkgs.boost181;
+    llvmPackages = pkgs.llvmPackages_17;
+  };
 
   imageConfig = {
     config = {

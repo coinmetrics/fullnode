@@ -1,6 +1,7 @@
 { cmake
 , curl
 , fetchFromGitHub
+, git
 , gmp
 , llvm
 , llvmPackages
@@ -17,13 +18,15 @@ llvmPackages.stdenv.mkDerivation rec {
     owner = "AntelopeIO";
     repo = "leap";
     rev = "v${version}";
-    hash = "sha256-X4x8z/xvFrL7I7LRmElYzIWL7Nq9kMkm8VfPzPhVtYk=";
     fetchSubmodules = true;
+    leaveDotGit = true;
+    hash = "sha256-mzEAkylaF0LQmjdQ93gLOmDFK4yZvzj6uvS0Le8f0G8=";
   };
 
   nativeBuildInputs = [
     cmake
     curl
+    git
     ninja
     llvm
     python3

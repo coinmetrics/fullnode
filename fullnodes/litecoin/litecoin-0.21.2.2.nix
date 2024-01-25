@@ -2,6 +2,7 @@
 , boost177
 , db48
 , fetchFromGitHub
+, fetchpatch
 , fmt
 , libevent
 , openssl
@@ -18,6 +19,13 @@ stdenv.mkDerivation rec {
     rev = "v${version}";
     hash = "sha256-TuDc47TZOEQA5Lr4DQkEhnO/Szp9h71xPjaBL3jFWuM=";
   };
+
+  patches = [
+    (fetchpatch {
+      url = "https://patch-diff.githubusercontent.com/raw/litecoin-project/litecoin/pull/929.patch";
+      hash = "sha256-1y4Iz2plMw5HMAjl9x50QQpYrYaUd2WKrrAcUnQmlBY=";
+    })
+  ];
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 

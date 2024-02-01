@@ -1,8 +1,8 @@
 { pkgs, version }:
 with pkgs; rec {
   package = callPackage (./. + "/leap-${version}.nix") {
+    gcc = gcc11;
     llvm = llvm_11;
-    llvmPackages = llvmPackages_17;
   };
 
   imageConfig = {

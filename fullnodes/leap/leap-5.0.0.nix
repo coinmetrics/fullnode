@@ -1,16 +1,17 @@
 { cmake
 , curl
 , fetchFromGitHub
+, gcc
 , git
 , gmp
 , llvm
-, llvmPackages
 , ninja
+, overrideCC
 , python3
 , stdenv
 }:
 
-llvmPackages.stdenv.mkDerivation rec {
+(overrideCC stdenv gcc).mkDerivation rec {
   pname = "leap";
   version = "5.0.0";
 
@@ -35,4 +36,7 @@ llvmPackages.stdenv.mkDerivation rec {
   buildInputs = [
     gmp
   ];
+
+  # Some individual source files require many GB of memory
+  enableParallelBuilding = false;
 }

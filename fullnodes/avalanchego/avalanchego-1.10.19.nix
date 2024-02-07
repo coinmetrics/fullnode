@@ -7,7 +7,7 @@
 
 buildGoModule rec {
   pname = "avalanchego";
-  version = "1.10.16";
+  version = "1.10.19";
 
   src = fetchFromGitHub {
     owner = "ava-labs";

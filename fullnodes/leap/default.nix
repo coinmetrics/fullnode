@@ -6,22 +6,36 @@ with pkgs; rec {
   };
 
   contents = [
-    package.debug
+    coreutils
+    findutils
+    gdb
+    gnugrep
+    procps
+    util-linux
   ];
 
   imageConfig = {
     config = {
       Entrypoint = [ "${package}/bin/nodeos" ];
       User = "1000:1000";
+      Env = [
+        "NIX_DEBUG_INFO_DIRS=${package.debug}/lib/debug"
+        "PATH=${lib.concatStringsSep ":" [
+          "${coreutils}/bin"
+          "${findutils}/bin"
+          "${gdb}/bin"
+          "${gnugrep}/bin"
+          "${package}/bin"
+          "${procps}/bin"
+          "${util-linux}/bin"
+          "/bin"
+        ]}"
+      ];
     };
 
     extraCommands = ''
       mkdir ./bin && \
-      ln -s ${package}/bin/nodeos ./bin/nodeos && \
-      ln -s ${package}/bin/leap-util ./bin/leap-util && \
-      ln -s ${bashInteractive}/bin/bash ./bin/bash && \
-      ln -s ${gdb}/bin/gdb ./bin/gdb && \
-      ln -s ${procps}/bin/ps ./bin/ps
+      ln -s ${bashInteractive}/bin/bash ./bin/bash
     '';
   };
 }

@@ -5,6 +5,10 @@ with pkgs; rec {
     llvm = llvm_11;
   };
 
+  contents = [
+    package.debug
+  ];
+
   imageConfig = {
     config = {
       Entrypoint = [ "${package}/bin/nodeos" ];
@@ -15,7 +19,9 @@ with pkgs; rec {
       mkdir ./bin && \
       ln -s ${package}/bin/nodeos ./bin/nodeos && \
       ln -s ${package}/bin/leap-util ./bin/leap-util && \
-      ln -s ${gdb}/bin/gdb ./bin/gdb
+      ln -s ${bashInteractive}/bin/bash ./bin/bash && \
+      ln -s ${gdb}/bin/gdb ./bin/gdb && \
+      ln -s ${procps}/bin/ps ./bin/ps
     '';
   };
 }

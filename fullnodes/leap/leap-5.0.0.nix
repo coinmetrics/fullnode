@@ -37,6 +37,8 @@
     gmp
   ];
 
+  separateDebugInfo = true;
+
   # Some individual source files require many GB of memory
   enableParallelBuilding = false;
 }

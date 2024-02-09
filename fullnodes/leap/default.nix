@@ -14,7 +14,8 @@ with pkgs; rec {
     extraCommands = ''
       mkdir ./bin && \
       ln -s ${package}/bin/nodeos ./bin/nodeos && \
-      ln -s ${package}/bin/leap-util ./bin/leap-util
+      ln -s ${package}/bin/leap-util ./bin/leap-util && \
+      ln -s ${gdb}/bin/gdb ./bin/gdb
     '';
   };
 }

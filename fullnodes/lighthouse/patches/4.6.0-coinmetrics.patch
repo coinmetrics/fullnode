@@ -221,7 +221,7 @@ index f99fcb55b..a41bbe25a 100644
      let env = new_env();
      let log = env.core_context().log().clone();
 diff --git a/beacon_node/http_api/src/lib.rs b/beacon_node/http_api/src/lib.rs
-index 1594668e5..3205a3cf5 100644
+index 1594668e5..55c5b9e92 100644
 --- a/beacon_node/http_api/src/lib.rs
 +++ b/beacon_node/http_api/src/lib.rs
 @@ -28,6 +28,7 @@ mod validator;
@@ -232,7 +232,23 @@ index 1594668e5..3205a3cf5 100644
  
  use crate::produce_block::{produce_blinded_block_v2, produce_block_v2, produce_block_v3};
  use beacon_chain::{
-@@ -4381,6 +4382,36 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -716,6 +717,7 @@ pub fn serve<T: BeaconChainTypes>(
+                         chain,
+                         &query.id,
+                         &query.status,
++                        query.start_index,
+                     )
+                 })
+             },
+@@ -738,6 +740,7 @@ pub fn serve<T: BeaconChainTypes>(
+                         chain,
+                         &query.ids,
+                         &query.statuses,
++                        0,
+                     )
+                 })
+             },
+@@ -4381,6 +4384,36 @@ pub fn serve<T: BeaconChainTypes>(
              },
          );
  
@@ -269,7 +285,7 @@ index 1594668e5..3205a3cf5 100644
      // GET lighthouse/analysis/attestation_performance/{index}
      let get_lighthouse_attestation_performance = warp::path("lighthouse")
          .and(warp::path("analysis"))
-@@ -4486,6 +4517,9 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -4486,6 +4519,9 @@ pub fn serve<T: BeaconChainTypes>(
                                  api_types::EventTopic::BlockReward => {
                                      event_handler.subscribe_block_reward()
                                  }
@@ -279,7 +295,7 @@ index 1594668e5..3205a3cf5 100644
                              };
  
                              receivers.push(
-@@ -4635,6 +4669,8 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -4635,6 +4671,8 @@ pub fn serve<T: BeaconChainTypes>(
                  .uor(get_lighthouse_staking)
                  .uor(get_lighthouse_database_info)
                  .uor(get_lighthouse_block_rewards)
@@ -432,6 +448,29 @@ index 000000000..c369146bb
 +    })
 +}
 \ No newline at end of file
+diff --git a/beacon_node/http_api/src/validators.rs b/beacon_node/http_api/src/validators.rs
+index 20af7a680..e23efe753 100644
+--- a/beacon_node/http_api/src/validators.rs
++++ b/beacon_node/http_api/src/validators.rs
+@@ -11,6 +11,7 @@ pub fn get_beacon_state_validators<T: BeaconChainTypes>(
+     chain: Arc<BeaconChain<T>>,
+     query_ids: &Option<Vec<ValidatorId>>,
+     query_statuses: &Option<Vec<ValidatorStatus>>,
++    query_start_index: u64
+ ) -> Result<ExecutionOptimisticFinalizedResponse<Vec<ValidatorData>>, warp::Rejection> {
+     let (data, execution_optimistic, finalized) = state_id
+         .map_state_and_execution_optimistic_and_finalized(
+@@ -25,6 +26,10 @@ pub fn get_beacon_state_validators<T: BeaconChainTypes>(
+                         .iter()
+                         .zip(state.balances().iter())
+                         .enumerate()
++                        // filter by start_index if provided
++                        .filter(|(index, (_, _))|
++                            { *index as u64 >= query_start_index }
++                        )
+                         // filter by validator id(s) if provided
+                         .filter(|(index, (validator, _))| {
+                             query_ids.as_ref().map_or(true, |ids| {
 diff --git a/beacon_node/http_api/tests/tests.rs b/beacon_node/http_api/tests/tests.rs
 index 933f98661..47d3f49c1 100644
 --- a/beacon_node/http_api/tests/tests.rs

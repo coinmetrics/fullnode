@@ -8,11 +8,11 @@ buildGoModule rec {
     repo = "go-ethereum";
     rev = "v${version}";
     # hash = "sha256-0000000000000000000000000000000000000000000=";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
   };
 
   # vendorHash = "sha256-0000000000000000000000000000000000000000000=";
-  vendorHash = "sha256-LRB1JQ0O8f9TsoCjc7keXdJj4lkGnfbf6UaLmjevpzM=";
+  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
 
   subPackages = [
     "cmd/geth"

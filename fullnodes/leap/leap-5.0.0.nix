@@ -24,6 +24,10 @@
     hash = "sha256-mzEAkylaF0LQmjdQ93gLOmDFK4yZvzj6uvS0Le8f0G8=";
   };
 
+  patches = [
+    ./patches/fix-threading-issue.patch
+  ];
+
   nativeBuildInputs = [
     cmake
     curl

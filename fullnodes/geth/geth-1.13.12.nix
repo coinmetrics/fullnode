@@ -12,7 +12,7 @@ buildGoModule rec {
   };
 
   # vendorHash = "sha256-0000000000000000000000000000000000000000000=";
-  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
+  vendorHash = "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
 
   subPackages = [
     "cmd/geth"

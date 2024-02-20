@@ -178,7 +178,7 @@ in buildGo120Module rec {
     owner = "ledgerwatch";
     repo = "erigon";
     rev = "refs/tags/v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-sLmMYgUCw43uuOEC02lZYDif6FlBstw4BqhFVX78+UE=";
   };
 
   vendorHash = "sha256-DfoXXK47BG0j1KexyCwIirTzhhS0+TYKDr8/iJ6Uj6M=";

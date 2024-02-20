@@ -194,7 +194,7 @@ in buildGo120Module rec {
     owner = "ledgerwatch";
     repo = "secp256k1";
     rev = "refs/tags/v1.0.0";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-Xp2FZSa+e246I8Pvk/ccc/j9JjgfURqa8nT7T9em7Rk=";
   };
 
   blst-src = fetchFromGitHub {

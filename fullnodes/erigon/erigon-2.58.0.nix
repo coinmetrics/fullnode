@@ -181,7 +181,7 @@ in buildGo120Module rec {
     hash = "sha256-sLmMYgUCw43uuOEC02lZYDif6FlBstw4BqhFVX78+UE=";
   };
 
-  vendorHash = "sha256-DfoXXK47BG0j1KexyCwIirTzhhS0+TYKDr8/iJ6Uj6M=";
+  vendorHash = "sha256-YQjzpju0J/9rem0MbgswvFOkOCvy//78day4PHXvM8Y=";
 
   silkworm-go-src = fetchFromGitHub {
     owner = "erigontech";

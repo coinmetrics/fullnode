@@ -178,10 +178,10 @@ in buildGo120Module rec {
     owner = "ledgerwatch";
     repo = "erigon";
     rev = "refs/tags/v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-knGRqwrNZZnqOg4C8dMj2RH7SxglTtJEahDuM+X5G+c=";
   };
 
-  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
+  vendorHash = "sha256-DfoXXK47BG0j1KexyCwIirTzhhS0+TYKDr8/iJ6Uj6M=";
 
   silkworm-go-src = fetchFromGitHub {
     owner = "erigontech";
@@ -194,7 +194,7 @@ in buildGo120Module rec {
     owner = "ledgerwatch";
     repo = "secp256k1";
     rev = "refs/tags/v1.0.0";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-Xp2FZSa+e246I8Pvk/ccc/j9JjgfURqa8nT7T9em7Rk=";
   };
 
   blst-src = fetchFromGitHub {

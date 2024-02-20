@@ -106,7 +106,7 @@ let
       rev = "ff7de5ef75a997163524538c5f074c239081c0c2";
       fetchSubmodules = true;
       leaveDotGit = true;
-      hash = "sha256-fdKGEI9hoIcK6JMB8qQioyy/PL1ztwK3divj9NroMa4=";
+      hash = "sha256-0000000000000000000000000000000000000000000=";
     };
 
     patches = [

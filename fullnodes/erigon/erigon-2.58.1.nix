@@ -11,7 +11,6 @@
 , grpc
 , gtest
 , llvmPackages
-, lmdbxx
 , magic-enum
 , microsoft-gsl
 , mimalloc
@@ -22,6 +21,7 @@
 , protobuf
 , python3
 , snappy
+, spdlog
 , sqlite
 , sqlitecpp
 , stdenv
@@ -98,15 +98,15 @@ let
 
   silkworm = stdenv.mkDerivation rec {
     pname = "silkworm";
-    version = "2024-01-22";
+    version = "capi-0.12.0";
 
     src = fetchFromGitHub {
       owner = "erigontech";
       repo = "silkworm";
-      rev = "ff7de5ef75a997163524538c5f074c239081c0c2";
+      rev = "refs/tags/${version}";
       fetchSubmodules = true;
       leaveDotGit = true;
-      hash = "sha256-fdKGEI9hoIcK6JMB8qQioyy/PL1ztwK3divj9NroMa4=";
+      hash = "sha256-LmJJRkwys4gsU5pwHJEKXG4uKZba2kXEa2VKK3zDE/g=";
     };
 
     patches = [
@@ -134,6 +134,7 @@ let
       asio-grpc
       cli11
       jwt-cpp
+      spdlog
     ] ++ [
       cmake
       git
@@ -149,7 +150,6 @@ let
       gmp
       grpc
       gtest
-      lmdbxx
       magic-enum
       microsoft-gsl
       mimalloc
@@ -172,22 +172,22 @@ let
 
 in buildGo120Module rec {
   pname = "erigon";
-  version = "2.57.0";
+  version = "2.58.1";
 
   src = fetchFromGitHub {
     owner = "ledgerwatch";
     repo = "erigon";
     rev = "refs/tags/v${version}";
-    hash = "sha256-knGRqwrNZZnqOg4C8dMj2RH7SxglTtJEahDuM+X5G+c=";
+    hash = "sha256-plQdhci+WUbA9IKjxk/wrprZzzc72w52BnU7joMtCcw=";
   };
 
-  vendorHash = "sha256-DfoXXK47BG0j1KexyCwIirTzhhS0+TYKDr8/iJ6Uj6M=";
+  vendorHash = "sha256-YGoCbenIqOm8NAxHEM/OW5hVpf6vcNPeIneM1I4J5tU=";
 
   silkworm-go-src = fetchFromGitHub {
     owner = "erigontech";
     repo = "silkworm-go";
-    rev = "refs/tags/v0.10.0";
-    hash = "sha256-cxj6IUtWSkvMjkJV9pI8TkKEtQsJhh8Ywm+hqd7ejmg=";
+    rev = "refs/tags/v0.12.0";
+    hash = "sha256-25Eokgr1RgEMUuceHu7/HQdylli34OpAG1NCG+15I4Q=";
   };
 
   libsecp256k1-src = fetchFromGitHub {

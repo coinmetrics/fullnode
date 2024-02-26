@@ -28,6 +28,31 @@ index 34ceb71f..cb568689 100644
    endif()
  
    add_executable(rpcdaemon "${RPCDAEMON_CMD_SRC}")
+diff --git a/cmd/dev/CMakeLists.txt b/cmd/dev/CMakeLists.txt
+index 0a88e90e..40eb453c 100644
+--- a/cmd/dev/CMakeLists.txt
++++ b/cmd/dev/CMakeLists.txt
+@@ -55,6 +55,7 @@ add_executable(check_tx_lookup check_tx_lookup.cpp)
+ target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
+ 
+ add_executable(embed_toml embed_toml.cpp)
++target_include_directories(embed_toml PRIVATE CLI11::CLI11 tomlplusplus::tomlplusplus)
+ target_link_libraries(embed_toml PRIVATE absl::strings CLI11::CLI11 tomlplusplus::tomlplusplus)
+ 
+ add_executable(genesistool genesistool.cpp)
+diff --git a/cmd/dev/embed_toml.cpp b/cmd/dev/embed_toml.cpp
+index 2e28593a..88e45f7f 100644
+--- a/cmd/dev/embed_toml.cpp
++++ b/cmd/dev/embed_toml.cpp
+@@ -24,7 +24,7 @@
+ 
+ #include <CLI/CLI.hpp>
+ #include <absl/strings/match.h>
+-#include <toml.hpp>
++#include <toml++/toml.hpp>
+ 
+ namespace fs = std::filesystem;
+ 
 diff --git a/silkworm/interfaces/generate_grpc.cmake b/silkworm/interfaces/generate_grpc.cmake
 index 87b656f9..a4ad6180 100644
 --- a/silkworm/interfaces/generate_grpc.cmake

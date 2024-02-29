@@ -13,10 +13,10 @@ buildGoModule rec {
     owner = "ava-labs";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-2/25vyPbokVapcs3IPR/wLw634HFYZfBcRXSIb2QgkA=";
   };
 
-  vendorHash = "sha256-WYewelAUkXLD6cwnJQ/jAYP99qq4HjEnJ4HwNUksHZU=";
+  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
   # go mod vendor has a bug, see: https://github.com/golang/go/issues/57529
   proxyVendor = true;
 

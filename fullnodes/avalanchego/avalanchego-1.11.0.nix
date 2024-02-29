@@ -16,7 +16,7 @@ buildGoModule rec {
     hash = "sha256-2/25vyPbokVapcs3IPR/wLw634HFYZfBcRXSIb2QgkA=";
   };
 
-  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
+  vendorHash = "sha256-x8AgsJuo2q5vRts4axMgL5rTJKQBfuIW341HnUhzvOI=";
   # go mod vendor has a bug, see: https://github.com/golang/go/issues/57529
   proxyVendor = true;
 

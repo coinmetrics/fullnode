@@ -17,6 +17,10 @@ stdenv.mkDerivation rec {
     hash = "sha256-bx3UK6gPd8Q0m5FB44Z3Dylw7VH1MgcON3FSILon45g=";
   };
 
+  patches = [
+    ./patches/fix-build.patch
+  ];
+
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 
   buildInputs = [ boost177 db48 libevent openssl ];

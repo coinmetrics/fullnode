@@ -25,7 +25,7 @@
   litecoin = [ "0.21.2.2" ];
   monero = [ "0.18.3.1" ];
   neo = [ "3.5.0" ];
-  omnicore = [ "0.11.0" "0.12.0.1" ];
+  omnicore = [ "0.12.0.1" ];
   openethereum = [ "3.3.5" ];
   pivx = [ "5.5.0" ];
   polkadot = [ "1.5.0" ];

@@ -1,0 +1,36 @@
+diff --git a/src/omnicore/parsing.h b/src/omnicore/parsing.h
+index 9d7a60e05..421af263f 100644
+--- a/src/omnicore/parsing.h
++++ b/src/omnicore/parsing.h
+@@ -1,6 +1,7 @@
+ #ifndef BITCOIN_OMNICORE_PARSING_H
+ #define BITCOIN_OMNICORE_PARSING_H
+ 
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 
+diff --git a/src/support/lockedpool.cpp b/src/support/lockedpool.cpp
+index f3cc12201..355587257 100644
+--- a/src/support/lockedpool.cpp
++++ b/src/support/lockedpool.cpp
+@@ -23,6 +23,7 @@
+ #endif
+ 
+ #include <algorithm>
++#include <stdexcept>
+ #ifdef ARENA_DEBUG
+ #include <iomanip>
+ #include <iostream>
+diff --git a/src/util/bip32.h b/src/util/bip32.h
+index 7e58b79f3..ea266cdc9 100644
+--- a/src/util/bip32.h
++++ b/src/util/bip32.h
+@@ -6,6 +6,7 @@
+ #define BITCOIN_UTIL_BIP32_H
+ 
+ #include <attributes.h>
++#include <cstdint>
+ #include <string>
+ #include <vector>
+ 

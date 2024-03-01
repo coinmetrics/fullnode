@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
   };
 
   patches = [
-    ./build-fix.patch
+    ./patches/build-fix.patch
   ];
 
   nativeBuildInputs = [

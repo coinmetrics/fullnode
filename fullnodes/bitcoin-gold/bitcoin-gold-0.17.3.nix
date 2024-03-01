@@ -23,15 +23,16 @@
 with lib;
 
 stdenv.mkDerivation rec {
-
   pname = "bitcoin" + toString (optional (!withGui) "d") + "-gold";
   version = "0.17.3";
 
   src = fetchFromGitHub {
     owner = "BTCGPU";
     repo = "BTCGPU";
-    rev = "v${version}";
-    sha256 = "sha256-1tFoUNsCPJkHSmNRl5gE3n2EQD6RZSry1zIM5hiTzEI=";
+    # This commit fixes build errors under Nix
+    #rev = "v${version}";
+    rev = "edbdf2b33989891cb57a04c78ea18bcb66ab60eb";
+    sha256 = "sha256-2VOf1uRRzqObW/WZ7bjDy1OeFpfSFO37EDjMmyaU2w4=";
   };
 
   nativeBuildInputs = [
@@ -59,11 +60,6 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   patches = [
-    (fetchpatch {
-      name = "fix-nix-build-errors";
-      url = "https://github.com/BTCGPU/BTCGPU/commit/462177b946dd28cb8e344095c3e328322807d42d.patch";
-      hash = "sha256-0ZyJz2yHvwibBuCK53LCqs51Jy1l2pIiAR8iJKz0zNE=";
-    })
     ./patches/build-fix.patch
   ];
 

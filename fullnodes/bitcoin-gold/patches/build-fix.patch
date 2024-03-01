@@ -34,3 +34,15 @@ index ec7aba34c..3c57edbfd 100644
  #include <random.h>
  #include <thread>
  
+diff --git a/src/support/lockedpool.cpp b/src/support/lockedpool.cpp
+index 070b3ed80..77e2310ae 100644
+--- a/src/support/lockedpool.cpp
++++ b/src/support/lockedpool.cpp
+@@ -27,6 +27,7 @@
+ #endif
+ 
+ #include <algorithm>
++#include <stdexcept>
+ 
+ LockedPoolManager* LockedPoolManager::_instance = nullptr;
+ std::once_flag LockedPoolManager::init_flag;

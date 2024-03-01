@@ -1,13 +1,20 @@
-{ autoreconfHook, boost, fetchFromGitHub, libevent, openssl, pkg-config, stdenv }:
-stdenv.mkDerivation {
+{ autoreconfHook
+, boost
+, fetchFromGitHub
+, libevent
+, openssl
+, pkg-config
+, stdenv
+}:
+stdenv.mkDerivation rec {
   pname = "elements";
-  version = "0.21.0.2";
+  version = "23.2.1";
 
   src = fetchFromGitHub {
     owner = "ElementsProject";
     repo = "elements";
-    rev = "386ed09e27fccf48c675c61c614562cf4491c6f8";
-    sha256 = "sha256-5b3wylp9Z2U0ueu2gI9jGeWiiJoddjcjQ/6zkFATyvA=";
+    rev = "elements-${version}";
+    sha256 = "sha256-qHtSgfZGZ4Beu5fsJAOZm8ejj7wfHBbOS6WAjOrCuw4=";
   };
 
   nativeBuildInputs = [ pkg-config autoreconfHook ];

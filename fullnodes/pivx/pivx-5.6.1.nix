@@ -1,20 +1,25 @@
 { autoreconfHook, boost, db48, fetchFromGitHub, gmp, libevent, libsodium
 , openssl, pkg-config, rustPlatform, stdenv }:
 let
-  version = "5.5.0";
+  version = "5.6.1";
 
   src = fetchFromGitHub {
     owner = "PIVX-Project";
     repo = "PIVX";
-    rev = "7fc4e325bd3b6d4df7f846c8a11ec8dc0f88c8be";
-    hash = "sha256-+C+k72RnWvmoRBZ7eWaBPRxVll0hkg9SvkJj9WimZT4=";
+    rev = "v${version}";
+    hash = "sha256-NYNeH77Mjh5nnkPeLw0ucnYD0Zzjd5O107gsGBjhz8U=";
   };
 
   librustzcash = rustPlatform.buildRustPackage {
     pname = "pivx-librustzcash";
     inherit version src;
 
-    cargoSha256 = "sha256-OAoqwY85+J/zpH0jJnn2qNW+zaQGp6KfWSKy/ep9L6Q=";
+    cargoLock = {
+      lockFile = ./5.6.1-Cargo.lock;
+      outputHashes = {
+         "equihash-0.2.0" = "sha256-ACPdTZAhhfs/QGhszU+PIdBQS+cImR2O82eepJFFVNM=";
+       };
+    };
 
     proxyVendor = true;
     doCheck = false;
@@ -29,11 +34,11 @@ in
     buildInputs = [ boost db48 gmp libevent librustzcash libsodium openssl ];
 
     patches = [
-      ./patches/add-missing-headers.patch
+      #./patches/add-missing-headers.patch
 
       # https://github.com/relic-toolkit/relic/issues/202
       # https://github.com/BLAKE2/BLAKE2/tree/54f4faa4c16ea34bcd59d16e8da46a64b259fc07/ref
-      ./patches/fix-blake2-alignment-error.patch
+      #./patches/fix-blake2-alignment-error.patch
     ];
 
     preAutoreconf = "sed -ie 's/: cargo-build/:/' src/Makefile.am";

@@ -21,7 +21,7 @@
   go-opera = [ "1.1.1-rc.2" ];
   grin = [ "5.2.1" ];
   leap = [ "5.0.0" ];
-  lighthouse = [ "4.6.0" ];
+  lighthouse = [ "5.0.0" ];
   litecoin = [ "0.21.2.2" ];
   monero = [ "0.18.3.1" ];
   neo = [ "3.5.0" ];

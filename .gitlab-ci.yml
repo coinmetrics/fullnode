@@ -336,15 +336,15 @@ publish omnicore:
   variables:
     FULLNODE: omnicore
 
-build openethereum:
-  extends: .generic-build
-  variables:
-    FULLNODE: openethereum
+#build openethereum:
+#  extends: .generic-build
+#  variables:
+#    FULLNODE: openethereum
 
-publish openethereum:
-  extends: .generic-publish
-  variables:
-    FULLNODE: openethereum
+#publish openethereum:
+#  extends: .generic-publish
+#  variables:
+#    FULLNODE: openethereum
 
 build pivx:
   extends: .generic-build

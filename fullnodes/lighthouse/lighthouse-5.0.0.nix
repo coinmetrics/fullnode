@@ -103,6 +103,7 @@ rustPlatform.buildRustPackage rec {
     "--exclude http_api"
     "--exclude lighthouse"
     "--exclude lighthouse_network"
+    "--exclude network"
     "--exclude slashing_protection"
     "--exclude watch"
     "--exclude web3signer_tests"

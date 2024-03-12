@@ -37,7 +37,7 @@ rustPlatform.buildRustPackage rec {
   };
 
   patches = [
-  #  ./patches/use-c-kzg-from-crates-io.patch
+    ./patches/use-c-kzg-from-crates-io.patch
     ./patches/5.0.0-coinmetrics.patch
   ];
 

@@ -13,7 +13,7 @@ buildGoModule rec {
   vendorHash = "sha256-l25PXNlzodnJU4VDyJ+elN8PokQX/o0EfQGfUEmPsQg=";
 
   subPackages = [
-    "cmd/geth"
+    "cmd/cli"
   ];
 
   proxyVendor = true;
@@ -22,6 +22,6 @@ buildGoModule rec {
   doCheck = false;
 
   postInstall = ''
-    mv $out/bin/geth $out/bin/bor
+    mv $out/bin/cli $out/bin/bor
   '';
 }

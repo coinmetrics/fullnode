@@ -7,7 +7,7 @@ buildGoModule rec {
     owner = "maticnetwork";
     repo = "bor";
     rev = "v${version}";
-    hash = "sha256-DL17AwrxiN58djmI8tqMCk6tikQ30PiemIcBMaNS5MA=";
+    hash = "sha256-HYj7COgmnyfQ1sF/fZinT3NreLLb1rAv4xmV8IbY+x0=";
   };
 
   vendorHash = "sha256-0000000000000000000000000000000000000000000=";

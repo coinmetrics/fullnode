@@ -17,7 +17,7 @@ stdenv.mkDerivation rec {
     owner = "litecoin-project";
     repo = "litecoin";
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-TuDc47TZOEQA5Lr4DQkEhnO/Szp9h71xPjaBL3jFWuM=";
   };
 
   patches = [

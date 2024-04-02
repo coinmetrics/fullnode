@@ -11,13 +11,13 @@
 , zeromq }:
 stdenv.mkDerivation rec {
   pname = "litecoin";
-  version = "0.21.2.2";
+  version = "0.21.3";
 
   src = fetchFromGitHub {
     owner = "litecoin-project";
     repo = "litecoin";
     rev = "v${version}";
-    hash = "sha256-TuDc47TZOEQA5Lr4DQkEhnO/Szp9h71xPjaBL3jFWuM=";
+    hash = "sha256-0000000000000000000000000000000000000000000=";
   };
 
   patches = [

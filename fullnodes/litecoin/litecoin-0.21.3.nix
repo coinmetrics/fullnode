@@ -17,15 +17,8 @@ stdenv.mkDerivation rec {
     owner = "litecoin-project";
     repo = "litecoin";
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-dcyf1Uejd9dSXHcRBT/8YtvgwGVMQwQMsoVSghvpWAo=";
   };
-
-  patches = [
-    (fetchpatch {
-      url = "https://patch-diff.githubusercontent.com/raw/litecoin-project/litecoin/pull/929.patch";
-      hash = "sha256-1y4Iz2plMw5HMAjl9x50QQpYrYaUd2WKrrAcUnQmlBY=";
-    })
-  ];
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 

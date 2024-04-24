@@ -62,7 +62,7 @@ let
       (fetchpatch {
         url = "https://raw.githubusercontent.com/zcash/zcash/v5.9.0/depends/patches/boost/6753-signals2-function-fix.patch";
         stripLen = 0;
-        sha256 = "sha256-0000000000000000000000000000000000000000000=";
+        sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
       })
     ];
   });

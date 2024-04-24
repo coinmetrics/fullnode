@@ -77,7 +77,7 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-lvm1sPRV2hna7mg9oCug6PgSPuuk+2m6vdMy6NCbQqQ=";
   };
 
   cargoLock = {

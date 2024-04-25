@@ -10,7 +10,8 @@ buildGoModule rec {
     hash = "sha256-woEUUC+n5YN+TFFpGWchub9AQroITQZyGUcnvHEniQo=";
   };
 
-  vendorHash = "sha256-u9m0umel7H3XXV7wwhhuxM8q3o9un5D+KTHagbcu7E0=";
+  proxyVendor = true;
+  vendorHash = "sha256-yD4Z7vbi3D3f9xGxRQjnjbTKljtjRLeIHRAdWjSub6U=";
 
   subPackages = [
     "cmd/geth"

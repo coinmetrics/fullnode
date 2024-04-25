@@ -27,6 +27,7 @@
   neo = [ "3.5.0" ];
   omnicore = [ "0.12.0.1" ];
   openethereum = [ "3.3.5" ];
+  op-geth = [ "1.101311.0" ];
   pivx = [ "5.6.1" ];
   polkadot = [ "1.5.0" ];
   polygon-bor = [ "1.2.0" "1.2.8" ];

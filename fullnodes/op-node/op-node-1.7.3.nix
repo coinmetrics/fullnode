@@ -15,4 +15,8 @@ buildGoModule rec {
   subPackages = [
     "op-node/cmd"
   ];
+
+  fixupPhase = ''
+    mv $out/bin/cmd $out/bin/op-node
+  '';
 }

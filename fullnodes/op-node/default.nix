@@ -4,7 +4,7 @@ rec {
 
   imageConfig = {
     config = {
-      Entrypoint = [ "${package}/bin/op-node" ];
+      Entrypoint = [ "${package}/bin/cmd" ];
       User = "1000:1000";
     };
   };

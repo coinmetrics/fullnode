@@ -12,7 +12,7 @@ rustPlatform.buildRustPackage rec {
     owner = "mimblewimble";
     repo = "grin";
     rev = "v${version}";
-    sha256 = "sha256-0000000000000000000000000000000000000000000=";
+    sha256 = "sha256-UFAVDYt/xqa1WTpSGdNc1hj6rIGu/Tk3lBvjI+E5MOI=";
   };
 
   cargoLock = {

@@ -19,14 +19,6 @@ rustPlatform.buildRustPackage rec {
     lockFile = ./5.3.0-Cargo.lock;
   };
 
-  patches = [
-#    (fetchpatch {
-#      name = "fix-leading-zeroes-bugs";
-#      url = "https://patch-diff.githubusercontent.com/raw/mimblewimble/grin/pull/3763.patch";
-#      hash = "sha256-xFUv0BhOSUbRZ7Q9As7aLcnOQCBiMr4HEyN//O2w9dU=";
-#    })
-  ];
-
   postPatch = ''
     cp ${./5.3.0-Cargo.lock} Cargo.lock
   '';

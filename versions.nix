@@ -12,7 +12,7 @@
   cosmos-gaia = [ "9.0.2" ];
   cosmos-rosetta = [ "1.0.0" ];
   dash = [ "19.3.0" "20.0.2" ];
-  decred = [ "1.7.5" "1.8.0" "1.8.1"];
+  decred = [ "1.8.1"];
   digibyte = [ "7.17.3" ];
   dogecoin = [ "1.14.7" ];
   elements = [ "23.2.1" ];

@@ -13,7 +13,7 @@
 }:
 buildGoModule rec {
   pname = "algorand";
-  version = "3.20.1";
+  version = "3.23.1";
 
   outputs = [ "out" "genesis" ];
 
@@ -21,10 +21,14 @@ buildGoModule rec {
     owner = "algorand";
     repo = "go-algorand";
     rev = "v${version}-stable";
-    hash = "sha256-ZwhnYYh4q4PU+AROhZh52qsR4NzNNW6dA3yQKAgggJw=";
+    hash = "sha256-p3cFq2EtTdxS+ZM9XQOny7Xm/g3TPHQTFA5dBW526nU=";
   };
 
-  vendorHash = "sha256-Ksa8nXIfFilEpDxyO6zkihzrksXG1EQprViHOi23cEI=";
+  patches = [
+    ./patches/bump-go-libp2p.patch
+  ];
+
+  vendorHash = "sha256-uM6Ph2YqR/BAbiZi+6PDSLDCQaChQSLUUZ8sKIZGFEQ=";
 
   postPatch = ''
     patchShebangs --build ./scripts

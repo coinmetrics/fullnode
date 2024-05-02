@@ -13,7 +13,7 @@ buildGoModule rec {
     owner = "ava-labs";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000=";
+    hash = "sha256-IZ4Q67b+VsmBN/NEBPDzN2PYO8cVfLpHBU0tCo+v3Xc=";
   };
 
   vendorHash = "sha256-0000000000000000000000000000000000000000000=";

@@ -1,7 +1,7 @@
 { autoconf
 , automake
 , boost
-, buildGo120Module
+, buildGo121Module
 , fetchFromGitHub
 , git
 , libtool
@@ -24,8 +24,8 @@ let
     src = fetchFromGitHub {
       owner = "algorand";
       repo = "go-algorand";
-      rev = "6f08413cf0c9c2e9b8469643dfd3ff1af9580135";
-      hash = "sha256-PInPmHPQrhAbs2Qhbl/hcFeOFmHfpsMbki6Y1O4++24=";
+      rev = "v3.23.1-stable";
+      hash = "sha256-p3cFq2EtTdxS+ZM9XQOny7Xm/g3TPHQTFA5dBW526nU=";
     };
 
     nativeBuildInputs = [
@@ -49,7 +49,7 @@ let
 		  make install
     '';
   };
-in buildGo120Module rec {
+in buildGo121Module rec {
   inherit version;
 
   pname = "algorand-indexer";

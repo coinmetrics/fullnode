@@ -1,6 +1,6 @@
 { abseil-cpp
 , boost
-, buildGo120Module
+, buildGo121Module
 , catch2
 , cli11
 , cmake
@@ -170,7 +170,7 @@ let
     ];
   };
 
-in buildGo120Module rec {
+in buildGo121Module rec {
   pname = "erigon";
   version = "2.58.1";
 

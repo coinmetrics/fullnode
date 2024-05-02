@@ -1,3 +1,53 @@
+From 5c3ad8f23047e6eeda3773ec192db3e45ac1062c Mon Sep 17 00:00:00 2001
+From: Antoine Le Calvez <antoine@coinmetrics.io>
+Date: Thu, 2 May 2024 14:22:15 +0200
+Subject: [PATCH] Apply our patch on v27.0
+
+---
+ PATCH.md                                      | 207 +++++++++++++++++
+ src/init.cpp                                  |  30 +++
+ src/interfaces/chain.h                        |   2 +
+ src/node/interfaces.cpp                       |   8 +
+ src/validation.cpp                            |   6 +
+ src/validationinterface.cpp                   |  27 +++
+ src/validationinterface.h                     |  24 +-
+ src/zmq/zmqabstractnotifier.cpp               |  35 +++
+ src/zmq/zmqabstractnotifier.h                 |  19 +-
+ src/zmq/zmqnotificationinterface.cpp          |  61 ++++-
+ src/zmq/zmqnotificationinterface.h            |   3 +
+ src/zmq/zmqpublishnotifier.cpp                | 218 ++++++++++++++++++
+ src/zmq/zmqpublishnotifier.h                  |  62 +++++
+ test/functional/interface_zmq.py              |   8 +-
+ .../interface_zmq_chainblockconnected.py      | 121 ++++++++++
+ .../interface_zmq_chainheaderadded.py         | 123 ++++++++++
+ .../interface_zmq_chaintipchanged.py          | 110 +++++++++
+ test/functional/interface_zmq_mempooladded.py |  83 +++++++
+ .../interface_zmq_mempoolconfirmed.py         |  69 ++++++
+ .../interface_zmq_mempoolremove_block.py      |  61 +++++
+ .../interface_zmq_mempoolremove_conflict.py   | 101 ++++++++
+ .../interface_zmq_mempoolremove_expiry.py     | 111 +++++++++
+ .../interface_zmq_mempoolremove_reorg.py      |  99 ++++++++
+ .../interface_zmq_mempoolremove_replaced.py   |  65 ++++++
+ .../interface_zmq_mempoolremove_sizelimit.py  |  84 +++++++
+ .../interface_zmq_mempoolreplace.py           |  79 +++++++
+ .../test_framework/util_patched_zmq.py        |  98 ++++++++
+ test/functional/test_runner.py                |  12 +
+ 28 files changed, 1917 insertions(+), 9 deletions(-)
+ create mode 100644 PATCH.md
+ create mode 100644 test/functional/interface_zmq_chainblockconnected.py
+ create mode 100644 test/functional/interface_zmq_chainheaderadded.py
+ create mode 100644 test/functional/interface_zmq_chaintipchanged.py
+ create mode 100644 test/functional/interface_zmq_mempooladded.py
+ create mode 100644 test/functional/interface_zmq_mempoolconfirmed.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_block.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_conflict.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_expiry.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_reorg.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_replaced.py
+ create mode 100644 test/functional/interface_zmq_mempoolremove_sizelimit.py
+ create mode 100644 test/functional/interface_zmq_mempoolreplace.py
+ create mode 100644 test/functional/test_framework/util_patched_zmq.py
+
 diff --git a/PATCH.md b/PATCH.md
 new file mode 100644
 index 0000000000..8cfda98465
@@ -212,10 +262,10 @@ index 0000000000..8cfda98465
 +- `sequence` is an `uint32` in Little Endian
 +
 diff --git a/src/init.cpp b/src/init.cpp
-index aa8d4b937c..71736b6421 100644
+index 988daefeec..80bbf3fb68 100644
 --- a/src/init.cpp
 +++ b/src/init.cpp
-@@ -538,6 +538,21 @@ void SetupServerArgs(ArgsManager& argsman)
+@@ -584,6 +584,21 @@ void SetupServerArgs(ArgsManager& argsman)
      argsman.AddArg("-zmqpubrawblockhwm=<n>", strprintf("Set publish raw block outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
      argsman.AddArg("-zmqpubrawtxhwm=<n>", strprintf("Set publish raw transaction outbound message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
      argsman.AddArg("-zmqpubsequencehwm=<n>", strprintf("Set publish hash sequence message high water mark (default: %d)", CZMQAbstractNotifier::DEFAULT_ZMQ_SNDHWM), ArgsManager::ALLOW_ANY, OptionsCategory::ZMQ);
@@ -237,7 +287,7 @@ index aa8d4b937c..71736b6421 100644
  #else
      hidden_args.emplace_back("-zmqpubhashblock=<address>");
      hidden_args.emplace_back("-zmqpubhashtx=<address>");
-@@ -549,6 +564,21 @@ void SetupServerArgs(ArgsManager& argsman)
+@@ -595,6 +610,21 @@ void SetupServerArgs(ArgsManager& argsman)
      hidden_args.emplace_back("-zmqpubrawblockhwm=<n>");
      hidden_args.emplace_back("-zmqpubrawtxhwm=<n>");
      hidden_args.emplace_back("-zmqpubsequencehwm=<n>");
@@ -260,25 +310,25 @@ index aa8d4b937c..71736b6421 100644
  
      argsman.AddArg("-checkblocks=<n>", strprintf("How many blocks to check at startup (default: %u, 0 = all)", DEFAULT_CHECKBLOCKS), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
 diff --git a/src/interfaces/chain.h b/src/interfaces/chain.h
-index a3fa753a98..1713913e2f 100644
+index 9da5cb9637..37927bf5ec 100644
 --- a/src/interfaces/chain.h
 +++ b/src/interfaces/chain.h
-@@ -269,6 +269,8 @@ public:
+@@ -311,6 +311,8 @@ public:
      public:
          virtual ~Notifications() {}
          virtual void transactionAddedToMempool(const CTransactionRef& tx) {}
 +        virtual void transactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) {}
 +        virtual void transactionReplacedInMempool(const CTransactionRef& tx_replaced, const CAmount fee_replaced, const CTransactionRef& tx_replacement, const CAmount fee_replacement) {}
          virtual void transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason) {}
-         virtual void blockConnected(const BlockInfo& block) {}
+         virtual void blockConnected(ChainstateRole role, const BlockInfo& block) {}
          virtual void blockDisconnected(const BlockInfo& block) {}
 diff --git a/src/node/interfaces.cpp b/src/node/interfaces.cpp
-index 50ed4c2ab8..f093c03d2b 100644
+index 5a8b7fc105..ecee5b721a 100644
 --- a/src/node/interfaces.cpp
 +++ b/src/node/interfaces.cpp
-@@ -423,10 +423,18 @@ public:
+@@ -435,10 +435,18 @@ public:
      {
-         m_notifications->transactionAddedToMempool(tx);
+         m_notifications->transactionAddedToMempool(tx.info.m_tx);
      }
 +    void TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) override
 +    {
@@ -292,14 +342,14 @@ index 50ed4c2ab8..f093c03d2b 100644
 +    {
 +        m_notifications->transactionReplacedInMempool(tx_replaced, fee_replaced, tx_replacement, fee_replacement);
 +    }
-     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
+     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
      {
-         m_notifications->blockConnected(kernel::MakeBlockInfo(index, block.get()));
+         m_notifications->blockConnected(role, kernel::MakeBlockInfo(index, block.get()));
 diff --git a/src/validation.cpp b/src/validation.cpp
-index 1fd8f0e326..acda6ca0a6 100644
+index f8e1de55e9..ef547367a9 100644
 --- a/src/validation.cpp
 +++ b/src/validation.cpp
-@@ -1084,6 +1084,7 @@ bool MemPoolAccept::Finalize(const ATMPArgs& args, Workspace& ws)
+@@ -1138,6 +1138,7 @@ bool MemPoolAccept::Finalize(const ATMPArgs& args, Workspace& ws)
                  entry->GetTxSize(),
                  entry->GetFee()
          );
@@ -307,15 +357,15 @@ index 1fd8f0e326..acda6ca0a6 100644
          ws.m_replaced_transactions.push_back(it->GetSharedTx());
      }
      m_pool.RemoveStaged(ws.m_all_conflicting, false, MemPoolRemovalReason::REPLACED);
-@@ -1225,6 +1226,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
-     if (!Finalize(args, ws)) return MempoolAcceptResult::Failure(ws.m_state);
- 
-     GetMainSignals().TransactionAddedToMempool(ptx, m_pool.GetAndIncrementSequence());
+@@ -1284,6 +1285,7 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
+                                                    IsCurrentForFeeEstimation(m_active_chainstate),
+                                                    m_pool.HasNoInputsOf(tx));
+     GetMainSignals().TransactionAddedToMempool(tx_info, m_pool.GetAndIncrementSequence());
 +    GetMainSignals().TransactionAddedToMempoolFee(ptx, ws.m_entry->GetFee());
  
      return MempoolAcceptResult::Success(std::move(ws.m_replaced_transactions), ws.m_vsize, ws.m_base_fees,
                                          effective_feerate, single_wtxid);
-@@ -3842,6 +3844,10 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
+@@ -4096,6 +4098,10 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
      }
      CBlockIndex* pindex{m_blockman.AddToBlockIndex(block, m_best_header)};
  
@@ -327,11 +377,11 @@ index 1fd8f0e326..acda6ca0a6 100644
          *ppindex = pindex;
  
 diff --git a/src/validationinterface.cpp b/src/validationinterface.cpp
-index d344c8bfbd..dbf2cd0c20 100644
+index 5e944a7c47..1641d66f55 100644
 --- a/src/validationinterface.cpp
 +++ b/src/validationinterface.cpp
-@@ -213,6 +213,15 @@ void CMainSignals::TransactionAddedToMempool(const CTransactionRef& tx, uint64_t
-                           tx->GetWitnessHash().ToString());
+@@ -216,6 +216,15 @@ void CMainSignals::TransactionAddedToMempool(const NewMempoolTransactionInfo& tx
+                           tx.info.m_tx->GetWitnessHash().ToString());
  }
  
 +void CMainSignals::TransactionAddedToMempoolFee(const CTransactionRef& tx, const CAmount fee) {
@@ -346,7 +396,7 @@ index d344c8bfbd..dbf2cd0c20 100644
  void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) {
      auto event = [tx, reason, mempool_sequence, this] {
          m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.TransactionRemovedFromMempool(tx, reason, mempool_sequence); });
-@@ -223,6 +232,24 @@ void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& tx, MemP
+@@ -226,6 +235,24 @@ void CMainSignals::TransactionRemovedFromMempool(const CTransactionRef& tx, MemP
                            RemovalReasonToString(reason));
  }
  
@@ -368,17 +418,17 @@ index d344c8bfbd..dbf2cd0c20 100644
 +                        pindexHeader->nHeight);
 +}
 +
- void CMainSignals::BlockConnected(const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex) {
-     auto event = [pblock, pindex, this] {
-         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.BlockConnected(pblock, pindex); });
+ void CMainSignals::BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex) {
+     auto event = [role, pblock, pindex, this] {
+         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.BlockConnected(role, pblock, pindex); });
 diff --git a/src/validationinterface.h b/src/validationinterface.h
-index 8c20cc8ffb..9bda188626 100644
+index d9292ae2c9..f4360571c3 100644
 --- a/src/validationinterface.h
 +++ b/src/validationinterface.h
-@@ -96,7 +96,18 @@ protected:
+@@ -99,7 +99,18 @@ protected:
       * Called on a background thread.
       */
-     virtual void TransactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) {}
+     virtual void TransactionAddedToMempool(const NewMempoolTransactionInfo& tx, uint64_t mempool_sequence) {}
 -
 +    /**
 +     * Notifies listeners of a transaction having been added to mempool. Includes the transaction fee.
@@ -395,10 +445,10 @@ index 8c20cc8ffb..9bda188626 100644
      /**
       * Notifies listeners of a transaction leaving mempool.
       *
-@@ -137,6 +148,12 @@ protected:
+@@ -148,6 +159,12 @@ protected:
       * Called on a background thread.
       */
-     virtual void BlockConnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex *pindex) {}
+     virtual void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock> &block, const CBlockIndex *pindex) {}
 +    /**
 +     * Notifies listeners when a new header is added to one of the branches of the chain.
 +     *
@@ -407,18 +457,21 @@ index 8c20cc8ffb..9bda188626 100644
 +    virtual void HeaderAddedToChain(const CBlockIndex *pindexHeader) {}
      /**
       * Notifies listeners of a block being disconnected
-      *
-@@ -198,8 +215,11 @@ public:
+      * Provides the block that was disconnected.
+@@ -211,10 +228,13 @@ public:
+ 
  
      void UpdatedBlockTip(const CBlockIndex *, const CBlockIndex *, bool fInitialDownload);
-     void TransactionAddedToMempool(const CTransactionRef&, uint64_t mempool_sequence);
++    void MempoolTransactionsRemovedForBlock(const std::vector<RemovedMempoolTransactionInfo>&, unsigned int nBlockHeight);
+     void TransactionAddedToMempool(const NewMempoolTransactionInfo&, uint64_t mempool_sequence);
 +    void TransactionAddedToMempoolFee(const CTransactionRef&, const CAmount fee);
      void TransactionRemovedFromMempool(const CTransactionRef&, MemPoolRemovalReason, uint64_t mempool_sequence);
+-    void MempoolTransactionsRemovedForBlock(const std::vector<RemovedMempoolTransactionInfo>&, unsigned int nBlockHeight);
 +    void TransactionReplacedInMempool(const CTransactionRef&, const CAmount, const CTransactionRef&, const CAmount);
-     void BlockConnected(const std::shared_ptr<const CBlock> &, const CBlockIndex *pindex);
+     void BlockConnected(ChainstateRole, const std::shared_ptr<const CBlock> &, const CBlockIndex *pindex);
 +    void HeaderAddedToChain(const CBlockIndex *);
      void BlockDisconnected(const std::shared_ptr<const CBlock> &, const CBlockIndex* pindex);
-     void ChainStateFlushed(const CBlockLocator &);
+     void ChainStateFlushed(ChainstateRole, const CBlockLocator &);
      void BlockChecked(const CBlock&, const BlockValidationState&);
 diff --git a/src/zmq/zmqabstractnotifier.cpp b/src/zmq/zmqabstractnotifier.cpp
 index 90aefb0018..fb970c9558 100644
@@ -471,17 +524,17 @@ index 90aefb0018..fb970c9558 100644
 +    return true;
 +}
 diff --git a/src/zmq/zmqabstractnotifier.h b/src/zmq/zmqabstractnotifier.h
-index cf0ee48f47..63d8badf09 100644
+index 17fa7bbaa9..e2e4312310 100644
 --- a/src/zmq/zmqabstractnotifier.h
 +++ b/src/zmq/zmqabstractnotifier.h
-@@ -12,13 +12,15 @@
+@@ -13,13 +13,15 @@
  class CBlockIndex;
  class CTransaction;
  class CZMQAbstractNotifier;
 +typedef int64_t CAmount;
 +enum class MemPoolRemovalReason;
  
- using CZMQNotifierFactory = std::unique_ptr<CZMQAbstractNotifier> (*)();
+ using CZMQNotifierFactory = std::function<std::unique_ptr<CZMQAbstractNotifier>()>;
  
  class CZMQAbstractNotifier
  {
@@ -491,7 +544,7 @@ index cf0ee48f47..63d8badf09 100644
  
      CZMQAbstractNotifier() : outbound_message_high_water_mark(DEFAULT_ZMQ_SNDHWM) {}
      virtual ~CZMQAbstractNotifier();
-@@ -53,9 +55,22 @@ public:
+@@ -54,9 +56,22 @@ public:
      virtual bool NotifyTransactionAcceptance(const CTransaction &transaction, uint64_t mempool_sequence);
      // Notifies of every mempool removal, except inclusion in blocks
      virtual bool NotifyTransactionRemoval(const CTransaction &transaction, uint64_t mempool_sequence);
@@ -516,18 +569,18 @@ index cf0ee48f47..63d8badf09 100644
      void* psocket{nullptr};
      std::string type;
 diff --git a/src/zmq/zmqnotificationinterface.cpp b/src/zmq/zmqnotificationinterface.cpp
-index df129c0830..2e2673e9b5 100644
+index 63c2737706..3b13174363 100644
 --- a/src/zmq/zmqnotificationinterface.cpp
 +++ b/src/zmq/zmqnotificationinterface.cpp
-@@ -7,6 +7,7 @@
+@@ -10,6 +10,7 @@
  #include <logging.h>
  #include <primitives/block.h>
  #include <primitives/transaction.h>
 +#include <txmempool.h>
- #include <util/system.h>
  #include <validationinterface.h>
  #include <zmq/zmqabstractnotifier.h>
-@@ -48,6 +49,14 @@ CZMQNotificationInterface* CZMQNotificationInterface::Create()
+ #include <zmq/zmqpublishnotifier.h>
+@@ -52,6 +53,16 @@ std::unique_ptr<CZMQNotificationInterface> CZMQNotificationInterface::Create(std
      factories["pubrawtx"] = CZMQAbstractNotifier::Create<CZMQPublishRawTransactionNotifier>;
      factories["pubsequence"] = CZMQAbstractNotifier::Create<CZMQPublishSequenceNotifier>;
  
@@ -536,13 +589,15 @@ index df129c0830..2e2673e9b5 100644
 +    factories["pubmempoolreplaced"] = CZMQAbstractNotifier::Create<CZMQPublishMempoolReplacedNotifier>;
 +    factories["pubmempoolconfirmed"] = CZMQAbstractNotifier::Create<CZMQPublishMempoolConfirmedNotifier>;
 +    factories["pubchaintipchanged"] = CZMQAbstractNotifier::Create<CZMQPublishChainTipChangedNotifier>;
-+    factories["pubchainconnected"] = CZMQAbstractNotifier::Create<CZMQPublishChainConnectedNotifier>;
++    factories["pubchainconnected"] = [&get_block_by_index]() -> std::unique_ptr<CZMQAbstractNotifier> {
++        return std::make_unique<CZMQPublishChainConnectedNotifier>(get_block_by_index);
++    };
 +    factories["pubchainheaderadded"] = CZMQAbstractNotifier::Create<CZMQPublishChainHeaderAddedNotifier>;
 +
      std::list<std::unique_ptr<CZMQAbstractNotifier>> notifiers;
      for (const auto& entry : factories)
      {
-@@ -147,6 +156,10 @@ void CZMQNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, co
+@@ -151,6 +162,10 @@ void CZMQNotificationInterface::UpdatedBlockTip(const CBlockIndex *pindexNew, co
      TryForEachAndRemoveFailed(notifiers, [pindexNew](CZMQAbstractNotifier* notifier) {
          return notifier->NotifyBlock(pindexNew);
      });
@@ -552,8 +607,8 @@ index df129c0830..2e2673e9b5 100644
 +    });
  }
  
- void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef& ptx, uint64_t mempool_sequence)
-@@ -158,6 +171,15 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const CTransactionRef&
+ void CZMQNotificationInterface::TransactionAddedToMempool(const NewMempoolTransactionInfo& ptx, uint64_t mempool_sequence)
+@@ -162,6 +177,15 @@ void CZMQNotificationInterface::TransactionAddedToMempool(const NewMempoolTransa
      });
  }
  
@@ -569,7 +624,7 @@ index df129c0830..2e2673e9b5 100644
  void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransactionRef& ptx, MemPoolRemovalReason reason, uint64_t mempool_sequence)
  {
      // Called for all non-block inclusion reasons
-@@ -166,6 +188,20 @@ void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransaction
+@@ -170,6 +194,20 @@ void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransaction
      TryForEachAndRemoveFailed(notifiers, [&tx, mempool_sequence](CZMQAbstractNotifier* notifier) {
          return notifier->NotifyTransactionRemoval(tx, mempool_sequence);
      });
@@ -589,8 +644,8 @@ index df129c0830..2e2673e9b5 100644
 +    });
  }
  
- void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected)
-@@ -175,12 +211,26 @@ void CZMQNotificationInterface::BlockConnected(const std::shared_ptr<const CBloc
+ void CZMQNotificationInterface::BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected)
+@@ -182,12 +220,26 @@ void CZMQNotificationInterface::BlockConnected(ChainstateRole role, const std::s
          TryForEachAndRemoveFailed(notifiers, [&tx](CZMQAbstractNotifier* notifier) {
              return notifier->NotifyTransaction(tx);
          });
@@ -617,10 +672,11 @@ index df129c0830..2e2673e9b5 100644
  }
  
  void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected)
-@@ -198,4 +248,11 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
+@@ -205,4 +257,11 @@ void CZMQNotificationInterface::BlockDisconnected(const std::shared_ptr<const CB
      });
  }
  
+-std::unique_ptr<CZMQNotificationInterface> g_zmq_notification_interface;
 +void CZMQNotificationInterface::HeaderAddedToChain(const CBlockIndex *pindexHeader)
 +{
 +    TryForEachAndRemoveFailed(notifiers, [pindexHeader](CZMQAbstractNotifier* notifier) {
@@ -628,12 +684,13 @@ index df129c0830..2e2673e9b5 100644
 +    });
 +}
 +
- CZMQNotificationInterface* g_zmq_notification_interface = nullptr;
++std::unique_ptr<CZMQNotificationInterface> g_zmq_notification_interface;
+\ No newline at end of file
 diff --git a/src/zmq/zmqnotificationinterface.h b/src/zmq/zmqnotificationinterface.h
-index a43f9bfef3..0ae63326df 100644
+index 45d0982bd3..ba1118b822 100644
 --- a/src/zmq/zmqnotificationinterface.h
 +++ b/src/zmq/zmqnotificationinterface.h
-@@ -36,6 +36,9 @@ protected:
+@@ -38,6 +38,9 @@ protected:
      void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected) override;
      void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;
  
@@ -644,10 +701,10 @@ index a43f9bfef3..0ae63326df 100644
      CZMQNotificationInterface();
  
 diff --git a/src/zmq/zmqpublishnotifier.cpp b/src/zmq/zmqpublishnotifier.cpp
-index 55f3d4e934..b05609548e 100644
+index 0f20706364..123aa3e10b 100644
 --- a/src/zmq/zmqpublishnotifier.cpp
 +++ b/src/zmq/zmqpublishnotifier.cpp
-@@ -49,6 +49,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
+@@ -46,6 +46,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
  static const char *MSG_RAWTX     = "rawtx";
  static const char *MSG_SEQUENCE  = "sequence";
  
@@ -662,7 +719,7 @@ index 55f3d4e934..b05609548e 100644
  // Internal function to send multipart message
  static int zmq_send_multipart(void *sock, const void* data, size_t size, ...)
  {
-@@ -106,6 +114,82 @@ static bool IsZMQAddressIPV6(const std::string &zmq_address)
+@@ -102,6 +110,82 @@ static bool IsZMQAddressIPV6(const std::string &zmq_address)
      return false;
  }
  
@@ -706,8 +763,8 @@ index 55f3d4e934..b05609548e 100644
 +// converts a CTransaction into a zmq_message_part (by serializing it)
 +static zmq_message_part transactionToZMQMessagePart(const CTransaction& transaction) {
 +    zmq_message_part part_transaction;
-+    CDataStream ss_transaction(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-+    ss_transaction << transaction;
++    DataStream ss_transaction{};
++    ss_transaction << TX_WITH_WITNESS(transaction);
 +    part_transaction.assign(ss_transaction.begin(), ss_transaction.end());
 +    return part_transaction;
 +}
@@ -723,12 +780,12 @@ index 55f3d4e934..b05609548e 100644
 +
 +// returns the current time in milliseconds as zmq_message_part
 +static zmq_message_part getCurrentTimeMillis() {
-+    return zmq_message_part(int64ToZMQMessagePart(GetTimeMillis()));
++    return zmq_message_part(int64ToZMQMessagePart(TicksSinceEpoch<std::chrono::milliseconds>(SystemClock::now())));
 +}
 +
 +// converts a header into a zmq_message_part
 +static zmq_message_part headerToZMQMessagePart(const CBlockHeader& header) {
-+    CDataStream ss_header(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
++    DataStream ss_header{};
 +    ss_header << header;
 +    return zmq_message_part(ss_header.begin() , ss_header.end());
 +}
@@ -745,7 +802,7 @@ index 55f3d4e934..b05609548e 100644
  bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
  {
      assert(!psocket);
-@@ -221,6 +305,33 @@ bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const void
+@@ -217,6 +301,33 @@ bool CZMQAbstractPublishNotifier::SendZmqMessage(const char *command, const void
      return true;
  }
  
@@ -779,7 +836,7 @@ index 55f3d4e934..b05609548e 100644
  bool CZMQPublishHashBlockNotifier::NotifyBlock(const CBlockIndex *pindex)
  {
      uint256 hash = pindex->GetBlockHash();
-@@ -309,3 +420,114 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
+@@ -304,3 +415,110 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
      LogPrint(BCLog::ZMQ, "Publish hashtx mempool removal %s to %s\n", hash.GetHex(), this->address);
      return SendSequenceMsg(*this, hash, /* Mempool (R)emoval */ 'R', mempool_sequence);
  }
@@ -860,18 +917,14 @@ index 55f3d4e934..b05609548e 100644
 +    uint256 hash = pindex->GetBlockHash();
 +    LogPrint(BCLog::ZMQ, "zmq: Publish chainconnected %s\n", hash.GetHex());
 +
-+    const Consensus::Params& consensusParams = Params().GetConsensus();
-+    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
-+    {
-+        LOCK(cs_main);
-+        CBlock block;
-+        if(!ReadBlockFromDisk(block, pindex, consensusParams))
-+        {
-+            zmqError("Can't read block from disk");
-+            return false;
-+        }
-+        ss << block;
++    DataStream ss;
++    CBlock block;
++    if (!m_get_block_by_index(block, *pindex)) {
++        zmqError("Can't read block from disk");
++        return false;
 +    }
++
++    ss << TX_WITH_WITNESS(block);
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(hash));
@@ -895,15 +948,22 @@ index 55f3d4e934..b05609548e 100644
 +    return SendZmqMessage(MSG_CHAINHEADERADDED, payload);
 +}
 diff --git a/src/zmq/zmqpublishnotifier.h b/src/zmq/zmqpublishnotifier.h
-index 18336a5eb0..57284d05ce 100644
+index a5cd433761..9457edc354 100644
 --- a/src/zmq/zmqpublishnotifier.h
 +++ b/src/zmq/zmqpublishnotifier.h
-@@ -10,9 +10,14 @@
+@@ -5,16 +5,21 @@
+ #ifndef BITCOIN_ZMQ_ZMQPUBLISHNOTIFIER_H
+ #define BITCOIN_ZMQ_ZMQPUBLISHNOTIFIER_H
+ 
++#include <node/blockstorage.h>
+ #include <zmq/zmqabstractnotifier.h>
+ 
  #include <cstddef>
  #include <cstdint>
- 
+ #include <functional>
 +#include <vector>
-+
+ 
+ class CBlock;
  class CBlockIndex;
  class CTransaction;
  
@@ -913,7 +973,7 @@ index 18336a5eb0..57284d05ce 100644
  class CZMQAbstractPublishNotifier : public CZMQAbstractNotifier
  {
  private:
-@@ -28,6 +33,14 @@ public:
+@@ -30,6 +35,14 @@ public:
      */
      bool SendZmqMessage(const char *command, const void* data, size_t size);
  
@@ -928,7 +988,7 @@ index 18336a5eb0..57284d05ce 100644
      bool Initialize(void *pcontext) override;
      void Shutdown() override;
  };
-@@ -56,6 +69,48 @@ public:
+@@ -63,6 +76,55 @@ public:
      bool NotifyTransaction(const CTransaction &transaction) override;
  };
  
@@ -964,9 +1024,16 @@ index 18336a5eb0..57284d05ce 100644
 +
 +class CZMQPublishChainConnectedNotifier : public CZMQAbstractPublishNotifier
 +{
++private:
++    const std::function<bool(CBlock&, const CBlockIndex&)> m_get_block_by_index;
++
 +public:
++    CZMQPublishChainConnectedNotifier(std::function<bool(CBlock&, const CBlockIndex&)> get_block_by_index)
++        : m_get_block_by_index{std::move(get_block_by_index)} {}
++
 +    bool NotifyChainBlockConnected(const CBlockIndex *index) override;
 +};
++
 +
 +class CZMQPublishChainHeaderAddedNotifier : public CZMQAbstractPublishNotifier
 +{
@@ -2279,13 +2346,13 @@ index 0000000000..ccd5a0d0bb
 +            del expected[txhash]
 +        assert_equal(0, len(expected))
 diff --git a/test/functional/test_runner.py b/test/functional/test_runner.py
-index 2ff877e820..462f4c03d7 100755
+index a23c5f7333..e6d8baa492 100755
 --- a/test/functional/test_runner.py
 +++ b/test/functional/test_runner.py
-@@ -225,6 +225,18 @@ BASE_SCRIPTS = [
-     'p2p_getdata.py',
+@@ -248,6 +248,18 @@ BASE_SCRIPTS = [
      'p2p_addrfetch.py',
      'rpc_net.py',
+     'rpc_net.py --v2transport',
 +    'interface_zmq_mempooladded.py',
 +    'interface_zmq_mempoolremove_block.py',
 +    'interface_zmq_mempoolremove_conflict.py',
@@ -2301,3 +2368,6 @@ index 2ff877e820..462f4c03d7 100755
      'wallet_keypool.py --legacy-wallet',
      'wallet_keypool.py --descriptors',
      'wallet_descriptor.py --descriptors',
+-- 
+2.39.3 (Apple Git-146)
+

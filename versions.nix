@@ -7,7 +7,7 @@
   bitcoin-gold = [ "0.17.3" ];
   bitcoin-sv = [ "1.0.16" ];
   bitcoin-zmce = [ "26.0" ];
-  bsc = [ "1.2.10" "1.3.9" ];
+  bsc = [ "1.3.9" ];
   coregeth = [ "1.12.17" ];
   cosmos-gaia = [ "9.0.2" ];
   cosmos-rosetta = [ "1.0.0" ];

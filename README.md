@@ -21,7 +21,7 @@ When updating a node's version, the source's hashes need to be recomputed.
 
 This can be done using either `nix-prefetch-git` for git repos:
 
-````
+```
 $ nix-prefetch-git --rev v4.6.0 --url https://github.com/sigp/lighthouse
 Initialized empty Git repository in /private/var/folders/rz/1m0q0l855hngpws3qwzqcync0000gn/T/git-checkout-tmp-W2giH8fN/lighthouse/.git/
 remote: Enumerating objects: 1501, done.

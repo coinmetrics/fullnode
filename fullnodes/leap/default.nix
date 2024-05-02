@@ -2,7 +2,7 @@
 with pkgs; rec {
   package = callPackage (./. + "/leap-${version}.nix") {
     gcc = gcc11;
-    llvm = llvm_11;
+    llvm = llvmPackages_11.llvm;
   };
 
   contents = [

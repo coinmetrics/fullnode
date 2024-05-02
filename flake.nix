@@ -12,6 +12,7 @@
     let
       pkgs = import nixpkgs {
         inherit system;
+        overlays = [ self.overlays.default ];
       };
 
       allFullnodeVersions = import ./versions.nix;
@@ -122,5 +123,7 @@
         accum // { "publish-${fullnode}" = { type = "app"; program = "${publishImagesFor fullnode}/bin/publish-${fullnode}"; }; }
       ) {} (builtins.attrNames allFullnodeImages);
     }
-  );
+  ) // {
+    overlays.default = import ./overlays/default.nix;
+  };
 }

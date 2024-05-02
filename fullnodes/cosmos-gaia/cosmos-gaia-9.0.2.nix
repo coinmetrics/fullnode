@@ -3,7 +3,7 @@ buildGoModule rec {
   pname = "cosmos-gaia";
   version = "9.0.2";
 
-  vendorSha256 = "sha256-4HGl8y9nJSFJH+5AxxJoY6ejzseAcatubUOXndFufqI=";
+  vendorHash = "sha256-4HGl8y9nJSFJH+5AxxJoY6ejzseAcatubUOXndFufqI=";
 
   src = fetchFromGitHub {
     owner = "cosmos";

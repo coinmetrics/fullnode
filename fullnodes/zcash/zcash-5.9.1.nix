@@ -60,7 +60,7 @@ let
   }).overrideAttrs (old: {
     patches = old.patches ++ [
       (fetchpatch {
-        url = "https://raw.githubusercontent.com/zcash/zcash/v5.9.0/depends/patches/boost/6753-signals2-function-fix.patch";
+        url = "https://raw.githubusercontent.com/zcash/zcash/v5.9.1/depends/patches/boost/6753-signals2-function-fix.patch";
         stripLen = 0;
         sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
       })
@@ -71,17 +71,19 @@ let
 in
 rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
   pname = "zcash";
-  version = "5.9.0";
+  version = "5.9.1";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-lvm1sPRV2hna7mg9oCug6PgSPuuk+2m6vdMy6NCbQqQ=";
+    hash = "sha256-bjv/6iYWA/chzLsDK+EUt6UufzOZIqgRZ6WTL3ZizsI=";
   };
 
+  cargoHash = "";
+
   cargoLock = {
-    lockFile = ./5.9.0-Cargo.lock;
+    lockFile = ./5.9.1-Cargo.lock;
   };
 
   prePatch = lib.optionalString clangStdenv.isAarch64 ''

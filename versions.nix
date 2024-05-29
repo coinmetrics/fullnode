@@ -31,7 +31,7 @@
   op-geth = [ "1.101311.0" ];
   pivx = [ "5.6.1" ];
   polkadot = [ "1.5.0" ];
-  polygon-bor = [ "1.2.0" "1.2.8" ];
+  polygon-bor = [ "1.3.2" ];
   vertcoin = [ "23.2" ];
   zcash = [ "5.9.0" ];
 }

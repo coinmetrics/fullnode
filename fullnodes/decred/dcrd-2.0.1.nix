@@ -8,10 +8,10 @@ buildGoModule rec {
     owner = "decred";
     repo = "dcrd";
     rev = "refs/tags/release-v${version}";
-    hash = "sha256-0000qwXgJhvfbdElddbb1gGxoygmtVtK6DbiSuMxYew=";
+    hash = "sha256-A7gpAwote4G8+40DWBNi2TA7K5HCwybtap92xxVVc9k=";
   };
 
-  vendorHash = "sha256-0000fj1+KjQ21Jb/qpIzg2W/grzun2Pz5FV5yIBXoTo=";
+  vendorHash = "sha256-CxamlHooosmXpDP9doBg+zk3qy3XPjlfYLl0EueC4kI=";
 
   doCheck = false;
 

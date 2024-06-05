@@ -106,7 +106,7 @@ let
       rev = "refs/tags/${version}";
       fetchSubmodules = true;
       leaveDotGit = true;
-      hash = "sha256-LmJJRkwys4gsU5pwHJEKXG4uKZba2kXEa2VKK3zDE/g=";
+      hash = "sha256-NcK5/miCCbWMCBliKP4Ku6PSIVVEE97AQz7BH/jfoCQ=";
     };
 
     patches = [

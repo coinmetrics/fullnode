@@ -1,7 +1,7 @@
 {
   algorand = [ "3.23.1" ];
   algorand-indexer = [ "3.4.0"];
-  avalanchego = [ "1.11.0" "1.11.5" ];
+  avalanchego = [ "1.11.5" "1.11.7" ];
   avalanche-rosetta = [ "0.1.41" "0.1.44" ];
   bitcoin-cash = [ "27.0.0" ];
   bitcoin-gold = [ "0.17.3" ];

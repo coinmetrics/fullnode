@@ -10,10 +10,10 @@
 }:
 let
   # NOTE: Please bump all of these values when upgrading to a new version.
-  version = "3.4.0";
-  gitCommit = "76f36eac45e2165385225fa5cdfb530849bda6cc";
-  gitNixHash = "sha256-+RBaUKYk8q89hpjxRLxVIZAiS5dxqpcDN529gg8rZr4=";
-  gitDescription = "dGFnOiAzLjMuMA=="; # TODO: Automate this: echo -n "tag: 3.4.0" | base64
+  version = "3.5.0";
+  gitCommit = "8e7d2e5b31b871f52cd4644baa9548fee780294c";
+  gitNixHash = "sha256-5SNf1ODIvXdt5inYQ15PqRaYPTabBxjreuKLWmir52o=";
+  gitDescription = "dGFnOiAzLjUuMA=="; # TODO: Automate this: echo -n "tag: 3.5.0" | base64
 
   algorandIndexerLibs = stdenv.mkDerivation {
     inherit version;
@@ -24,8 +24,8 @@ let
     src = fetchFromGitHub {
       owner = "algorand";
       repo = "go-algorand";
-      rev = "v3.23.1-stable";
-      hash = "sha256-p3cFq2EtTdxS+ZM9XQOny7Xm/g3TPHQTFA5dBW526nU=";
+      rev = "v3.24.0-stable";
+      hash = "sha256-er2upz+11lzgRCIjJn/eaWGOdg8Q0rquWhTIlpDQ/P8=";
     };
 
     nativeBuildInputs = [
@@ -62,7 +62,7 @@ in buildGo121Module rec {
     fetchSubmodules = true;
   };
 
-  vendorHash = "sha256-yrtwQcRzbW6fjvtSFh6aElJA9fJ7W5GVUw8OBXmxb5Y=";
+  vendorHash = "sha256-0eUOAXkHpwnf7/hLOvX56AExeXZWJwF4GWenWtKmj2k=";
 
   buildInputs = [
     boost

@@ -28,7 +28,7 @@
   omnicore = [ "0.12.0.1" ];
   op-node = [ "1.7.7" ];
   openethereum = [ "3.3.5" ];
-  op-geth = [ "1.101311.0" ];
+  op-geth = [ "1.101315.2" ];
   pivx = [ "5.6.1" ];
   polkadot = [ "1.5.0" ];
   polygon-bor = [ "1.3.2" ];

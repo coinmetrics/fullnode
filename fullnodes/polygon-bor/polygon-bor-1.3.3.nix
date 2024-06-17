@@ -1,16 +1,16 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "polygon-bor";
-  version = "1.3.2";
+  version = "1.3.3";
 
   src = fetchFromGitHub {
     owner = "maticnetwork";
     repo = "bor";
     rev = "v${version}";
-    hash = "sha256-NBARiimGIe8nIoA8jXfOIuH3Rx4eBU79CqubTIO1Fas=";
+    hash = "sha256-gdBfG7tT4AjHUQuLfrHEbARuT15U1qlFkX5vNrJo7zM=";
   };
 
-  vendorHash = "sha256-FHDWvutAi61NDYj/nAf7JASgtzOQmW03AhwFRjqnjc8=";
+  vendorHash = "sha256-osKqRCFojS2Aa16WnTrVawhJfE1bYkEt0AgKXudw+a8=";
 
   subPackages = [
     "cmd/cli"

@@ -1,16 +1,16 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "coregeth";
-  version = "1.12.17";
+  version = "1.12.20";
 
   src = fetchFromGitHub {
     owner = "etclabscore";
     repo = "core-geth";
     rev = "refs/tags/v${version}";
-    hash = "sha256-FKa3l14wl6pxXwsyTEAymTwJffuneSY26ZYQd0/JVWE=";
+    hash = "sha256-+xfV1SNAOSSBRPZuEAFsyIzEMdjsKAyGo1URy9J+e2o=";
   };
 
-  vendorHash = "sha256-oJeftK5bxNRi+1DlyahGlm4iamvjtZV2/J/62l3Jl6s=";
+  vendorHash = "sha256-CzHhxtZu/7zQ6Wbm+bKkDrQ91FyLTpcJ0u7O0QDaAXQ=";
 
   proxyVendor = true;
 

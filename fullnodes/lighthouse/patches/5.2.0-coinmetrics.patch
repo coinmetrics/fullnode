@@ -1,16 +1,47 @@
+diff --git a/.gitlab-ci.yml b/.gitlab-ci.yml
+new file mode 100644
+index 000000000..929634d39
+--- /dev/null
++++ b/.gitlab-ci.yml
+@@ -0,0 +1,16 @@
++stages:
++  - build
++build-custom-lighthouse:
++  stage: build
++  image: docker:latest
++  services:
++    - docker:dind
++  script:
++    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
++    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA -t $CI_REGISTRY_IMAGE:latest .
++    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
++    - test $CI_COMMIT_REF_NAME = master && docker push $CI_REGISTRY_IMAGE:latest || true
++  tags:
++    - linux
++    - docker
++    - coinmetrics-build-runner
+\ No newline at end of file
 diff --git a/Cargo.lock b/Cargo.lock
-index 1d3dc3070..793ed1c05 100644
+index 2e87f8b7f..0391c27b2 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -2149,6 +2149,7 @@ dependencies = [
+@@ -2441,6 +2441,7 @@ dependencies = [
   "serde_json",
   "slashing_protection",
   "ssz_types",
 + "state_processing",
   "store",
   "tokio",
-  "tree_hash",
-@@ -7525,6 +7526,7 @@ dependencies = [
+  "types",
+@@ -4938,6 +4939,7 @@ dependencies = [
+ name = "lighthouse_metrics"
+ version = "0.2.0"
+ dependencies = [
++ "lazy_static",
+  "prometheus",
+ ]
+ 
+@@ -7938,6 +7940,7 @@ dependencies = [
   "merkle_proof",
   "rayon",
   "safe_arith",
@@ -18,6 +49,43 @@ index 1d3dc3070..793ed1c05 100644
   "smallvec",
   "ssz_types",
   "tokio",
+diff --git a/Dockerfile b/Dockerfile
+index e0c48699b..e10bbd25d 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -7,12 +7,29 @@ ARG CARGO_USE_GIT_CLI=true
+ ENV FEATURES $FEATURES
+ ENV PROFILE $PROFILE
+ ENV CARGO_NET_GIT_FETCH_WITH_CLI=$CARGO_USE_GIT_CLI
+-RUN cd lighthouse && make
++RUN cd lighthouse && make && make test
+ 
+ FROM ubuntu:22.04
+ RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
+   libssl-dev \
+   ca-certificates \
+-  && apt-get clean \
+-  && rm -rf /var/lib/apt/lists/*
++  curl && \
++  apt-get clean && \
++  rm -rf /var/lib/apt/lists/*
++
+ COPY --from=builder /usr/local/cargo/bin/lighthouse /usr/local/bin/lighthouse
++RUN useradd -m -u 1000 -s /bin/bash lighthouse
++RUN chown -R lighthouse:lighthouse /opt
++USER lighthouse
++RUN mkdir /opt/data
++WORKDIR /opt/lighthouse
++
++# Firewall configurations
++# P2P TCP, UDP
++EXPOSE 9001/TCP
++EXPOSE 9001/UDP
++# RPC
++EXPOSE 5053
++# Prometheus PORT
++EXPOSE 5054
++ENTRYPOINT [ "lighthouse" ]
 diff --git a/HOWTO_PATCH.md b/HOWTO_PATCH.md
 new file mode 100644
 index 000000000..3e2db1ce5
@@ -40,38 +108,52 @@ index 000000000..3e2db1ce5
 +
 +3. Fix conflicts if any (that's the complicated part)
 +4. Commit and push changes.
+diff --git a/Makefile b/Makefile
+index 3e6934e6b..7d044d542 100644
+--- a/Makefile
++++ b/Makefile
+@@ -115,7 +115,8 @@ build-release-tarballs:
+ # test vectors.
+ test-release:
+ 	cargo test --workspace --release --features "$(TEST_FEATURES)" \
+- 		--exclude ef_tests --exclude beacon_chain --exclude slasher --exclude network
++ 		--exclude ef_tests --exclude beacon_chain --exclude slasher --exclude network \
++		--exclude web3signer_tests
+ 
+ # Runs the full workspace tests in **release**, without downloading any additional
+ # test vectors, using nextest.
 diff --git a/beacon_node/beacon_chain/src/events.rs b/beacon_node/beacon_chain/src/events.rs
-index 0e5dfc805..89ceb9803 100644
+index 5f91fe5d0..934e49441 100644
 --- a/beacon_node/beacon_chain/src/events.rs
 +++ b/beacon_node/beacon_chain/src/events.rs
-@@ -20,6 +20,7 @@ pub struct ServerSentEventHandler<T: EthSpec> {
-     light_client_finality_update_tx: Sender<EventKind<T>>,
-     light_client_optimistic_update_tx: Sender<EventKind<T>>,
-     block_reward_tx: Sender<EventKind<T>>,
-+    trace_tx: Sender<EventKind<T>>,
+@@ -23,6 +23,7 @@ pub struct ServerSentEventHandler<E: EthSpec> {
+     proposer_slashing_tx: Sender<EventKind<E>>,
+     attester_slashing_tx: Sender<EventKind<E>>,
+     bls_to_execution_change_tx: Sender<EventKind<E>>,
++    trace_tx: Sender<EventKind<E>>,
      log: Logger,
  }
  
-@@ -45,6 +46,7 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-         let (light_client_finality_update_tx, _) = broadcast::channel(capacity);
-         let (light_client_optimistic_update_tx, _) = broadcast::channel(capacity);
-         let (block_reward_tx, _) = broadcast::channel(capacity);
+@@ -51,6 +52,7 @@ impl<E: EthSpec> ServerSentEventHandler<E> {
+         let (proposer_slashing_tx, _) = broadcast::channel(capacity);
+         let (attester_slashing_tx, _) = broadcast::channel(capacity);
+         let (bls_to_execution_change_tx, _) = broadcast::channel(capacity);
 +        let (trace_tx, _) = broadcast::channel(capacity);
  
          Self {
              attestation_tx,
-@@ -60,6 +62,7 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-             light_client_finality_update_tx,
-             light_client_optimistic_update_tx,
-             block_reward_tx,
+@@ -69,6 +71,7 @@ impl<E: EthSpec> ServerSentEventHandler<E> {
+             proposer_slashing_tx,
+             attester_slashing_tx,
+             bls_to_execution_change_tx,
 +            trace_tx,
              log,
          }
      }
-@@ -126,6 +129,10 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-                 .block_reward_tx
+@@ -147,6 +150,10 @@ impl<E: EthSpec> ServerSentEventHandler<E> {
+                 .bls_to_execution_change_tx
                  .send(kind)
-                 .map(|count| log_count("block reward", count)),
+                 .map(|count| log_count("bls to execution change", count)),
 +            EventKind::Trace(_) => self
 +                .trace_tx
 +                .send(kind)
@@ -79,31 +161,31 @@ index 0e5dfc805..89ceb9803 100644
          };
          if let Err(SendError(event)) = result {
              trace!(self.log, "No receivers registered to listen for event"; "event" => ?event);
-@@ -184,6 +191,10 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-         self.block_reward_tx.subscribe()
+@@ -216,6 +223,10 @@ impl<E: EthSpec> ServerSentEventHandler<E> {
+     pub fn subscribe_bls_to_execution_change(&self) -> Receiver<EventKind<E>> {
+         self.bls_to_execution_change_tx.subscribe()
      }
- 
-+    pub fn subscribe_trace(&self) -> Receiver<EventKind<T>> {
++    
++    pub fn subscribe_trace(&self) -> Receiver<EventKind<E>> {
 +        self.trace_tx.subscribe()
 +    }
-+
+ 
      pub fn has_attestation_subscribers(&self) -> bool {
          self.attestation_tx.receiver_count() > 0
+@@ -272,4 +283,8 @@ impl<E: EthSpec> ServerSentEventHandler<E> {
+     pub fn has_bls_to_execution_change_subscribers(&self) -> bool {
+         self.bls_to_execution_change_tx.receiver_count() > 0
      }
-@@ -227,4 +238,8 @@ impl<T: EthSpec> ServerSentEventHandler<T> {
-     pub fn has_block_reward_subscribers(&self) -> bool {
-         self.block_reward_tx.receiver_count() > 0
-     }
-+
++    
 +    pub fn has_trace_subscribers(&self) -> bool {
 +        self.trace_tx.receiver_count() > 0
 +    }
  }
 diff --git a/beacon_node/beacon_chain/tests/store_tests.rs b/beacon_node/beacon_chain/tests/store_tests.rs
-index 9b832bd76..8227658f0 100644
+index 5da92573f..b6de3f2a7 100644
 --- a/beacon_node/beacon_chain/tests/store_tests.rs
 +++ b/beacon_node/beacon_chain/tests/store_tests.rs
-@@ -817,7 +817,7 @@ async fn block_replayer_hooks() {
+@@ -770,7 +770,7 @@ async fn block_replayer_hooks() {
              pre_block_slots.push(block.slot());
              Ok(())
          }))
@@ -113,18 +195,18 @@ index 9b832bd76..8227658f0 100644
              post_block_slots.push(block.slot());
              Ok(())
 diff --git a/beacon_node/eth1/tests/test.rs b/beacon_node/eth1/tests/test.rs
-index 505e4a479..b9d327320 100644
+index 0479ea7c5..292095c97 100644
 --- a/beacon_node/eth1/tests/test.rs
 +++ b/beacon_node/eth1/tests/test.rs
-@@ -102,6 +102,7 @@ mod eth1_cache {
-     use types::{EthSpec, MainnetEthSpec};
+@@ -101,6 +101,7 @@ mod eth1_cache {
+     use super::*;
  
      #[tokio::test]
 +    #[ignore] // depends on anvil
      async fn simple_scenario() {
          async {
              let log = null_logger();
-@@ -184,6 +185,7 @@ mod eth1_cache {
+@@ -183,6 +184,7 @@ mod eth1_cache {
      /// Tests the case where we attempt to download more blocks than will fit in the cache.
  
      #[tokio::test]
@@ -132,7 +214,7 @@ index 505e4a479..b9d327320 100644
      async fn big_skip() {
          async {
              let log = null_logger();
-@@ -239,6 +241,7 @@ mod eth1_cache {
+@@ -238,6 +240,7 @@ mod eth1_cache {
      /// Tests to ensure that the cache gets pruned when doing multiple downloads smaller than the
      /// cache size.
      #[tokio::test]
@@ -140,7 +222,7 @@ index 505e4a479..b9d327320 100644
      async fn pruning() {
          async {
              let log = null_logger();
-@@ -291,6 +294,7 @@ mod eth1_cache {
+@@ -290,6 +293,7 @@ mod eth1_cache {
      }
  
      #[tokio::test]
@@ -148,7 +230,7 @@ index 505e4a479..b9d327320 100644
      async fn double_update() {
          async {
              let log = null_logger();
-@@ -344,6 +348,7 @@ mod deposit_tree {
+@@ -343,6 +347,7 @@ mod deposit_tree {
      use super::*;
  
      #[tokio::test]
@@ -156,7 +238,7 @@ index 505e4a479..b9d327320 100644
      async fn updating() {
          async {
              let log = null_logger();
-@@ -425,6 +430,7 @@ mod deposit_tree {
+@@ -424,6 +429,7 @@ mod deposit_tree {
      }
  
      #[tokio::test]
@@ -164,7 +246,7 @@ index 505e4a479..b9d327320 100644
      async fn double_update() {
          async {
              let log = null_logger();
-@@ -476,6 +482,7 @@ mod deposit_tree {
+@@ -475,6 +481,7 @@ mod deposit_tree {
      }
  
      #[tokio::test]
@@ -172,7 +254,7 @@ index 505e4a479..b9d327320 100644
      async fn cache_consistency() {
          async {
              let n = 8;
-@@ -592,6 +599,7 @@ mod http {
+@@ -591,6 +598,7 @@ mod http {
      }
  
      #[tokio::test]
@@ -180,7 +262,7 @@ index 505e4a479..b9d327320 100644
      async fn incrementing_deposits() {
          async {
              let eth1 = new_anvil_instance()
-@@ -687,6 +695,7 @@ mod fast {
+@@ -686,6 +694,7 @@ mod fast {
      // Adds deposits into deposit cache and matches deposit_count and deposit_root
      // with the deposit count and root computed from the deposit cache.
      #[tokio::test]
@@ -188,7 +270,7 @@ index 505e4a479..b9d327320 100644
      async fn deposit_cache_query() {
          async {
              let log = null_logger();
-@@ -770,6 +779,7 @@ mod fast {
+@@ -769,6 +778,7 @@ mod fast {
  mod persist {
      use super::*;
      #[tokio::test]
@@ -197,22 +279,22 @@ index 505e4a479..b9d327320 100644
          async {
              let log = null_logger();
 diff --git a/beacon_node/genesis/src/eth1_genesis_service.rs b/beacon_node/genesis/src/eth1_genesis_service.rs
-index fdba9f474..c8bc9e652 100644
+index 0ede74ba7..deb4b0ab2 100644
 --- a/beacon_node/genesis/src/eth1_genesis_service.rs
 +++ b/beacon_node/genesis/src/eth1_genesis_service.rs
 @@ -435,6 +435,7 @@ impl Eth1GenesisService {
  
-                 process_deposit(&mut state, &deposit, spec, PROOF_VERIFICATION)
+                 apply_deposit(&mut state, &deposit, spec, PROOF_VERIFICATION)
                      .map_err(|e| format!("Error whilst processing deposit: {:?}", e))
 +                    .map(|_r| ())
              })?;
  
          process_activations(&mut state, spec)
 diff --git a/beacon_node/genesis/tests/tests.rs b/beacon_node/genesis/tests/tests.rs
-index f99fcb55b..a41bbe25a 100644
+index 1252e0100..9df9b4057 100644
 --- a/beacon_node/genesis/tests/tests.rs
 +++ b/beacon_node/genesis/tests/tests.rs
-@@ -23,6 +23,7 @@ pub fn new_env() -> Environment<MinimalEthSpec> {
+@@ -19,6 +19,7 @@ pub fn new_env() -> Environment<MinimalEthSpec> {
  }
  
  #[test]
@@ -221,10 +303,10 @@ index f99fcb55b..a41bbe25a 100644
      let env = new_env();
      let log = env.core_context().log().clone();
 diff --git a/beacon_node/http_api/src/lib.rs b/beacon_node/http_api/src/lib.rs
-index 1594668e5..55c5b9e92 100644
+index 02db6b6a0..96f3a7beb 100644
 --- a/beacon_node/http_api/src/lib.rs
 +++ b/beacon_node/http_api/src/lib.rs
-@@ -28,6 +28,7 @@ mod validator;
+@@ -29,6 +29,7 @@ mod validator;
  mod validator_inclusion;
  mod validators;
  mod version;
@@ -232,7 +314,7 @@ index 1594668e5..55c5b9e92 100644
  
  use crate::produce_block::{produce_blinded_block_v2, produce_block_v2, produce_block_v3};
  use beacon_chain::{
-@@ -716,6 +717,7 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -715,6 +716,7 @@ pub fn serve<T: BeaconChainTypes>(
                          chain,
                          &query.id,
                          &query.status,
@@ -240,7 +322,7 @@ index 1594668e5..55c5b9e92 100644
                      )
                  })
              },
-@@ -738,6 +740,7 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -737,6 +739,7 @@ pub fn serve<T: BeaconChainTypes>(
                          chain,
                          &query.ids,
                          &query.statuses,
@@ -248,7 +330,7 @@ index 1594668e5..55c5b9e92 100644
                      )
                  })
              },
-@@ -4381,6 +4384,36 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -4253,6 +4256,36 @@ pub fn serve<T: BeaconChainTypes>(
              },
          );
  
@@ -285,9 +367,9 @@ index 1594668e5..55c5b9e92 100644
      // GET lighthouse/analysis/attestation_performance/{index}
      let get_lighthouse_attestation_performance = warp::path("lighthouse")
          .and(warp::path("analysis"))
-@@ -4486,6 +4519,9 @@ pub fn serve<T: BeaconChainTypes>(
-                                 api_types::EventTopic::BlockReward => {
-                                     event_handler.subscribe_block_reward()
+@@ -4367,6 +4400,9 @@ pub fn serve<T: BeaconChainTypes>(
+                                 api_types::EventTopic::BlsToExecutionChange => {
+                                     event_handler.subscribe_bls_to_execution_change()
                                  }
 +                                api_types::EventTopic::Trace => {
 +                                    event_handler.subscribe_trace()
@@ -295,7 +377,7 @@ index 1594668e5..55c5b9e92 100644
                              };
  
                              receivers.push(
-@@ -4635,6 +4671,8 @@ pub fn serve<T: BeaconChainTypes>(
+@@ -4515,6 +4551,8 @@ pub fn serve<T: BeaconChainTypes>(
                  .uor(get_lighthouse_staking)
                  .uor(get_lighthouse_database_info)
                  .uor(get_lighthouse_block_rewards)
@@ -449,7 +531,7 @@ index 000000000..c369146bb
 +}
 \ No newline at end of file
 diff --git a/beacon_node/http_api/src/validators.rs b/beacon_node/http_api/src/validators.rs
-index 20af7a680..e23efe753 100644
+index 93e63953e..9e90b6015 100644
 --- a/beacon_node/http_api/src/validators.rs
 +++ b/beacon_node/http_api/src/validators.rs
 @@ -11,6 +11,7 @@ pub fn get_beacon_state_validators<T: BeaconChainTypes>(
@@ -460,7 +542,7 @@ index 20af7a680..e23efe753 100644
  ) -> Result<ExecutionOptimisticFinalizedResponse<Vec<ValidatorData>>, warp::Rejection> {
      let (data, execution_optimistic, finalized) = state_id
          .map_state_and_execution_optimistic_and_finalized(
-@@ -25,6 +26,10 @@ pub fn get_beacon_state_validators<T: BeaconChainTypes>(
+@@ -27,6 +28,10 @@ pub fn get_beacon_state_validators<T: BeaconChainTypes>(
                          .iter()
                          .zip(state.balances().iter())
                          .enumerate()
@@ -470,12 +552,12 @@ index 20af7a680..e23efe753 100644
 +                        )
                          // filter by validator id(s) if provided
                          .filter(|(index, (validator, _))| {
-                             query_ids.as_ref().map_or(true, |ids| {
+                             ids_filter_set.as_ref().map_or(true, |ids_set| {
 diff --git a/beacon_node/http_api/tests/tests.rs b/beacon_node/http_api/tests/tests.rs
-index 933f98661..47d3f49c1 100644
+index 2828b15a9..72e384f54 100644
 --- a/beacon_node/http_api/tests/tests.rs
 +++ b/beacon_node/http_api/tests/tests.rs
-@@ -5519,6 +5519,13 @@ async fn poll_events<S: Stream<Item = Result<EventKind<T>, eth2::Error>> + Unpin
+@@ -5613,6 +5613,13 @@ async fn poll_events<S: Stream<Item = Result<EventKind<E>, eth2::Error>> + Unpin
  }
  
  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -489,7 +571,7 @@ index 933f98661..47d3f49c1 100644
  async fn get_events() {
      ApiTester::new().await.test_get_events().await;
  }
-@@ -5687,6 +5694,14 @@ async fn beacon_pools_post_proposer_slashings_invalid() {
+@@ -5781,6 +5788,14 @@ async fn beacon_pools_post_proposer_slashings_invalid() {
  }
  
  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -504,7 +586,7 @@ index 933f98661..47d3f49c1 100644
  async fn beacon_pools_post_voluntary_exits_valid() {
      ApiTester::new()
          .await
-@@ -5791,6 +5806,11 @@ async fn get_validator_duties_early() {
+@@ -5885,6 +5900,11 @@ async fn get_validator_duties_early() {
  }
  
  #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -517,21 +599,19 @@ index 933f98661..47d3f49c1 100644
      ApiTester::new()
          .await
 diff --git a/common/eth2/Cargo.toml b/common/eth2/Cargo.toml
-index 0f27bb667..4aff1fb92 100644
+index 10b4755ba..70f8029bb 100644
 --- a/common/eth2/Cargo.toml
 +++ b/common/eth2/Cargo.toml
-@@ -30,7 +30,8 @@ store = { workspace = true }
+@@ -29,6 +29,7 @@ store = { workspace = true }
  slashing_protection = { workspace = true }
  mediatype = "0.19.13"
- mime = "0.3.16"
--pretty_reqwest_error = { workspace = true }
-+state_processing = { path = "../../consensus/state_processing" }
-+pretty_reqwest_error = { path = "../../common/pretty_reqwest_error" }
+ pretty_reqwest_error = { workspace = true }
++state_processing = { workspace = true }
  
  [dev-dependencies]
  tokio = { workspace = true }
 diff --git a/common/eth2/src/lighthouse.rs b/common/eth2/src/lighthouse.rs
-index 11706f309..52fa6a41d 100644
+index e978d9224..ba3a837a1 100644
 --- a/common/eth2/src/lighthouse.rs
 +++ b/common/eth2/src/lighthouse.rs
 @@ -6,6 +6,7 @@ mod block_packing_efficiency;
@@ -541,8 +621,8 @@ index 11706f309..52fa6a41d 100644
 +mod traces;
  
  use crate::{
-     ok_or_error,
-@@ -33,6 +34,7 @@ pub use block_rewards::{AttestationRewards, BlockReward, BlockRewardMeta, BlockR
+     types::{
+@@ -30,6 +31,7 @@ pub use block_rewards::{AttestationRewards, BlockReward, BlockRewardMeta, BlockR
  pub use lighthouse_network::{types::SyncState, PeerInfo};
  pub use standard_block_rewards::StandardBlockReward;
  pub use sync_committee_rewards::SyncCommitteeReward;
@@ -568,10 +648,10 @@ index 000000000..727ad9323
 +}
 \ No newline at end of file
 diff --git a/common/eth2/src/types.rs b/common/eth2/src/types.rs
-index a301055f3..6dad1e22d 100644
+index 2bb749af9..7113d02e7 100644
 --- a/common/eth2/src/types.rs
 +++ b/common/eth2/src/types.rs
-@@ -22,6 +22,8 @@ pub use types::*;
+@@ -21,6 +21,8 @@ pub use types::*;
  
  #[cfg(feature = "lighthouse")]
  use crate::lighthouse::BlockReward;
@@ -580,7 +660,7 @@ index a301055f3..6dad1e22d 100644
  
  /// An API error serializable to JSON.
  #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-@@ -498,6 +500,8 @@ pub struct AttestationPoolQuery {
+@@ -497,6 +499,8 @@ pub struct AttestationPoolQuery {
  #[derive(Debug, Deserialize)]
  #[serde(deny_unknown_fields)]
  pub struct ValidatorsQuery {
@@ -589,28 +669,28 @@ index a301055f3..6dad1e22d 100644
      #[serde(default, deserialize_with = "option_query_vec")]
      pub id: Option<Vec<ValidatorId>>,
      #[serde(default, deserialize_with = "option_query_vec")]
-@@ -1077,6 +1081,8 @@ pub enum EventKind<T: EthSpec> {
-     LightClientOptimisticUpdate(Box<LightClientOptimisticUpdate<T>>),
+@@ -1079,6 +1083,8 @@ pub enum EventKind<E: EthSpec> {
+     LightClientOptimisticUpdate(Box<LightClientOptimisticUpdate<E>>),
      #[cfg(feature = "lighthouse")]
      BlockReward(BlockReward),
 +    #[cfg(feature = "lighthouse")]
 +    Trace(Trace),
      PayloadAttributes(VersionedSsePayloadAttributes),
- }
- 
-@@ -1097,6 +1103,8 @@ impl<T: EthSpec> EventKind<T> {
-             EventKind::LightClientOptimisticUpdate(_) => "light_client_optimistic_update",
-             #[cfg(feature = "lighthouse")]
-             EventKind::BlockReward(_) => "block_reward",
+     ProposerSlashing(Box<ProposerSlashing>),
+     AttesterSlashing(Box<AttesterSlashing<E>>),
+@@ -1105,6 +1111,8 @@ impl<E: EthSpec> EventKind<E> {
+             EventKind::ProposerSlashing(_) => "proposer_slashing",
+             EventKind::AttesterSlashing(_) => "attester_slashing",
+             EventKind::BlsToExecutionChange(_) => "bls_to_execution_change",
 +            #[cfg(feature = "lighthouse")]
 +            EventKind::Trace(_) => "trace",
          }
      }
  
-@@ -1177,6 +1185,10 @@ impl<T: EthSpec> EventKind<T> {
-             "block_reward" => Ok(EventKind::BlockReward(serde_json::from_str(data).map_err(
-                 |e| ServerError::InvalidServerSentEvent(format!("Block Reward: {:?}", e)),
-             )?)),
+@@ -1200,6 +1208,10 @@ impl<E: EthSpec> EventKind<E> {
+                     ServerError::InvalidServerSentEvent(format!("Bls To Execution Change: {:?}", e))
+                 })?,
+             )),
 +            #[cfg(feature = "lighthouse")]
 +            "trace" => Ok(EventKind::Trace(serde_json::from_str(data).map_err(
 +                |e| ServerError::InvalidServerSentEvent(format!("Trace: {:?}", e)),
@@ -618,32 +698,41 @@ index a301055f3..6dad1e22d 100644
              _ => Err(ServerError::InvalidServerSentEvent(
                  "Could not parse event tag".to_string(),
              )),
-@@ -1208,6 +1220,8 @@ pub enum EventTopic {
-     LightClientOptimisticUpdate,
-     #[cfg(feature = "lighthouse")]
-     BlockReward,
+@@ -1234,6 +1246,8 @@ pub enum EventTopic {
+     AttesterSlashing,
+     ProposerSlashing,
+     BlsToExecutionChange,
 +    #[cfg(feature = "lighthouse")]
 +    Trace,
  }
  
  impl FromStr for EventTopic {
-@@ -1229,6 +1243,8 @@ impl FromStr for EventTopic {
-             "light_client_optimistic_update" => Ok(EventTopic::LightClientOptimisticUpdate),
-             #[cfg(feature = "lighthouse")]
-             "block_reward" => Ok(EventTopic::BlockReward),
+@@ -1258,6 +1272,8 @@ impl FromStr for EventTopic {
+             "attester_slashing" => Ok(EventTopic::AttesterSlashing),
+             "proposer_slashing" => Ok(EventTopic::ProposerSlashing),
+             "bls_to_execution_change" => Ok(EventTopic::BlsToExecutionChange),
 +            #[cfg(feature = "lighthouse")]
 +            "trace" => Ok(EventTopic::Trace),
              _ => Err("event topic cannot be parsed.".to_string()),
          }
      }
-@@ -1251,6 +1267,7 @@ impl fmt::Display for EventTopic {
-             EventTopic::LightClientOptimisticUpdate => write!(f, "light_client_optimistic_update"),
-             #[cfg(feature = "lighthouse")]
-             EventTopic::BlockReward => write!(f, "block_reward"),
+@@ -1283,6 +1299,7 @@ impl fmt::Display for EventTopic {
+             EventTopic::AttesterSlashing => write!(f, "attester_slashing"),
+             EventTopic::ProposerSlashing => write!(f, "proposer_slashing"),
+             EventTopic::BlsToExecutionChange => write!(f, "bls_to_execution_change"),
 +            EventTopic::Trace => write!(f, "trace"),
          }
      }
  }
+diff --git a/common/lighthouse_metrics/Cargo.toml b/common/lighthouse_metrics/Cargo.toml
+index fe966f4a9..ea8e668c4 100644
+--- a/common/lighthouse_metrics/Cargo.toml
++++ b/common/lighthouse_metrics/Cargo.toml
+@@ -8,3 +8,4 @@ edition = { workspace = true }
+ 
+ [dependencies]
+ prometheus = "0.13.0"
++lazy_static = { workspace = true }
 diff --git a/common/lockfile/src/lib.rs b/common/lockfile/src/lib.rs
 index cc622e0fb..a0350b1a3 100644
 --- a/common/lockfile/src/lib.rs
@@ -662,7 +751,7 @@ index cc622e0fb..a0350b1a3 100644
          let temp = tempdir().unwrap();
          let path = temp.path().join("lockfile");
 diff --git a/consensus/state_processing/Cargo.toml b/consensus/state_processing/Cargo.toml
-index 7279fd28f..78440f24e 100644
+index be5367eb0..ede0cd78e 100644
 --- a/consensus/state_processing/Cargo.toml
 +++ b/consensus/state_processing/Cargo.toml
 @@ -28,6 +28,7 @@ arbitrary = { workspace = true }
@@ -674,27 +763,28 @@ index 7279fd28f..78440f24e 100644
  [features]
  default = ["legacy-arith"]
 diff --git a/consensus/state_processing/src/block_replayer.rs b/consensus/state_processing/src/block_replayer.rs
-index f502d7f69..f2c3442ed 100644
+index d7621ebf1..0e363c6f6 100644
 --- a/consensus/state_processing/src/block_replayer.rs
 +++ b/consensus/state_processing/src/block_replayer.rs
-@@ -12,7 +12,15 @@ type PreBlockHook<'a, E, Error> = Box<
+@@ -10,12 +10,16 @@ use types::{
+     BeaconState, BeaconStateError, BlindedPayload, ChainSpec, EthSpec, Hash256, SignedBeaconBlock,
+     Slot,
+ };
++use crate::common::BalanceUpdate;
+ 
+ pub type PreBlockHook<'a, E, Error> = Box<
      dyn FnMut(&mut BeaconState<E>, &SignedBeaconBlock<E, BlindedPayload<E>>) -> Result<(), Error>
          + 'a,
  >;
--type PostBlockHook<'a, E, Error> = PreBlockHook<'a, E, Error>;
-+type PostBlockHook<'a, E, Error> = Box<
-+    dyn FnMut(
-+        &mut BeaconState<E>,
-+        &SignedBeaconBlock<E, BlindedPayload<E>>,
-+        &Vec<BalanceUpdate>,
-+    ) -> Result<(), Error>
-+    + 'a,
+-pub type PostBlockHook<'a, E, Error> = PreBlockHook<'a, E, Error>;
++pub type PostBlockHook<'a, E, Error> = Box<
++    dyn FnMut(&mut BeaconState<E>, &SignedBeaconBlock<E, BlindedPayload<E>>, &Vec<BalanceUpdate>) -> Result<(), Error>
++        + 'a,
 +>;
-+use crate::common::BalanceUpdate;
- type PreSlotHook<'a, E, Error> = Box<dyn FnMut(&mut BeaconState<E>) -> Result<(), Error> + 'a>;
- type PostSlotHook<'a, E, Error> = Box<
-     dyn FnMut(&mut BeaconState<E>, Option<EpochProcessingSummary<E>>, bool) -> Result<(), Error>
-@@ -264,7 +272,7 @@ where
+ pub type PreSlotHook<'a, E, Error> =
+     Box<dyn FnMut(Hash256, &mut BeaconState<E>) -> Result<(), Error> + 'a>;
+ pub type PostSlotHook<'a, E, Error> = Box<
+@@ -254,7 +258,7 @@ where
              // can omit recomputing it during replay.
              let mut ctxt = ConsensusContext::new(block.slot())
                  .set_proposer_index(block.message().proposer_index());
@@ -703,7 +793,7 @@ index f502d7f69..f2c3442ed 100644
                  &mut self.state,
                  block,
                  self.block_sig_strategy,
-@@ -276,7 +284,7 @@ where
+@@ -265,7 +269,7 @@ where
              .map_err(BlockReplayError::from)?;
  
              if let Some(ref mut post_block_hook) = self.post_block_hook {
@@ -713,10 +803,10 @@ index f502d7f69..f2c3442ed 100644
          }
  
 diff --git a/consensus/state_processing/src/common/mod.rs b/consensus/state_processing/src/common/mod.rs
-index ffe8be3a0..b4515d21b 100644
+index cefc47b02..16710f6fd 100644
 --- a/consensus/state_processing/src/common/mod.rs
 +++ b/consensus/state_processing/src/common/mod.rs
-@@ -18,24 +18,61 @@ pub use slash_validator::slash_validator;
+@@ -18,33 +18,70 @@ pub use slash_validator::slash_validator;
  
  use safe_arith::SafeArith;
  use types::{BeaconState, BeaconStateError, EthSpec};
@@ -748,10 +838,15 @@ index ffe8be3a0..b4515d21b 100644
      index: usize,
      delta: u64,
 -) -> Result<(), BeaconStateError> {
+-    increase_balance_directly(state.get_balance_mut(index)?, delta)
 +    reason: BalanceUpdateReason,
-+) ->Result<BalanceUpdate, BeaconStateError> {
-     state.get_balance_mut(index)?.safe_add_assign(delta)?;
--    Ok(())
++) -> Result<BalanceUpdate, BeaconStateError> {
++    increase_balance_directly(state.get_balance_mut(index)?, delta, index, reason)
++}
++
++/// Increase the balance of a validator, erroring upon overflow, as per the spec.
++pub fn increase_balance_directly(balance: &mut u64, delta: u64, index: usize, reason: BalanceUpdateReason) -> Result<BalanceUpdate, BeaconStateError> {
++    balance.safe_add_assign(delta)?;
 +    Ok(BalanceUpdate{
 +        index,
 +        delta: delta as i64,
@@ -766,9 +861,21 @@ index ffe8be3a0..b4515d21b 100644
      index: usize,
      delta: u64,
 -) -> Result<(), BeaconStateError> {
+-    decrease_balance_directly(state.get_balance_mut(index)?, delta)
+-}
+-
+-/// Increase the balance of a validator, erroring upon overflow, as per the spec.
+-pub fn increase_balance_directly(balance: &mut u64, delta: u64) -> Result<(), BeaconStateError> {
+-    balance.safe_add_assign(delta)?;
+-    Ok(())
 +    reason: BalanceUpdateReason,
-+) ->  Result<BalanceUpdate, BeaconStateError> {
-     let balance = state.get_balance_mut(index)?;
++) -> Result<BalanceUpdate, BeaconStateError> {
++    decrease_balance_directly(state.get_balance_mut(index)?, delta, index, reason)
+ }
+ 
+ /// Decrease the balance of a validator, saturating upon overflow, as per the spec.
+-pub fn decrease_balance_directly(balance: &mut u64, delta: u64) -> Result<(), BeaconStateError> {
++pub fn decrease_balance_directly(balance: &mut u64, delta: u64, index: usize, reason: BalanceUpdateReason) -> Result<BalanceUpdate, BeaconStateError> {
 +    let previous_balance: u64 = *balance;
      *balance = balance.saturating_sub(delta);
 -    Ok(())
@@ -783,7 +890,7 @@ index ffe8be3a0..b4515d21b 100644
 +    })
  }
 diff --git a/consensus/state_processing/src/common/slash_validator.rs b/consensus/state_processing/src/common/slash_validator.rs
-index d8b1c1a10..18acc3d12 100644
+index 520b58a8a..30221bd52 100644
 --- a/consensus/state_processing/src/common/slash_validator.rs
 +++ b/consensus/state_processing/src/common/slash_validator.rs
 @@ -1,6 +1,8 @@
@@ -796,24 +903,17 @@ index d8b1c1a10..18acc3d12 100644
      per_block_processing::errors::BlockProcessingError,
      ConsensusContext,
  };
-@@ -12,13 +14,15 @@ use types::{
- };
- 
- /// Slash the validator with index `slashed_index`.
-+#[deny(unused_results)]
- pub fn slash_validator<T: EthSpec>(
-     state: &mut BeaconState<T>,
-     slashed_index: usize,
+@@ -18,7 +20,8 @@ pub fn slash_validator<E: EthSpec>(
      opt_whistleblower_index: Option<usize>,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
 +    let mut balance_updates = Vec::<BalanceUpdate>::new();
      let epoch = state.current_epoch();
+     let latest_block_slot = state.latest_block_header().slot;
  
-     initiate_validator_exit(state, slashed_index, spec)?;
-@@ -37,12 +41,13 @@ pub fn slash_validator<T: EthSpec>(
+@@ -38,12 +41,13 @@ pub fn slash_validator<E: EthSpec>(
              .safe_add(validator_effective_balance)?,
      )?;
  
@@ -827,9 +927,9 @@ index d8b1c1a10..18acc3d12 100644
 +        BalanceUpdateReason::SlashingPenalty,
 +    )?);
  
-     update_progressive_balances_on_slashing(state, slashed_index)?;
- 
-@@ -66,12 +71,18 @@ pub fn slash_validator<T: EthSpec>(
+     update_progressive_balances_on_slashing(state, slashed_index, validator_effective_balance)?;
+     state
+@@ -71,12 +75,18 @@ pub fn slash_validator<E: EthSpec>(
          return Err(BeaconStateError::UnknownValidator(whistleblower_index).into());
      }
  
@@ -853,7 +953,7 @@ index d8b1c1a10..18acc3d12 100644
 +    Ok(balance_updates)
  }
 diff --git a/consensus/state_processing/src/per_block_processing.rs b/consensus/state_processing/src/per_block_processing.rs
-index b9a147a5a..f0ed61aa8 100644
+index 98671f82b..a20096575 100644
 --- a/consensus/state_processing/src/per_block_processing.rs
 +++ b/consensus/state_processing/src/per_block_processing.rs
 @@ -1,3 +1,4 @@
@@ -861,9 +961,9 @@ index b9a147a5a..f0ed61aa8 100644
  use crate::consensus_context::ConsensusContext;
  use errors::{BlockOperationError, BlockProcessingError, HeaderInvalid};
  use rayon::prelude::*;
-@@ -105,7 +106,8 @@ pub fn per_block_processing<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -104,7 +105,8 @@ pub fn per_block_processing<E: EthSpec, Payload: AbstractExecPayload<E>>(
      verify_block_root: VerifyBlockRoot,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
@@ -871,14 +971,13 @@ index b9a147a5a..f0ed61aa8 100644
      let block = signed_block.message();
  
      // Verify that the `SignedBeaconBlock` instantiation matches the fork at `signed_block.slot()`.
-@@ -169,30 +171,30 @@ pub fn per_block_processing<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -170,29 +172,29 @@ pub fn per_block_processing<E: EthSpec, Payload: AbstractExecPayload<E>>(
+     // previous block.
      if is_execution_enabled(state, block.body()) {
          let body = block.body();
-         if state_processing_strategy == StateProcessingStrategy::Accurate {
--            process_withdrawals::<T, Payload>(state, body.execution_payload()?, spec)?;
-+            balance_updates.append( &mut process_withdrawals::<T, Payload>(state, body.execution_payload()?, spec)?);
-         }
-         process_execution_payload::<T, Payload>(state, body, spec)?;
+-        process_withdrawals::<E, Payload>(state, body.execution_payload()?, spec)?;
++        balance_updates.append( &mut process_withdrawals::<E, Payload>(state, body.execution_payload()?, spec)?);
+         process_execution_payload::<E, Payload>(state, body, spec)?;
      }
  
      process_randao(state, block, verify_randao, ctxt, spec)?;
@@ -907,25 +1006,25 @@ index b9a147a5a..f0ed61aa8 100644
  }
  
  /// Processes the block header, returning the proposer index.
-@@ -542,13 +544,15 @@ pub fn get_expected_withdrawals<T: EthSpec>(
+@@ -552,13 +554,15 @@ pub fn get_expected_withdrawals<E: EthSpec>(
  }
  
  /// Apply withdrawals to the state.
 +#[deny(unused_results)]
- pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
-     state: &mut BeaconState<T>,
+ pub fn process_withdrawals<E: EthSpec, Payload: AbstractExecPayload<E>>(
+     state: &mut BeaconState<E>,
      payload: Payload::Ref<'_>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
 +    let mut balance_updates = Vec::<BalanceUpdate>::new();
      match state {
--        BeaconState::Merge(_) => Ok(()),
-+        BeaconState::Merge(_) => Ok(Vec::new()),
-         BeaconState::Capella(_) | BeaconState::Deneb(_) => {
+-        BeaconState::Bellatrix(_) => Ok(()),
++        BeaconState::Bellatrix(_) => Ok(Vec::new()),
+         BeaconState::Capella(_) | BeaconState::Deneb(_) | BeaconState::Electra(_) => {
              let expected_withdrawals = get_expected_withdrawals(state, spec)?;
              let expected_root = expected_withdrawals.tree_hash_root();
-@@ -560,13 +564,29 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -570,13 +574,29 @@ pub fn process_withdrawals<E: EthSpec, Payload: AbstractExecPayload<E>>(
                      found: withdrawals_root,
                  });
              }
@@ -941,14 +1040,14 @@ index b9a147a5a..f0ed61aa8 100644
 +                let balance = *state.balances().get(validator_index).ok_or(
 +                    BeaconStateError::BalancesOutOfBounds(validator_index),
                  )?;
-+                if validator.is_fully_withdrawable_at(balance, epoch, spec) {
++                if validator.is_fully_withdrawable_at(balance, epoch, spec, state.fork_name_unchecked()) {
 +                    balance_updates.push(decrease_balance(
 +                        state,
 +                        validator_index,
 +                        withdrawal.amount,
 +                        BalanceUpdateReason::FullWithdrawal
 +                    )?);
-+                } else if validator.is_partially_withdrawable_validator(balance, spec) {
++                } else if validator.is_partially_withdrawable_validator(balance, spec, state.fork_name_unchecked()) {
 +                    balance_updates.push(decrease_balance(
 +                        state,
 +                        validator_index,
@@ -959,7 +1058,7 @@ index b9a147a5a..f0ed61aa8 100644
              }
  
              // Update the next withdrawal index if this block contained withdrawals
-@@ -593,9 +613,9 @@ pub fn process_withdrawals<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -603,9 +623,9 @@ pub fn process_withdrawals<E: EthSpec, Payload: AbstractExecPayload<E>>(
                  *state.next_withdrawal_validator_index_mut()? = next_validator_index;
              }
  
@@ -972,7 +1071,7 @@ index b9a147a5a..f0ed61aa8 100644
      }
  }
 diff --git a/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs b/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
-index a5dcd6e0b..580016b5d 100644
+index 210db4c9c..3bc93f111 100644
 --- a/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
 +++ b/consensus/state_processing/src/per_block_processing/altair/sync_committee.rs
 @@ -1,4 +1,7 @@
@@ -984,14 +1083,14 @@ index a5dcd6e0b..580016b5d 100644
  use crate::per_block_processing::errors::{BlockProcessingError, SyncAggregateInvalid};
  use crate::{signature_sets::sync_aggregate_signature_set, VerifySignatures};
  use safe_arith::SafeArith;
-@@ -6,13 +9,15 @@ use std::borrow::Cow;
- use types::consts::altair::{PROPOSER_WEIGHT, SYNC_REWARD_WEIGHT, WEIGHT_DENOMINATOR};
- use types::{BeaconState, ChainSpec, EthSpec, PublicKeyBytes, SyncAggregate, Unsigned};
+@@ -8,13 +11,15 @@ use types::{
+     BeaconState, BeaconStateError, ChainSpec, EthSpec, PublicKeyBytes, SyncAggregate, Unsigned,
+ };
  
 +#[deny(unused_results)]
- pub fn process_sync_aggregate<T: EthSpec>(
-     state: &mut BeaconState<T>,
-     aggregate: &SyncAggregate<T>,
+ pub fn process_sync_aggregate<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     aggregate: &SyncAggregate<E>,
      proposer_index: u64,
      verify_signatures: VerifySignatures,
      spec: &ChainSpec,
@@ -1001,41 +1100,58 @@ index a5dcd6e0b..580016b5d 100644
      let current_sync_committee = state.current_sync_committee()?.clone();
  
      // Verify sync committee aggregate signature signing over the previous slot block root
-@@ -52,14 +57,14 @@ pub fn process_sync_aggregate<T: EthSpec>(
+@@ -55,6 +60,8 @@ pub fn process_sync_aggregate<E: EthSpec>(
+         .get(proposer_index)
+         .ok_or(BeaconStateError::BalancesOutOfBounds(proposer_index))?;
+ 
++    let previous_proposer_balance = proposer_balance;
++
+     for (participant_index, participation_bit) in committee_indices
+         .into_iter()
          .zip(aggregate.sync_committee_bits.iter())
-     {
-         if participation_bit {
--            increase_balance(state, participant_index, participant_reward)?;
--            increase_balance(state, proposer_index as usize, proposer_reward)?;
-+            balance_updates.push(increase_balance(state, participant_index as usize, participant_reward, BalanceUpdateReason::Reward)?);
-+            balance_updates.push(increase_balance(state, proposer_index as usize, proposer_reward, BalanceUpdateReason::Reward)?);
+@@ -65,19 +72,23 @@ pub fn process_sync_aggregate<E: EthSpec>(
+             if participant_index == proposer_index {
+                 proposer_balance.safe_add_assign(participant_reward)?;
+             } else {
+-                increase_balance(state, participant_index, participant_reward)?;
++                balance_updates.push(increase_balance(state, participant_index, participant_reward, BalanceUpdateReason::Reward)?);
+             }
+             proposer_balance.safe_add_assign(proposer_reward)?;
+         } else if participant_index == proposer_index {
+             proposer_balance = proposer_balance.saturating_sub(participant_reward);
          } else {
 -            decrease_balance(state, participant_index, participant_reward)?;
 +            balance_updates.push(decrease_balance(state, participant_index as usize, participant_reward, BalanceUpdateReason::Penalty)?);
          }
      }
  
+     *state.get_balance_mut(proposer_index)? = proposer_balance;
+ 
 -    Ok(())
++    // CM modification: since the proposer's balance is mutated, we have to push a manual balance update
++    let proposer_delta = proposer_balance - previous_proposer_balance;
++    balance_updates.push(BalanceUpdate{index: proposer_index, delta: proposer_delta as i64, reason: BalanceUpdateReason::Reward});
++
 +    Ok(balance_updates)
  }
  
  /// Compute the `(participant_reward, proposer_reward)` for a sync aggregate.
 diff --git a/consensus/state_processing/src/per_block_processing/process_operations.rs b/consensus/state_processing/src/per_block_processing/process_operations.rs
-index cb24a7ba7..7e598e5e3 100644
+index 3aefcf8a9..114dbd9f8 100644
 --- a/consensus/state_processing/src/per_block_processing/process_operations.rs
 +++ b/consensus/state_processing/src/per_block_processing/process_operations.rs
-@@ -2,7 +2,7 @@ use super::*;
+@@ -1,7 +1,7 @@
+ use super::*;
  use crate::common::{
-     altair::{get_base_reward, BaseRewardPerIncrement},
      get_attestation_participation_flag_indices, increase_balance, initiate_validator_exit,
 -    slash_validator,
 +    slash_validator,BalanceUpdate, BalanceUpdateReason,
  };
  use crate::per_block_processing::errors::{BlockProcessingError, IntoWithIndex};
  use crate::VerifySignatures;
-@@ -15,30 +15,36 @@ pub fn process_operations<T: EthSpec, Payload: AbstractExecPayload<T>>(
+@@ -13,30 +13,36 @@ pub fn process_operations<E: EthSpec, Payload: AbstractExecPayload<E>>(
      verify_signatures: VerifySignatures,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 -    process_proposer_slashings(
@@ -1076,16 +1192,16 @@ index cb24a7ba7..7e598e5e3 100644
  }
  
  pub mod base {
-@@ -54,7 +60,7 @@ pub mod base {
+@@ -52,7 +58,7 @@ pub mod base {
          verify_signatures: VerifySignatures,
-         ctxt: &mut ConsensusContext<T>,
+         ctxt: &mut ConsensusContext<E>,
          spec: &ChainSpec,
 -    ) -> Result<(), BlockProcessingError> {
 +    ) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
-         // Ensure the previous epoch cache exists.
+         // Ensure required caches are all built. These should be no-ops during regular operation.
+         state.build_committee_cache(RelativeEpoch::Current, spec)?;
          state.build_committee_cache(RelativeEpoch::Previous, spec)?;
- 
-@@ -91,7 +97,7 @@ pub mod base {
+@@ -93,7 +99,7 @@ pub mod base {
              }
          }
  
@@ -1094,16 +1210,16 @@ index cb24a7ba7..7e598e5e3 100644
      }
  }
  
-@@ -100,21 +106,34 @@ pub mod altair_deneb {
+@@ -101,21 +107,34 @@ pub mod altair_deneb {
+     use super::*;
      use crate::common::update_progressive_balances_cache::update_progressive_balances_on_attestation;
-     use types::consts::altair::TIMELY_TARGET_FLAG_INDEX;
  
 +    #[deny(unused_results)]
-     pub fn process_attestations<T: EthSpec>(
-         state: &mut BeaconState<T>,
-         attestations: &[Attestation<T>],
+     pub fn process_attestations<E: EthSpec>(
+         state: &mut BeaconState<E>,
+         attestations: &[Attestation<E>],
          verify_signatures: VerifySignatures,
-         ctxt: &mut ConsensusContext<T>,
+         ctxt: &mut ConsensusContext<E>,
          spec: &ChainSpec,
 -    ) -> Result<(), BlockProcessingError> {
 +    ) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
@@ -1130,19 +1246,22 @@ index cb24a7ba7..7e598e5e3 100644
      }
  
 +    #[deny(unused_results)]
-     pub fn process_attestation<T: EthSpec>(
-         state: &mut BeaconState<T>,
-         attestation: &Attestation<T>,
-@@ -122,7 +141,7 @@ pub mod altair_deneb {
-         ctxt: &mut ConsensusContext<T>,
+     pub fn process_attestation<E: EthSpec>(
+         state: &mut BeaconState<E>,
+         attestation: &Attestation<E>,
+@@ -123,7 +142,10 @@ pub mod altair_deneb {
+         ctxt: &mut ConsensusContext<E>,
          verify_signatures: VerifySignatures,
          spec: &ChainSpec,
 -    ) -> Result<(), BlockProcessingError> {
 +    ) -> Result<BalanceUpdate, BlockProcessingError> {
-         state.build_committee_cache(RelativeEpoch::Previous, spec)?;
-         state.build_committee_cache(RelativeEpoch::Current, spec)?;
- 
-@@ -182,8 +201,12 @@ pub mod altair_deneb {
++        state.build_committee_cache(RelativeEpoch::Previous, spec)?;
++        state.build_committee_cache(RelativeEpoch::Current, spec)?;
++
+         let proposer_index = ctxt.get_proposer_index(state, spec)?;
+         let previous_epoch = ctxt.previous_epoch;
+         let current_epoch = ctxt.current_epoch;
+@@ -187,8 +209,12 @@ pub mod altair_deneb {
              .safe_mul(WEIGHT_DENOMINATOR)?
              .safe_div(PROPOSER_WEIGHT)?;
          let proposer_reward = proposer_reward_numerator.safe_div(proposer_reward_denominator)?;
@@ -1157,19 +1276,21 @@ index cb24a7ba7..7e598e5e3 100644
      }
  }
  
-@@ -191,46 +214,48 @@ pub mod altair_deneb {
+@@ -196,97 +222,97 @@ pub mod altair_deneb {
  ///
  /// Returns `Ok(())` if the validation and state updates completed successfully, otherwise returns
  /// an `Err` describing the invalid object or cause of failure.
 +#[deny(unused_results)]
- pub fn process_proposer_slashings<T: EthSpec>(
-     state: &mut BeaconState<T>,
+ pub fn process_proposer_slashings<E: EthSpec>(
+     state: &mut BeaconState<E>,
      proposer_slashings: &[ProposerSlashing],
      verify_signatures: VerifySignatures,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     state.build_slashings_cache()?;
+ 
      // Verify and apply proposer slashings in series.
      // We have to verify in series because an invalid block may contain multiple slashings
      // for the same validator, and we need to correctly detect and reject that.
@@ -1204,20 +1325,21 @@ index cb24a7ba7..7e598e5e3 100644
  /// Returns `Ok(())` if the validation and state updates completed successfully, otherwise returns
  /// an `Err` describing the invalid object or cause of failure.
 +#[deny(unused_results)]
- pub fn process_attester_slashings<T: EthSpec>(
-     state: &mut BeaconState<T>,
-     attester_slashings: &[AttesterSlashing<T>],
+ pub fn process_attester_slashings<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     attester_slashings: &[AttesterSlashing<E>],
      verify_signatures: VerifySignatures,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
+     state.build_slashings_cache()?;
+ 
 +    let mut balance_updates = Vec::<BalanceUpdate>::new();
      for (i, attester_slashing) in attester_slashings.iter().enumerate() {
-         verify_attester_slashing(state, attester_slashing, verify_signatures, spec)
-             .map_err(|e| e.into_with_index(i))?;
-@@ -239,46 +264,44 @@ pub fn process_attester_slashings<T: EthSpec>(
-             get_slashable_indices(state, attester_slashing).map_err(|e| e.into_with_index(i))?;
+         let slashable_indices =
+             verify_attester_slashing(state, attester_slashing, verify_signatures, spec)
+                 .map_err(|e| e.into_with_index(i))?;
  
          for i in slashable_indices {
 -            slash_validator(state, i as usize, None, ctxt, spec)?;
@@ -1232,11 +1354,11 @@ index cb24a7ba7..7e598e5e3 100644
  /// Wrapper function to handle calling the correct version of `process_attestations` based on
  /// the fork.
 +#[deny(unused_results)]
- pub fn process_attestations<T: EthSpec, Payload: AbstractExecPayload<T>>(
-     state: &mut BeaconState<T>,
-     block_body: BeaconBlockBodyRef<T, Payload>,
+ pub fn process_attestations<E: EthSpec, Payload: AbstractExecPayload<E>>(
+     state: &mut BeaconState<E>,
+     block_body: BeaconBlockBodyRef<E, Payload>,
      verify_signatures: VerifySignatures,
-     ctxt: &mut ConsensusContext<T>,
+     ctxt: &mut ConsensusContext<E>,
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
@@ -1258,9 +1380,10 @@ index cb24a7ba7..7e598e5e3 100644
 +            spec,
 +        )?),
          BeaconBlockBodyRef::Altair(_)
-         | BeaconBlockBodyRef::Merge(_)
+         | BeaconBlockBodyRef::Bellatrix(_)
          | BeaconBlockBodyRef::Capella(_)
-         | BeaconBlockBodyRef::Deneb(_) => {
+         | BeaconBlockBodyRef::Deneb(_)
+         | BeaconBlockBodyRef::Electra(_) => {
 -            altair_deneb::process_attestations(
 +            Ok(altair_deneb::process_attestations(
                  state,
@@ -1276,27 +1399,27 @@ index cb24a7ba7..7e598e5e3 100644
  }
  
  /// Validates each `Exit` and updates the state, short-circuiting on an invalid object.
-@@ -331,11 +354,13 @@ pub fn process_bls_to_execution_changes<T: EthSpec>(
+@@ -339,11 +365,13 @@ pub fn process_bls_to_execution_changes<E: EthSpec>(
  ///
  /// Returns `Ok(())` if the validation and state updates completed successfully, otherwise returns
  /// an `Err` describing the invalid object or cause of failure.
 +#[deny(unused_results)]
- pub fn process_deposits<T: EthSpec>(
-     state: &mut BeaconState<T>,
+ pub fn process_deposits<E: EthSpec>(
+     state: &mut BeaconState<E>,
      deposits: &[Deposit],
      spec: &ChainSpec,
 -) -> Result<(), BlockProcessingError> {
 +) -> Result<Vec<BalanceUpdate>, BlockProcessingError> {
 +    let mut balance_updates = Vec::<BalanceUpdate>::new();
      let expected_deposit_len = std::cmp::min(
-         T::MaxDeposits::to_u64(),
+         E::MaxDeposits::to_u64(),
          state.get_outstanding_deposit_len()?,
-@@ -364,19 +389,22 @@ pub fn process_deposits<T: EthSpec>(
+@@ -372,19 +400,22 @@ pub fn process_deposits<E: EthSpec>(
  
      // Update the state in series.
      for deposit in deposits {
--        process_deposit(state, deposit, spec, false)?;
-+        match process_deposit(state, deposit, spec, false)? {
+-        apply_deposit(state, deposit, spec, false)?;
++        match apply_deposit(state, deposit, spec, false)? {
 +            Some(update) => balance_updates.push(update),
 +            None => {}
 +        }
@@ -1308,8 +1431,8 @@ index cb24a7ba7..7e598e5e3 100644
  
  /// Process a single deposit, optionally verifying its merkle proof.
 +#[deny(unused_results)]
- pub fn process_deposit<T: EthSpec>(
-     state: &mut BeaconState<T>,
+ pub fn apply_deposit<E: EthSpec>(
+     state: &mut BeaconState<E>,
      deposit: &Deposit,
      spec: &ChainSpec,
      verify_merkle_proof: bool,
@@ -1318,7 +1441,7 @@ index cb24a7ba7..7e598e5e3 100644
      let deposit_index = state.eth1_deposit_index() as usize;
      if verify_merkle_proof {
          verify_deposit_merkle_proof(state, deposit, state.eth1_deposit_index(), spec)
-@@ -394,12 +422,17 @@ pub fn process_deposit<T: EthSpec>(
+@@ -402,12 +433,17 @@ pub fn apply_deposit<E: EthSpec>(
  
      if let Some(index) = validator_index {
          // Update the existing validator balance.
@@ -1338,7 +1461,7 @@ index cb24a7ba7..7e598e5e3 100644
          }
  
          // Create a new validator.
-@@ -429,7 +462,10 @@ pub fn process_deposit<T: EthSpec>(
+@@ -437,7 +473,10 @@ pub fn apply_deposit<E: EthSpec>(
          if let Ok(inactivity_scores) = state.inactivity_scores_mut() {
              inactivity_scores.push(0)?;
          }
@@ -1352,10 +1475,10 @@ index cb24a7ba7..7e598e5e3 100644
 -    Ok(())
  }
 diff --git a/consensus/state_processing/src/per_block_processing/tests.rs b/consensus/state_processing/src/per_block_processing/tests.rs
-index 83fd0f232..b9cb557d5 100644
+index f0055fa80..51255fef9 100644
 --- a/consensus/state_processing/src/per_block_processing/tests.rs
 +++ b/consensus/state_processing/src/per_block_processing/tests.rs
-@@ -230,7 +230,7 @@ async fn valid_4_deposits() {
+@@ -225,7 +225,7 @@ async fn valid_4_deposits() {
      let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
  
      // Expecting Ok because these are valid deposits.
@@ -1364,7 +1487,7 @@ index 83fd0f232..b9cb557d5 100644
  }
  
  #[tokio::test]
-@@ -352,7 +352,7 @@ async fn invalid_deposit_wrong_sig() {
+@@ -347,7 +347,7 @@ async fn invalid_deposit_wrong_sig() {
  
      let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
      // Expecting Ok(()) even though the block signature does not correspond to the correct public key
@@ -1373,7 +1496,7 @@ index 83fd0f232..b9cb557d5 100644
  }
  
  #[tokio::test]
-@@ -377,7 +377,7 @@ async fn invalid_deposit_invalid_pub_key() {
+@@ -372,7 +372,7 @@ async fn invalid_deposit_invalid_pub_key() {
      let result = process_operations::process_deposits(state, head_block.body().deposits(), &spec);
  
      // Expecting Ok(()) even though we passed in invalid publickeybytes in the public key field of the deposit data.
@@ -1382,7 +1505,7 @@ index 83fd0f232..b9cb557d5 100644
  }
  
  #[tokio::test]
-@@ -667,7 +667,7 @@ async fn valid_insert_attester_slashing() {
+@@ -662,7 +662,7 @@ async fn valid_insert_attester_slashing() {
      );
  
      // Expecting Ok(()) because attester slashing is valid
@@ -1392,93 +1515,31 @@ index 83fd0f232..b9cb557d5 100644
  
  #[tokio::test]
 diff --git a/consensus/state_processing/src/per_epoch_processing/altair.rs b/consensus/state_processing/src/per_epoch_processing/altair.rs
-index 0abbd16a9..99e212584 100644
+index 5fcd147b2..4b7c6ee9d 100644
 --- a/consensus/state_processing/src/per_epoch_processing/altair.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/altair.rs
-@@ -44,13 +44,13 @@ pub fn process_epoch<T: EthSpec>(
-     process_inactivity_updates(state, &participation_cache, spec)?;
+@@ -51,7 +51,7 @@ pub fn process_epoch<E: EthSpec>(
+     // without loss of correctness.
+     let current_epoch_progressive_balances = state.progressive_balances_cache().clone();
+     let current_epoch_total_active_balance = state.get_total_active_balance()?;
+-    let participation_summary =
++    let (participation_summary, balance_updates) =
+         process_epoch_single_pass(state, spec, SinglePassConfig::default())?;
  
-     // Rewards and Penalties.
--    process_rewards_and_penalties(state, &participation_cache, spec)?;
-+    let rewards_and_penalties_updates = process_rewards_and_penalties(state, &participation_cache, spec)?;
- 
-     // Registry Updates.
-     process_registry_updates(state, spec)?;
- 
-     // Slashings.
--    process_slashings(
-+    let slashing_updates =process_slashings(
-         state,
-         participation_cache.current_epoch_total_active_balance(),
-         spec,
-@@ -82,6 +82,7 @@ pub fn process_epoch<T: EthSpec>(
+     // Reset eth1 data votes.
+@@ -82,6 +82,7 @@ pub fn process_epoch<E: EthSpec>(
      update_progressive_balances_on_epoch_transition(state, spec)?;
  
      Ok(EpochProcessingSummary::Altair {
-+        balance_updates: [rewards_and_penalties_updates, slashing_updates].concat(),
-         participation_cache,
-         sync_committee,
-     })
-diff --git a/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs b/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
-index 19d57130c..5d37655ae 100644
---- a/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
-+++ b/consensus/state_processing/src/per_epoch_processing/altair/rewards_and_penalties.rs
-@@ -8,20 +8,22 @@ use types::{BeaconState, ChainSpec, EthSpec};
- 
- use crate::common::{
-     altair::{get_base_reward, BaseRewardPerIncrement},
--    decrease_balance, increase_balance,
-+    decrease_balance, increase_balance, BalanceUpdate, BalanceUpdateReason,
- };
- use crate::per_epoch_processing::{Delta, Error};
- 
- /// Apply attester and proposer rewards.
- ///
- /// Spec v1.1.0
-+#[deny(unused_results)]
- pub fn process_rewards_and_penalties<T: EthSpec>(
-     state: &mut BeaconState<T>,
-     participation_cache: &ParticipationCache,
-     spec: &ChainSpec,
--) -> Result<(), Error> {
-+) -> Result<Vec<BalanceUpdate>, Error> {
-+    let mut balance_updates = Vec::<BalanceUpdate>::new();
-     if state.current_epoch() == T::genesis_epoch() {
--        return Ok(());
-+        return Ok(Vec::new());
-     }
- 
-     let mut deltas = vec![Delta::default(); state.validators().len()];
-@@ -44,11 +46,21 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
-     // Apply the deltas, erroring on overflow above but not on overflow below (saturating at 0
-     // instead).
-     for (i, delta) in deltas.into_iter().enumerate() {
--        increase_balance(state, i, delta.rewards)?;
--        decrease_balance(state, i, delta.penalties)?;
-+        balance_updates.push(increase_balance(
-+            state,
-+            i,
-+            delta.rewards,
-+            BalanceUpdateReason::Reward,
-+        )?);
-+        balance_updates.push(decrease_balance(
-+            state,
-+            i,
-+            delta.penalties,
-+            BalanceUpdateReason::Penalty,
-+        )?);
-     }
- 
--    Ok(())
-+    Ok(balance_updates)
- }
- 
- /// Return the deltas for a given flag index by scanning through the participation flags.
++        balance_updates: balance_updates,
+         progressive_balances: current_epoch_progressive_balances,
+         current_epoch_total_active_balance,
+         participation: participation_summary,
 diff --git a/consensus/state_processing/src/per_epoch_processing/base.rs b/consensus/state_processing/src/per_epoch_processing/base.rs
-index c5864bd1e..3084846b6 100644
+index e468a8ddd..a40b4087f 100644
 --- a/consensus/state_processing/src/per_epoch_processing/base.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/base.rs
-@@ -36,13 +36,13 @@ pub fn process_epoch<T: EthSpec>(
+@@ -39,13 +39,13 @@ pub fn process_epoch<E: EthSpec>(
      justification_and_finalization_state.apply_changes_to_state(state);
  
      // Rewards and Penalties.
@@ -1494,8 +1555,8 @@ index c5864bd1e..3084846b6 100644
          state,
          validator_statuses.total_balances.current_epoch(),
          spec,
-@@ -70,6 +70,7 @@ pub fn process_epoch<T: EthSpec>(
-     state.advance_caches(spec)?;
+@@ -73,6 +73,7 @@ pub fn process_epoch<E: EthSpec>(
+     state.advance_caches()?;
  
      Ok(EpochProcessingSummary::Base {
 +        balance_updates: [rewards_and_penalties_updates, slashing_updates].concat(),
@@ -1503,37 +1564,37 @@ index c5864bd1e..3084846b6 100644
          statuses: validator_statuses.statuses,
      })
 diff --git a/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs b/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
-index 74c96d8ae..ac648eb83 100644
+index ecea0b554..2fa5851e1 100644
 --- a/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/base/rewards_and_penalties.rs
-@@ -1,4 +1,7 @@
--use crate::common::{base::get_base_reward, decrease_balance, increase_balance};
-+use crate::common::{
-+    base::get_base_reward, decrease_balance, increase_balance,
+@@ -1,6 +1,7 @@
+ use crate::common::{
+     base::{get_base_reward, SqrtTotalActiveBalance},
+     decrease_balance, increase_balance,
 +    BalanceUpdate, BalanceUpdateReason,
-+};
+ };
  use crate::per_epoch_processing::{
      base::{TotalBalances, ValidatorStatus, ValidatorStatuses},
-     Delta, Error,
-@@ -43,13 +46,15 @@ impl AttestationDelta {
+@@ -46,13 +47,16 @@ impl AttestationDelta {
  }
  
  /// Apply attester and proposer rewards.
 +#[deny(unused_results)]
- pub fn process_rewards_and_penalties<T: EthSpec>(
-     state: &mut BeaconState<T>,
+ pub fn process_rewards_and_penalties<E: EthSpec>(
+     state: &mut BeaconState<E>,
      validator_statuses: &ValidatorStatuses,
      spec: &ChainSpec,
 -) -> Result<(), Error> {
 +) -> Result<Vec<BalanceUpdate>, Error> {
 +    let mut balance_updates = Vec::<BalanceUpdate>::new();
-     if state.current_epoch() == T::genesis_epoch() {
++
+     if state.current_epoch() == E::genesis_epoch() {
 -        return Ok(());
-+        return Ok(Vec::new());
++        return Ok(balance_updates);
      }
  
      // Guard against an out-of-bounds during the validator balance update.
-@@ -65,11 +70,20 @@ pub fn process_rewards_and_penalties<T: EthSpec>(
+@@ -68,11 +72,20 @@ pub fn process_rewards_and_penalties<E: EthSpec>(
      // instead).
      for (i, delta) in deltas.into_iter().enumerate() {
          let combined_delta = delta.flatten()?;
@@ -1558,51 +1619,22 @@ index 74c96d8ae..ac648eb83 100644
  }
  
  /// Apply rewards for participation in attestations during the previous epoch.
-diff --git a/consensus/state_processing/src/per_epoch_processing/capella.rs b/consensus/state_processing/src/per_epoch_processing/capella.rs
-index 911510ed0..4575b46c6 100644
---- a/consensus/state_processing/src/per_epoch_processing/capella.rs
-+++ b/consensus/state_processing/src/per_epoch_processing/capella.rs
-@@ -40,13 +40,13 @@ pub fn process_epoch<T: EthSpec>(
-     process_inactivity_updates(state, &participation_cache, spec)?;
- 
-     // Rewards and Penalties.
--    process_rewards_and_penalties(state, &participation_cache, spec)?;
-+    let rewards_and_penalties_updates = process_rewards_and_penalties(state, &participation_cache, spec)?;
- 
-     // Registry Updates.
-     process_registry_updates(state, spec)?;
- 
-     // Slashings.
--    process_slashings(
-+    let slashing_updates  =process_slashings(
-         state,
-         participation_cache.current_epoch_total_active_balance(),
-         spec,
-@@ -78,6 +78,7 @@ pub fn process_epoch<T: EthSpec>(
-     update_progressive_balances_on_epoch_transition(state, spec)?;
- 
-     Ok(EpochProcessingSummary::Altair {
-+        balance_updates: [rewards_and_penalties_updates, slashing_updates].concat(),
-         participation_cache,
-         sync_committee,
-     })
 diff --git a/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs b/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
-index 89bc4ab5a..bb092b325 100644
+index 952ab3f64..892662c3a 100644
 --- a/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/epoch_processing_summary.rs
-@@ -2,18 +2,22 @@ use super::{
-     altair::{participation_cache::Error as ParticipationCacheError, ParticipationCache},
-     base::{validator_statuses::InclusionInfo, TotalBalances, ValidatorStatus},
- };
+@@ -1,4 +1,5 @@
+ use super::base::{validator_statuses::InclusionInfo, TotalBalances, ValidatorStatus};
 +use crate::common::BalanceUpdate;
  use crate::metrics;
  use std::sync::Arc;
- use types::{EthSpec, SyncCommittee};
+ use types::{
+@@ -9,12 +10,15 @@ use types::{
  
  /// Provides a summary of validator participation during the epoch.
  #[derive(PartialEq, Debug)]
 +#[must_use]
- pub enum EpochProcessingSummary<T: EthSpec> {
+ pub enum EpochProcessingSummary<E: EthSpec> {
      Base {
 +        balance_updates: Vec<BalanceUpdate>,
          total_balances: TotalBalances,
@@ -1610,23 +1642,182 @@ index 89bc4ab5a..bb092b325 100644
      },
      Altair {
 +        balance_updates: Vec<BalanceUpdate>,
-         participation_cache: ParticipationCache,
-         sync_committee: Arc<SyncCommittee<T>>,
-     },
+         progressive_balances: ProgressiveBalancesCache,
+         current_epoch_total_active_balance: u64,
+         participation: ParticipationEpochSummary<E>,
+diff --git a/consensus/state_processing/src/per_epoch_processing/registry_updates.rs b/consensus/state_processing/src/per_epoch_processing/registry_updates.rs
+index 3d02d7973..317f89001 100644
+--- a/consensus/state_processing/src/per_epoch_processing/registry_updates.rs
++++ b/consensus/state_processing/src/per_epoch_processing/registry_updates.rs
+@@ -57,6 +57,7 @@ pub fn process_registry_updates<E: EthSpec>(
+     Ok(())
+ }
+ 
++// CM note: used only in tests, no need to propagate balance updates
+ pub fn process_registry_updates_slow<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     spec: &ChainSpec,
+diff --git a/consensus/state_processing/src/per_epoch_processing/single_pass.rs b/consensus/state_processing/src/per_epoch_processing/single_pass.rs
+index a9629e73e..2725fc2df 100644
+--- a/consensus/state_processing/src/per_epoch_processing/single_pass.rs
++++ b/consensus/state_processing/src/per_epoch_processing/single_pass.rs
+@@ -5,7 +5,7 @@ use crate::{
+ };
+ use itertools::izip;
+ use safe_arith::{SafeArith, SafeArithIter};
+-use std::cmp::{max, min};
++use std::{cmp::{max, min}, ops::Neg};
+ use std::collections::BTreeSet;
+ use types::{
+     consts::altair::{
+@@ -16,6 +16,7 @@ use types::{
+     ActivationQueue, BeaconState, BeaconStateError, ChainSpec, Epoch, EthSpec, ExitCache, ForkName,
+     ParticipationFlags, ProgressiveBalancesCache, RelativeEpoch, Unsigned, Validator,
+ };
++use crate::common::{BalanceUpdate, BalanceUpdateReason};
+ 
+ pub struct SinglePassConfig {
+     pub inactivity_updates: bool,
+@@ -109,7 +110,7 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     spec: &ChainSpec,
+     conf: SinglePassConfig,
+-) -> Result<ParticipationEpochSummary<E>, Error> {
++) -> Result<(ParticipationEpochSummary<E>, Vec<BalanceUpdate>), Error> {
+     initialize_epoch_cache(state, spec)?;
+     initialize_progressive_balances_cache(state, spec)?;
+     state.build_exit_cache(spec)?;
+@@ -153,6 +154,8 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+ 
+     let num_validators = validators.len();
+ 
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
++
+     // Take a snapshot of the validators and participation before mutating. This is used for
+     // informational purposes (e.g. by the validator monitor).
+     let summary = ParticipationEpochSummary::new(
+@@ -233,7 +236,7 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+ 
+             // `process_rewards_and_penalties`
+             if conf.rewards_and_penalties {
+-                process_single_reward_and_penalty(
++                let delta = process_single_reward_and_penalty(
+                     &mut balance,
+                     &inactivity_score,
+                     validator_info,
+@@ -241,6 +244,14 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+                     state_ctxt,
+                     spec,
+                 )?;
++
++                if delta.rewards != 0 {
++                    balance_updates.push(BalanceUpdate{index: validator_info.index, delta: delta.rewards as i64, reason: BalanceUpdateReason::Reward})
++                }
++
++                if delta.penalties != 0 {
++                    balance_updates.push(BalanceUpdate{index: validator_info.index, delta: (delta.penalties as i64).neg(), reason: BalanceUpdateReason::Reward})
++                }
+             }
+         }
+ 
+@@ -259,7 +270,7 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+ 
+         // `process_slashings`
+         if conf.slashings {
+-            process_single_slashing(&mut balance, &validator, slashings_ctxt, state_ctxt, spec)?;
++            process_single_slashing(&mut balance, &validator, index, slashings_ctxt, state_ctxt, spec)?;
+         }
+ 
+         // `process_effective_balance_updates`
+@@ -287,7 +298,7 @@ pub fn process_epoch_single_pass<E: EthSpec>(
+         )?;
+     }
+ 
+-    Ok(summary)
++    Ok((summary, balance_updates))
+ }
+ 
+ fn process_single_inactivity_update(
+@@ -323,6 +334,7 @@ fn process_single_inactivity_update(
+     Ok(())
+ }
+ 
++#[deny(unused_results)]
+ fn process_single_reward_and_penalty(
+     balance: &mut Cow<u64>,
+     inactivity_score: &u64,
+@@ -330,12 +342,13 @@ fn process_single_reward_and_penalty(
+     rewards_ctxt: &RewardsAndPenaltiesContext,
+     state_ctxt: &StateContext,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Delta, Error> {
++    let mut delta = Delta::default();
++
+     if !validator_info.is_eligible {
+-        return Ok(());
++        return Ok(delta);
+     }
+ 
+-    let mut delta = Delta::default();
+     for flag_index in 0..NUM_FLAG_INDICES {
+         get_flag_index_delta(
+             &mut delta,
+@@ -359,7 +372,7 @@ fn process_single_reward_and_penalty(
+         *balance = balance.saturating_sub(delta.penalties);
+     }
+ 
+-    Ok(())
++    Ok(delta)
+ }
+ 
+ fn get_flag_index_delta(
+@@ -545,13 +558,17 @@ impl SlashingsContext {
+     }
+ }
+ 
++#[deny(unused_results)]
+ fn process_single_slashing(
+     balance: &mut Cow<u64>,
+     validator: &Validator,
++    validator_index: usize,
+     slashings_ctxt: &SlashingsContext,
+     state_ctxt: &StateContext,
+     spec: &ChainSpec,
+-) -> Result<(), Error> {
++) -> Result<Vec<BalanceUpdate>, Error> {
++    let mut balance_updates = Vec::<BalanceUpdate>::new();
++    
+     if validator.slashed && slashings_ctxt.target_withdrawable_epoch == validator.withdrawable_epoch
+     {
+         let increment = spec.effective_balance_increment;
+@@ -564,8 +581,11 @@ fn process_single_slashing(
+             .safe_mul(increment)?;
+ 
+         *balance.make_mut()? = balance.saturating_sub(penalty);
++
++        balance_updates.push(BalanceUpdate{index: validator_index, delta: (penalty as i64).neg(), reason: BalanceUpdateReason::SlashingPenalty})
+     }
+-    Ok(())
++
++    Ok(balance_updates)
+ }
+ 
+ impl EffectiveBalancesContext {
 diff --git a/consensus/state_processing/src/per_epoch_processing/slashings.rs b/consensus/state_processing/src/per_epoch_processing/slashings.rs
-index 2d595491c..3ca5ee5b8 100644
+index 6104208ee..60991faf2 100644
 --- a/consensus/state_processing/src/per_epoch_processing/slashings.rs
 +++ b/consensus/state_processing/src/per_epoch_processing/slashings.rs
-@@ -1,13 +1,16 @@
- use crate::per_epoch_processing::Error;
+@@ -5,13 +5,16 @@ use crate::per_epoch_processing::{
+ };
  use safe_arith::{SafeArith, SafeArithIter};
- use types::{BeaconState, BeaconStateError, ChainSpec, EthSpec, Unsigned};
+ use types::{BeaconState, ChainSpec, EthSpec, Unsigned};
 +use crate::common::{BalanceUpdate, BalanceUpdateReason};
  
  /// Process slashings.
 +#[deny(unused_results)]
- pub fn process_slashings<T: EthSpec>(
-     state: &mut BeaconState<T>,
+ pub fn process_slashings<E: EthSpec>(
+     state: &mut BeaconState<E>,
      total_balance: u64,
      spec: &ChainSpec,
 -) -> Result<(), Error> {
@@ -1635,26 +1826,58 @@ index 2d595491c..3ca5ee5b8 100644
      let epoch = state.current_epoch();
      let sum_slashings = state.get_all_slashings().iter().copied().safe_sum()?;
  
-@@ -36,8 +39,13 @@ pub fn process_slashings<T: EthSpec>(
-                 .get_mut(index)
-                 .ok_or(BeaconStateError::BalancesOutOfBounds(index))?;
-             *balance = balance.saturating_sub(penalty);
-+            balance_updates.push(BalanceUpdate {
-+                index,
-+                delta: penalty as i64,
-+                reason: BalanceUpdateReason::SlashingPenalty,
-+            });
-         }
+@@ -41,12 +44,13 @@ pub fn process_slashings<E: EthSpec>(
+             .safe_div(total_balance)?
+             .safe_mul(increment)?;
+ 
+-        decrease_balance(state, index, penalty)?;
++        balance_updates.push(decrease_balance(state, index, penalty, BalanceUpdateReason::SlashingPenalty)?);
      }
  
 -    Ok(())
 +    Ok(balance_updates)
  }
+ 
++// CM note: used only in tests, no need to propagate balance updates
+ pub fn process_slashings_slow<E: EthSpec>(
+     state: &mut BeaconState<E>,
+     spec: &ChainSpec,
+diff --git a/consensus/state_processing/src/per_epoch_processing/tests.rs b/consensus/state_processing/src/per_epoch_processing/tests.rs
+index 14bbfbc07..044a2b531 100644
+--- a/consensus/state_processing/src/per_epoch_processing/tests.rs
++++ b/consensus/state_processing/src/per_epoch_processing/tests.rs
+@@ -35,7 +35,7 @@ async fn runs_without_error() {
+         .await;
+     let mut new_head_state = harness.get_current_state();
+ 
+-    process_epoch(&mut new_head_state, &spec).unwrap();
++    let _ = process_epoch(&mut new_head_state, &spec).unwrap();
+ }
+ 
+ #[cfg(not(debug_assertions))]
+@@ -83,7 +83,7 @@ mod release_tests {
+         );
+ 
+         // Check the state is valid before starting this test.
+-        process_epoch(&mut altair_state.clone(), &spec)
++        let _ = process_epoch(&mut altair_state.clone(), &spec)
+             .expect("state passes intial epoch processing");
+         per_slot_processing(&mut altair_state.clone(), None, &spec)
+             .expect("state passes intial slot processing");
+@@ -143,7 +143,7 @@ mod release_tests {
+         );
+ 
+         // Check the state is valid before starting this test.
+-        process_epoch(&mut base_state.clone(), &spec)
++        let _ = process_epoch(&mut base_state.clone(), &spec)
+             .expect("state passes intial epoch processing");
+         per_slot_processing(&mut base_state.clone(), None, &spec)
+             .expect("state passes intial slot processing");
 diff --git a/lighthouse/tests/beacon_node.rs b/lighthouse/tests/beacon_node.rs
-index 2a88770cd..7116e519c 100644
+index 73badac91..e4f0d24ea 100644
 --- a/lighthouse/tests/beacon_node.rs
 +++ b/lighthouse/tests/beacon_node.rs
-@@ -773,6 +773,7 @@ fn network_shutdown_after_sync_disabled_flag() {
+@@ -830,6 +830,7 @@ fn network_shutdown_after_sync_disabled_flag() {
          .with_config(|config| assert!(!config.network.shutdown_after_sync));
  }
  #[test]
@@ -1662,7 +1885,7 @@ index 2a88770cd..7116e519c 100644
  fn network_listen_address_flag_v4() {
      let addr = "127.0.0.2".parse::<Ipv4Addr>().unwrap();
      CommandLineTest::new()
-@@ -786,6 +787,16 @@ fn network_listen_address_flag_v4() {
+@@ -843,6 +844,16 @@ fn network_listen_address_flag_v4() {
          });
  }
  #[test]
@@ -1679,7 +1902,7 @@ index 2a88770cd..7116e519c 100644
  fn network_listen_address_flag_v6() {
      const ADDR: &str = "::1";
      let addr = ADDR.parse::<Ipv6Addr>().unwrap();
-@@ -800,6 +811,15 @@ fn network_listen_address_flag_v6() {
+@@ -857,6 +868,15 @@ fn network_listen_address_flag_v6() {
          });
  }
  #[test]
@@ -1695,7 +1918,7 @@ index 2a88770cd..7116e519c 100644
  fn network_listen_address_flag_dual_stack() {
      const V4_ADDR: &str = "127.0.0.1";
      const V6_ADDR: &str = "::1";
-@@ -881,6 +901,16 @@ fn network_port_flag_over_ipv4() {
+@@ -940,6 +960,16 @@ fn network_port_flag_over_ipv4() {
          });
  }
  #[test]
@@ -1712,7 +1935,7 @@ index 2a88770cd..7116e519c 100644
  fn network_port_flag_over_ipv6() {
      let port = 0;
      CommandLineTest::new()
-@@ -917,6 +947,7 @@ fn network_port_flag_over_ipv6() {
+@@ -978,6 +1008,7 @@ fn network_port_flag_over_ipv6() {
          });
  }
  #[test]
@@ -1720,7 +1943,7 @@ index 2a88770cd..7116e519c 100644
  fn network_port_flag_over_ipv4_and_ipv6() {
      let port = 0;
      let port6 = 0;
-@@ -996,6 +1027,11 @@ fn network_port_and_discovery_port_flags_over_ipv4() {
+@@ -1060,6 +1091,11 @@ fn network_port_and_discovery_port_flags_over_ipv4() {
          });
  }
  #[test]
@@ -1732,7 +1955,7 @@ index 2a88770cd..7116e519c 100644
  fn network_port_and_discovery_port_flags_over_ipv6() {
      let tcp6_port = 0;
      let disc6_port = 0;
-@@ -1016,6 +1052,11 @@ fn network_port_and_discovery_port_flags_over_ipv6() {
+@@ -1081,6 +1117,11 @@ fn network_port_and_discovery_port_flags_over_ipv6() {
          });
  }
  #[test]
@@ -1744,7 +1967,7 @@ index 2a88770cd..7116e519c 100644
  fn network_port_and_discovery_port_flags_over_ipv4_and_ipv6() {
      let tcp4_port = 0;
      let disc4_port = 0;
-@@ -1051,6 +1092,7 @@ fn network_port_and_discovery_port_flags_over_ipv4_and_ipv6() {
+@@ -1117,6 +1158,7 @@ fn network_port_and_discovery_port_flags_over_ipv4_and_ipv6() {
  }
  
  #[test]
@@ -1752,7 +1975,7 @@ index 2a88770cd..7116e519c 100644
  fn network_port_discovery_quic_port_flags_over_ipv4_and_ipv6() {
      let tcp4_port = 0;
      let disc4_port = 0;
-@@ -1242,6 +1284,11 @@ fn enr_tcp_port_flag() {
+@@ -1319,6 +1361,11 @@ fn enr_tcp_port_flag() {
          });
  }
  #[test]
@@ -1764,7 +1987,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_udp6_port_flag() {
      let port = DUMMY_ENR_UDP_PORT;
      CommandLineTest::new()
-@@ -1255,6 +1302,7 @@ fn enr_udp6_port_flag() {
+@@ -1332,6 +1379,7 @@ fn enr_udp6_port_flag() {
          });
  }
  #[test]
@@ -1772,7 +1995,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_quic6_port_flag() {
      let port = DUMMY_ENR_QUIC_PORT;
      CommandLineTest::new()
-@@ -1268,6 +1316,11 @@ fn enr_quic6_port_flag() {
+@@ -1345,6 +1393,11 @@ fn enr_quic6_port_flag() {
          });
  }
  #[test]
@@ -1784,7 +2007,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_tcp6_port_flag() {
      let port = DUMMY_ENR_TCP_PORT;
      CommandLineTest::new()
-@@ -1281,6 +1334,7 @@ fn enr_tcp6_port_flag() {
+@@ -1358,6 +1411,7 @@ fn enr_tcp6_port_flag() {
          });
  }
  #[test]
@@ -1792,7 +2015,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_match_flag_over_ipv4() {
      let addr = "127.0.0.2".parse::<Ipv4Addr>().unwrap();
  
-@@ -1311,6 +1365,11 @@ fn enr_match_flag_over_ipv4() {
+@@ -1388,6 +1442,11 @@ fn enr_match_flag_over_ipv4() {
          });
  }
  #[test]
@@ -1804,7 +2027,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_match_flag_over_ipv6() {
      const ADDR: &str = "::1";
      let addr = ADDR.parse::<Ipv6Addr>().unwrap();
-@@ -1342,6 +1401,12 @@ fn enr_match_flag_over_ipv6() {
+@@ -1419,6 +1478,12 @@ fn enr_match_flag_over_ipv6() {
          });
  }
  #[test]
@@ -1817,7 +2040,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_match_flag_over_ipv4_and_ipv6() {
      const IPV6_ADDR: &str = "::1";
  
-@@ -1413,6 +1478,11 @@ fn enr_address_flag_with_ipv4() {
+@@ -1489,6 +1554,11 @@ fn enr_address_flag_with_ipv4() {
          });
  }
  #[test]
@@ -1829,7 +2052,7 @@ index 2a88770cd..7116e519c 100644
  fn enr_address_flag_with_ipv6() {
      let addr = "192.167.1.1".parse::<Ipv4Addr>().unwrap();
      let port = DUMMY_ENR_UDP_PORT;
-@@ -1465,6 +1535,7 @@ fn http_flag() {
+@@ -1541,6 +1611,7 @@ fn http_flag() {
          .with_config(|config| assert!(config.http_api.enabled));
  }
  #[test]
@@ -1837,7 +2060,7 @@ index 2a88770cd..7116e519c 100644
  fn http_address_flag() {
      let addr = "127.0.0.99".parse::<IpAddr>().unwrap();
      CommandLineTest::new()
-@@ -1474,6 +1545,7 @@ fn http_address_flag() {
+@@ -1550,6 +1621,7 @@ fn http_address_flag() {
          .with_config(|config| assert_eq!(config.http_api.listen_addr, addr));
  }
  #[test]
@@ -1845,7 +2068,7 @@ index 2a88770cd..7116e519c 100644
  fn http_address_ipv6_flag() {
      let addr = "::1".parse::<IpAddr>().unwrap();
      CommandLineTest::new()
-@@ -1622,6 +1694,7 @@ fn metrics_flag() {
+@@ -1699,6 +1771,7 @@ fn metrics_flag() {
          });
  }
  #[test]
@@ -1853,7 +2076,7 @@ index 2a88770cd..7116e519c 100644
  fn metrics_address_flag() {
      let addr = "127.0.0.99".parse::<IpAddr>().unwrap();
      CommandLineTest::new()
-@@ -1631,6 +1704,10 @@ fn metrics_address_flag() {
+@@ -1708,6 +1781,10 @@ fn metrics_address_flag() {
          .with_config(|config| assert_eq!(config.http_metrics.listen_addr, addr));
  }
  #[test]
@@ -1865,10 +2088,10 @@ index 2a88770cd..7116e519c 100644
      let addr = "::1".parse::<IpAddr>().unwrap();
      CommandLineTest::new()
 diff --git a/testing/ef_tests/src/cases/epoch_processing.rs b/testing/ef_tests/src/cases/epoch_processing.rs
-index cf182af2b..3dd572ec3 100644
+index c4c592e4c..cc7b729b7 100644
 --- a/testing/ef_tests/src/cases/epoch_processing.rs
 +++ b/testing/ef_tests/src/cases/epoch_processing.rs
-@@ -123,16 +123,20 @@ impl<E: EthSpec> EpochTransition<E> for RewardsAndPenalties {
+@@ -125,13 +125,14 @@ impl<E: EthSpec> EpochTransition<E> for RewardsAndPenalties {
              BeaconState::Base(_) => {
                  let mut validator_statuses = base::ValidatorStatuses::new(state, spec)?;
                  validator_statuses.process_attestations(state)?;
@@ -1877,30 +2100,20 @@ index cf182af2b..3dd572ec3 100644
 +                Ok(())
              }
              BeaconState::Altair(_)
-             | BeaconState::Merge(_)
+             | BeaconState::Bellatrix(_)
              | BeaconState::Capella(_)
--            | BeaconState::Deneb(_) => altair::process_rewards_and_penalties(
--                state,
--                &altair::ParticipationCache::new(state, spec).unwrap(),
--                spec,
--            ),
-+            | BeaconState::Deneb(_)  => {
-+                let _ = altair::process_rewards_and_penalties(
-+                    state,
-+                    &altair::ParticipationCache::new(state, spec).unwrap(),
-+                    spec,
-+                );
-+                Ok(())
-+            },
+             | BeaconState::Deneb(_)
+-            | BeaconState::Electra(_) => altair::process_rewards_and_penalties_slow(state, spec),
++            | BeaconState::Electra(_)  => altair::process_rewards_and_penalties_slow(state, spec),
          }
      }
  }
 diff --git a/testing/ef_tests/src/cases/operations.rs b/testing/ef_tests/src/cases/operations.rs
-index 4c02126d4..84abb31ce 100644
+index 158f2334d..35c6c2c94 100644
 --- a/testing/ef_tests/src/cases/operations.rs
 +++ b/testing/ef_tests/src/cases/operations.rs
-@@ -91,26 +91,30 @@ impl<E: EthSpec> Operation<E> for Attestation<E> {
-     ) -> Result<(), BlockProcessingError> {
+@@ -91,27 +91,31 @@ impl<E: EthSpec> Operation<E> for Attestation<E> {
+         initialize_epoch_cache(state, spec)?;
          let mut ctxt = ConsensusContext::new(state.slot());
          match state {
 -            BeaconState::Base(_) => base::process_attestations(
@@ -1910,10 +2123,8 @@ index 4c02126d4..84abb31ce 100644
 -                &mut ctxt,
 -                spec,
 -            ),
--            BeaconState::Altair(_)
--            | BeaconState::Merge(_)
 +            BeaconState::Base(_) => {
-+                let _ =   base::process_attestations(
++                let _ = base::process_attestations(
 +                    state,
 +                    &[self.clone()],
 +                    VerifySignatures::True,
@@ -1922,23 +2133,19 @@ index 4c02126d4..84abb31ce 100644
 +                );
 +                Ok(())
 +            }
-+            BeaconState::Altair(_) 
-+            | BeaconState::Merge(_) 
+             BeaconState::Altair(_)
+             | BeaconState::Bellatrix(_)
              | BeaconState::Capella(_)
-             | BeaconState::Deneb(_) => {
-                 initialize_progressive_balances_cache(state, None, spec)?;
+             | BeaconState::Deneb(_)
+             | BeaconState::Electra(_) => {
+                 initialize_progressive_balances_cache(state, spec)?;
 -                altair_deneb::process_attestation(
--                    state,
--                    self,
--                    0,
--                    &mut ctxt,
--                    VerifySignatures::True,
-+                let _= altair_deneb::process_attestation(
-+                    state, 
-+                    self, 
-+                    0, 
-+                    &mut ctxt, 
-+                    VerifySignatures::True, 
++                let _ = altair_deneb::process_attestation(
+                     state,
+                     self,
+                     0,
+                     &mut ctxt,
+                     VerifySignatures::True,
                      spec,
 -                )
 +                );
@@ -1946,12 +2153,12 @@ index 4c02126d4..84abb31ce 100644
              }
          }
      }
-@@ -133,13 +137,14 @@ impl<E: EthSpec> Operation<E> for AttesterSlashing<E> {
+@@ -134,13 +138,14 @@ impl<E: EthSpec> Operation<E> for AttesterSlashing<E> {
      ) -> Result<(), BlockProcessingError> {
          let mut ctxt = ConsensusContext::new(state.slot());
-         initialize_progressive_balances_cache(state, None, spec)?;
+         initialize_progressive_balances_cache(state, spec)?;
 -        process_attester_slashings(
-+        let _ =process_attester_slashings(
++        let _ = process_attester_slashings(
              state,
              &[self.clone()],
              VerifySignatures::True,
@@ -1963,7 +2170,7 @@ index 4c02126d4..84abb31ce 100644
      }
  }
  
-@@ -163,7 +168,8 @@ impl<E: EthSpec> Operation<E> for Deposit {
+@@ -164,7 +169,8 @@ impl<E: EthSpec> Operation<E> for Deposit {
          spec: &ChainSpec,
          _: &Operations<E, Self>,
      ) -> Result<(), BlockProcessingError> {
@@ -1973,12 +2180,12 @@ index 4c02126d4..84abb31ce 100644
      }
  }
  
-@@ -184,13 +190,14 @@ impl<E: EthSpec> Operation<E> for ProposerSlashing {
+@@ -185,13 +191,14 @@ impl<E: EthSpec> Operation<E> for ProposerSlashing {
      ) -> Result<(), BlockProcessingError> {
          let mut ctxt = ConsensusContext::new(state.slot());
-         initialize_progressive_balances_cache(state, None, spec)?;
+         initialize_progressive_balances_cache(state, spec)?;
 -        process_proposer_slashings(
-+        let _= process_proposer_slashings(
++        let _ = process_proposer_slashings(
              state,
              &[self.clone()],
              VerifySignatures::True,
@@ -1990,7 +2197,7 @@ index 4c02126d4..84abb31ce 100644
      }
  }
  
-@@ -268,7 +275,8 @@ impl<E: EthSpec> Operation<E> for SyncAggregate<E> {
+@@ -269,7 +276,8 @@ impl<E: EthSpec> Operation<E> for SyncAggregate<E> {
          _: &Operations<E, Self>,
      ) -> Result<(), BlockProcessingError> {
          let proposer_index = state.get_beacon_proposer_index(state.slot(), spec)? as u64;
@@ -2000,7 +2207,7 @@ index 4c02126d4..84abb31ce 100644
      }
  }
  
-@@ -392,7 +400,8 @@ impl<E: EthSpec> Operation<E> for WithdrawalsPayload<E> {
+@@ -396,7 +404,8 @@ impl<E: EthSpec> Operation<E> for WithdrawalsPayload<E> {
          spec: &ChainSpec,
          _: &Operations<E, Self>,
      ) -> Result<(), BlockProcessingError> {
@@ -2011,10 +2218,10 @@ index 4c02126d4..84abb31ce 100644
  }
  
 diff --git a/testing/state_transition_vectors/src/exit.rs b/testing/state_transition_vectors/src/exit.rs
-index 50b98d306..e21c64850 100644
+index 61cae6dbe..b83d267a8 100644
 --- a/testing/state_transition_vectors/src/exit.rs
 +++ b/testing/state_transition_vectors/src/exit.rs
-@@ -73,7 +73,8 @@ impl ExitTest {
+@@ -71,7 +71,8 @@ impl ExitTest {
              VerifyBlockRoot::True,
              &mut ctxt,
              &E::default_spec(),
@@ -2025,10 +2232,10 @@ index 50b98d306..e21c64850 100644
  
      #[cfg(all(test, not(debug_assertions)))]
 diff --git a/testing/web3signer_tests/src/lib.rs b/testing/web3signer_tests/src/lib.rs
-index 6f3536fe4..9960b4d14 100644
+index 911704e75..afdfd2ee5 100644
 --- a/testing/web3signer_tests/src/lib.rs
 +++ b/testing/web3signer_tests/src/lib.rs
-@@ -673,36 +673,43 @@ mod tests {
+@@ -891,16 +891,19 @@ mod tests {
      }
  
      #[tokio::test]
@@ -2045,17 +2252,25 @@ index 6f3536fe4..9960b4d14 100644
  
      #[tokio::test]
 +    #[ignore] // CM modification, slow tests and we don't depend on signing
-     async fn prater_base_types() {
-         test_base_types("prater", 4246).await
+     async fn mainnet_bellatrix_types() {
+         test_bellatrix_types("mainnet", 4244).await
+     }
+@@ -912,20 +915,41 @@ mod tests {
      }
  
      #[tokio::test]
 +    #[ignore] // CM modification, slow tests and we don't depend on signing
-     async fn prater_altair_types() {
-         test_altair_types("prater", 4247).await
-     }
- 
-     #[tokio::test]
++    async fn prater_base_types() {
++        test_base_types("prater", 4246).await
++    }
++
++    #[tokio::test]
++    #[ignore] // CM modification, slow tests and we don't depend on signing
++    async fn prater_altair_types() {
++        test_altair_types("prater", 4247).await
++    }
++
++    #[tokio::test]
 +    #[ignore] // CM modification, slow tests and we don't depend on signing
      async fn sepolia_base_types() {
          test_base_types("sepolia", 4250).await
@@ -2067,16 +2282,26 @@ index 6f3536fe4..9960b4d14 100644
          test_altair_types("sepolia", 4251).await
      }
  
-     #[tokio::test]
 +    #[ignore] // CM modification, slow tests and we don't depend on signing
-     async fn sepolia_merge_types() {
-         test_merge_types("sepolia", 4252).await
+     #[tokio::test]
+     async fn sepolia_bellatrix_types() {
+         test_bellatrix_types("sepolia", 4252).await
      }
+ 
++    #[tokio::test]
++    #[ignore] // CM modification, slow tests and we don't depend on signing
++    async fn sepolia_merge_types() {
++        test_merge_types("sepolia", 4252).await
++    }
++
+     #[tokio::test]
+     async fn slashing_protection_disabled_locally() {
+         test_lighthouse_slashing_protection(SlashingProtectionConfig { local: false }, 4253).await
 diff --git a/watch/tests/tests.rs b/watch/tests/tests.rs
-index 0e29e7f0c..b44855c3b 100644
+index 5461508ed..202e9ede0 100644
 --- a/watch/tests/tests.rs
 +++ b/watch/tests/tests.rs
-@@ -636,6 +636,9 @@ pub fn random_dbname() -> String {
+@@ -630,6 +630,9 @@ pub fn random_dbname() -> String {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2086,7 +2311,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn short_chain() {
      let builder = TesterBuilder::new().await;
  
-@@ -664,6 +667,9 @@ async fn short_chain() {
+@@ -658,6 +661,9 @@ async fn short_chain() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2096,7 +2321,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn short_chain_sync_starts_on_skip_slot() {
      let builder = TesterBuilder::new().await;
  
-@@ -702,6 +708,9 @@ async fn short_chain_sync_starts_on_skip_slot() {
+@@ -696,6 +702,9 @@ async fn short_chain_sync_starts_on_skip_slot() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2106,7 +2331,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn short_chain_with_skip_slot() {
      let builder = TesterBuilder::new().await;
  
-@@ -747,6 +756,9 @@ async fn short_chain_with_skip_slot() {
+@@ -741,6 +750,9 @@ async fn short_chain_with_skip_slot() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2116,7 +2341,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn short_chain_with_reorg() {
      let builder = TesterBuilder::new().await;
  
-@@ -794,6 +806,9 @@ async fn short_chain_with_reorg() {
+@@ -788,6 +800,9 @@ async fn short_chain_with_reorg() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2126,7 +2351,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn chain_grows() {
      let builder = TesterBuilder::new().await;
  
-@@ -858,6 +873,9 @@ async fn chain_grows() {
+@@ -852,6 +867,9 @@ async fn chain_grows() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2136,7 +2361,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn chain_grows_with_metadata() {
      let builder = TesterBuilder::new().await;
  
-@@ -965,6 +983,9 @@ async fn chain_grows_with_metadata() {
+@@ -959,6 +977,9 @@ async fn chain_grows_with_metadata() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2146,7 +2371,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn chain_grows_with_metadata_and_multiple_skip_slots() {
      let builder = TesterBuilder::new().await;
  
-@@ -1079,6 +1100,11 @@ async fn chain_grows_with_metadata_and_multiple_skip_slots() {
+@@ -1073,6 +1094,11 @@ async fn chain_grows_with_metadata_and_multiple_skip_slots() {
  
  #[cfg(unix)]
  #[tokio::test]
@@ -2158,7 +2383,7 @@ index 0e29e7f0c..b44855c3b 100644
  async fn chain_grows_to_second_epoch() {
      let builder = TesterBuilder::new().await;
  
-@@ -1167,6 +1193,9 @@ async fn chain_grows_to_second_epoch() {
+@@ -1161,6 +1187,9 @@ async fn chain_grows_to_second_epoch() {
  
  #[cfg(unix)]
  #[tokio::test]

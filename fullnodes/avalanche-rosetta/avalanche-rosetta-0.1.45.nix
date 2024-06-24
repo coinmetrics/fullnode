@@ -1,16 +1,16 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "avalanche-rosetta";
-  version = "0.1.41";
+  version = "0.1.45";
 
   src = fetchFromGitHub {
     owner = "ava-labs";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-NyZVOFcP4XQDZfQG9/4CUJzkJ7S1gvEWbUEpPgPzkVM=";
+    hash = "sha256-bXhbXXTExvZbhWuWzv3CAXGUwZgm557nD55ry0Ns7pc=";
   };
 
-  vendorHash = "sha256-7qCuxo4uLoqM0JAZX/Te68OWYXAwfzBGVkc1g4A8gBo=";
+  vendorHash = "sha256-S46u6Vryo6YwRXLVakq8jWoqoECp6uQGKXPFRunCsi4=";
 
   proxyVendor = true;
 

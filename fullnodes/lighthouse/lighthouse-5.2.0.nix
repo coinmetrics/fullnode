@@ -53,7 +53,7 @@ rustPlatform.buildRustPackage rec {
     };
   };
 
-  buildFeatures = [ "modern" "gnosis" ];
+  buildFeatures = [ "modern" "gnosis" "jemalloc" ];
 
   nativeBuildInputs = [
     rustPlatform.bindgenHook

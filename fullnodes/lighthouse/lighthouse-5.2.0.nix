@@ -55,7 +55,7 @@ rustPlatform.buildRustPackage rec {
     };
   };
 
-  buildFeatures = [ "modern" "gnosis" "jemalloc" ];
+  buildFeatures = [ "portable" "gnosis" "slasher-lmdb" "jemalloc" ];
 
   nativeBuildInputs = [
     rustPlatform.bindgenHook

@@ -36,6 +36,8 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-kruHYFPQ9H9HtEjzscQOyghPSpx++wNbHDYOVo0qtjY=";
   };
 
+  buildType = "maxperf";
+
   patches = [
     ./patches/5.2.0-coinmetrics.patch
   ];

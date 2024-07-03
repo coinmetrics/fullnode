@@ -23,7 +23,7 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "5.0.0";
+  version = "5.2.1";
 
   # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
@@ -33,29 +33,29 @@ rustPlatform.buildRustPackage rec {
     owner = "sigp";
     repo = "lighthouse";
     rev = "v${version}";
-    hash = "sha256-lv0B4RdZz/NFjoTOtXKCge1l6aYky5aieVbuLsCyTT4=";
+    hash = "sha256-nItMiFPP4jeRsRwR8AJTyT5VCeIKths9UNgCZXNWqYE=";
   };
 
+  buildType = "maxperf";
+
   patches = [
-    ./patches/use-c-kzg-from-crates-io.patch
-    ./patches/5.0.0-coinmetrics.patch
+    ./patches/5.2.1-coinmetrics.patch
   ];
 
   postPatch = ''
-    cp ${./5.0.0-Cargo.lock} Cargo.lock
+    cp ${./5.2.1-Cargo.lock} Cargo.lock
   '';
 
   cargoLock = {
-    lockFile = ./5.0.0-Cargo.lock;
+    lockFile = ./5.2.1-Cargo.lock;
     outputHashes = {
       "alloy-consensus-0.1.0" = "sha256-y5AIZN4d7Vm2dVa3jd0e6zXwC8hzPyOv0h5+W/Az3rs=";
-      "amcl-0.3.0" = "sha256-kc8k/ls4W0TwFBsRcyyotyz8ZBEjsZXHeJnJtsnW/LM=";
       "libmdbx-0.1.4" = "sha256-NMsR/Wl1JIj+YFPyeMMkrJFfoS07iEAKEQawO89a+/Q=";
       "lmdb-rkv-0.14.0" = "sha256-sxmguwqqcyOlfXOZogVz1OLxfJPo+Q0+UjkROkbbOCk=";
     };
   };
 
-  buildFeatures = [ "modern" "gnosis" ];
+  buildFeatures = [ "portable" "gnosis" "slasher-lmdb" "jemalloc" ];
 
   nativeBuildInputs = [
     rustPlatform.bindgenHook

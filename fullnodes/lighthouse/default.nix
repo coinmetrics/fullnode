@@ -8,6 +8,7 @@ rec {
     config = {
       Entrypoint = [ "${package}/bin/lighthouse" ];
       User = "1000:1000";
+      Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
     };
   };
 }

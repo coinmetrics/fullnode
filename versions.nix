@@ -30,7 +30,7 @@
   openethereum = [ "3.3.5" ];
   op-geth = [ "1.101315.2" ];
   pivx = [ "5.6.1" ];
-  polkadot = [ "1.5.0" ];
+  polkadot = [ "1.14.0" ];
   polygon-bor = [ "1.3.3" ];
   vertcoin = [ "23.2" ];
   zcash = [ "5.9.1" ];

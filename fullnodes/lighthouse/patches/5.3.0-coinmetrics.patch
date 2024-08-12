@@ -1016,7 +1016,7 @@ index 210db4c9c..a69f2c2af 100644
  
  /// Compute the `(participant_reward, proposer_reward)` for a sync aggregate.
 diff --git a/consensus/state_processing/src/per_block_processing/process_operations.rs b/consensus/state_processing/src/per_block_processing/process_operations.rs
-index 17607f7f3..b6fd756cb 100644
+index 17607f7f3..7faea71ff 100644
 --- a/consensus/state_processing/src/per_block_processing/process_operations.rs
 +++ b/consensus/state_processing/src/per_block_processing/process_operations.rs
 @@ -1,7 +1,7 @@
@@ -1345,8 +1345,12 @@ index 17607f7f3..b6fd756cb 100644
          }
  
          let new_validator_index = state.validators().len();
-@@ -525,7 +561,7 @@ pub fn apply_deposit<E: EthSpec>(
+@@ -523,9 +559,11 @@ pub fn apply_deposit<E: EthSpec>(
+                 amount,
+             })?;
          }
++
++        return Ok(Some(BalanceUpdate{index: new_validator_index as usize, delta: amount as i64, reason: BalanceUpdateReason::Deposit}));
      }
  
 -    Ok(())
@@ -1354,7 +1358,7 @@ index 17607f7f3..b6fd756cb 100644
  }
  
  pub fn process_execution_layer_withdrawal_requests<E: EthSpec>(
-@@ -629,7 +665,9 @@ pub fn process_deposit_requests<E: EthSpec>(
+@@ -629,7 +667,9 @@ pub fn process_deposit_requests<E: EthSpec>(
      state: &mut BeaconState<E>,
      receipts: &[DepositRequest],
      spec: &ChainSpec,
@@ -1365,7 +1369,7 @@ index 17607f7f3..b6fd756cb 100644
      for receipt in receipts {
          // Set deposit receipt start index
          if state.deposit_requests_start_index()? == spec.unset_deposit_requests_start_index {
-@@ -641,10 +679,14 @@ pub fn process_deposit_requests<E: EthSpec>(
+@@ -641,10 +681,14 @@ pub fn process_deposit_requests<E: EthSpec>(
              amount: receipt.amount,
              signature: receipt.signature.clone().into(),
          };

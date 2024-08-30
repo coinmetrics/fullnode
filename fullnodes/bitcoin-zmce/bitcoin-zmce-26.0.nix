@@ -1,5 +1,6 @@
 { lib
 , stdenv
+, fetchpatch
 , fetchurl
 , autoreconfHook
 , pkg-config
@@ -57,6 +58,10 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./patches/v26.0-zmce.patch
+    (fetchpatch {
+      url = "https://github.com/bitcoin/bitcoin/commit/8acdf66540834b9f9cf28f16d389e8b6a48516d5.patch";
+      hash = "sha256-sFB3umsPfpiVsXHvU+noHW41JfegQzIgYZRpnkos0lU=";
+    })
   ];
 
   postInstall = optionalString withGui ''

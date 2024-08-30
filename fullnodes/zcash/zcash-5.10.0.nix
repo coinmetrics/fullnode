@@ -80,6 +80,8 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     hash = "sha256-ggp/jHmtHJecw/O0HhiEk5XH8pWT/zFPzXY11dKx6Zo=";
   };
 
+  cargoHash = "";
+
   cargoLock = {
     lockFile = ./5.10.0-Cargo.lock;
   };

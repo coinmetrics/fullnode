@@ -26,9 +26,9 @@
   monero = [ "0.18.3.1" ];
   neo = [ "3.5.0" ];
   omnicore = [ "0.12.0.1" ];
-  op-node = [ "1.8.0" ];
+  op-node = [ "1.9.1" ];
   openethereum = [ "3.3.5" ];
-  op-geth = [ "1.101315.2" ];
+  op-geth = [ "1.101408.0" ];
   pivx = [ "5.6.1" ];
   polkadot = [ "1.14.0" ];
   polygon-bor = [ "1.3.4" ];

@@ -6,29 +6,21 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "grin";
-  version = "5.2.1";
+  version = "5.3.2";
 
   src = fetchFromGitHub {
     owner = "mimblewimble";
     repo = "grin";
     rev = "v${version}";
-    sha256 = "sha256-5s0YgQfs8Z/sJDWj8THuryNk5RH8yOS6Wk7ntnQHGZw=";
+    hash = "sha256-ao59alchBdRd8hSzEudsve5c7DKwC3BjjhWv815ah30=";
   };
 
   cargoLock = {
-    lockFile = ./5.2.1-Cargo.lock;
+    lockFile = ./5.3.2-Cargo.lock;
   };
 
-  patches = [
-#    (fetchpatch {
-#      name = "fix-leading-zeroes-bugs";
-#      url = "https://patch-diff.githubusercontent.com/raw/mimblewimble/grin/pull/3763.patch";
-#      hash = "sha256-xFUv0BhOSUbRZ7Q9As7aLcnOQCBiMr4HEyN//O2w9dU=";
-#    })
-  ];
-
   postPatch = ''
-    cp ${./5.2.1-Cargo.lock} Cargo.lock
+    cp ${./5.3.2-Cargo.lock} Cargo.lock
   '';
 
   nativeBuildInputs = [ llvmPackages_16.clang ];

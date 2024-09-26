@@ -82,8 +82,8 @@ Please consult upstream documentation for details.
 
 ## For maintainers
 
-### Adding new version
+### Adding a new fullnode
 
-TODO
-
-
+Use [this commit](https://gitlab.com/coinmetrics/fullnode/-/commit/a7f603918f31f1850b520041dee4c1bafcc81648) as a guide
+for adding new fullnodes. Create a [new Docker Hub repository](https://hub.docker.com/repository/create?namespace=coinmetrics)
+and assign the `bots` team `Read & Write` permissions.

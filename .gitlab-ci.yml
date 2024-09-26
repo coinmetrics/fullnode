@@ -396,6 +396,16 @@ publish polygon-bor:
   variables:
     FULLNODE: polygon-bor
 
+build spring:
+  extends: .generic-build
+  variables:
+    FULLNODE: spring
+
+publish spring:
+  extends: .generic-publish
+  variables:
+    FULLNODE: spring
+
 build vertcoin:
   extends: .generic-build
   variables:

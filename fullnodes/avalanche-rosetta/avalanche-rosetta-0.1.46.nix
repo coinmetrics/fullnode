@@ -1,5 +1,5 @@
-{ buildGoModule, fetchFromGitHub }:
-buildGoModule rec {
+{ buildGo122Module, fetchFromGitHub }:
+buildGo122Module rec {
   pname = "avalanche-rosetta";
   version = "0.1.46";
 

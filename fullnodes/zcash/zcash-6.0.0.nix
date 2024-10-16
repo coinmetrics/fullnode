@@ -62,7 +62,7 @@ let
       (fetchpatch {
         url = "https://raw.githubusercontent.com/zcash/zcash/v6.0.0/depends/patches/boost/6753-signals2-function-fix.patch";
         stripLen = 0;
-        sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
+        sha256 = "sha256-0000000000000000000000000000000000000000000=";
       })
     ];
   });
@@ -77,7 +77,7 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-Md2KPY8+OL88c8X6+2Cbs9DXbqC26Uo8FU2YCTfoH28=";
+    hash = "sha256-0000000000000000000000000000000000000000000=";
   };
 
   cargoHash = "";

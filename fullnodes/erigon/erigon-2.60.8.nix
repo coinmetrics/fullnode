@@ -1,6 +1,6 @@
 { abseil-cpp
 , boost
-, buildGo121Module
+, buildGoModule
 , catch2
 , cli11
 , cmake
@@ -98,7 +98,7 @@ let
 
   silkworm = stdenv.mkDerivation rec {
     pname = "silkworm";
-    version = "capi-0.12.0";
+    version = "capi-0.18.0";
 
     src = fetchFromGitHub {
       owner = "erigontech";
@@ -106,7 +106,7 @@ let
       rev = "refs/tags/${version}";
       fetchSubmodules = true;
       leaveDotGit = true;
-      hash = "sha256-NcK5/miCCbWMCBliKP4Ku6PSIVVEE97AQz7BH/jfoCQ=";
+      hash = "sha256-KUee39wE86z+FNXSXOda/8LlE18jDK8zQ8De8/fKA+Q=";
     };
 
     patches = [
@@ -170,24 +170,24 @@ let
     ];
   };
 
-in buildGo121Module rec {
+in buildGoModule rec {
   pname = "erigon";
-  version = "2.58.1";
+  version = "2.60.8";
 
   src = fetchFromGitHub {
-    owner = "ledgerwatch";
+    owner = "erigontech";
     repo = "erigon";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-plQdhci+WUbA9IKjxk/wrprZzzc72w52BnU7joMtCcw=";
+    rev = "refs/tags/${version}";
+    hash = "sha256-CUMKKj3R3AeCkLMb4o/Bj9IOUCxHVrnYRDTY/S7/hls=";
   };
 
-  vendorHash = "sha256-YGoCbenIqOm8NAxHEM/OW5hVpf6vcNPeIneM1I4J5tU=";
+  vendorHash = "sha256-cByx+vUTWiF7MMHtmZ16I8acW9pfCtjWSzZCdhr+S60=";
 
   silkworm-go-src = fetchFromGitHub {
     owner = "erigontech";
     repo = "silkworm-go";
-    rev = "refs/tags/v0.12.0";
-    hash = "sha256-25Eokgr1RgEMUuceHu7/HQdylli34OpAG1NCG+15I4Q=";
+    rev = "refs/tags/v0.18.0";
+    hash = "sha256-f95oulCFOv4fGnOvpMvCFgckNd1cR6UfBeFlYIRtNuw=";
   };
 
   libsecp256k1-src = fetchFromGitHub {

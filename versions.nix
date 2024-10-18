@@ -24,7 +24,7 @@
   lighthouse = [ "5.3.0" ];
   litecoin = [ "0.21.2.2" "0.21.3" ];
   monero = [ "0.18.3.1" ];
-  neo = [ "3.5.0" ];
+  neo = [ "3.7.5" ];
   omnicore = [ "0.12.0.1" ];
   op-node = [ "1.9.3" ];
   openethereum = [ "3.3.5" ];

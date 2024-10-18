@@ -1,5 +1,5 @@
-{ buildGoModule, fetchFromGitHub }:
-buildGoModule rec {
+{ buildGo122Module, fetchFromGitHub }:
+buildGo122Module rec {
   pname = "polygon-bor";
   version = "1.4.0";
 

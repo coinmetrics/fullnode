@@ -13,7 +13,7 @@
 
 (overrideCC stdenv gcc).mkDerivation rec {
   pname = "leap";
-  version = "5.0.0";
+  version = "5.0.3";
 
   src = fetchFromGitHub {
     owner = "AntelopeIO";
@@ -21,7 +21,7 @@
     rev = "v${version}";
     fetchSubmodules = true;
     leaveDotGit = true;
-    hash = "sha256-mzEAkylaF0LQmjdQ93gLOmDFK4yZvzj6uvS0Le8f0G8=";
+    hash = "sha256-leYivglKw1ZkTQj5DBteVC4OseImP7edrBIKxCmwuxo=";
   };
 
   patches = [

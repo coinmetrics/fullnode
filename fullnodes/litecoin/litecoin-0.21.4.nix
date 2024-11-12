@@ -11,21 +11,14 @@
 , zeromq }:
 stdenv.mkDerivation rec {
   pname = "litecoin";
-  version = "0.21.2.2";
+  version = "0.21.4";
 
   src = fetchFromGitHub {
     owner = "litecoin-project";
     repo = "litecoin";
     rev = "v${version}";
-    hash = "sha256-TuDc47TZOEQA5Lr4DQkEhnO/Szp9h71xPjaBL3jFWuM=";
+    hash = "sha256-39+lGWnsK2kq7iUveey98mMAVHCu4tWY8BEzY1rJZcU=";
   };
-
-  patches = [
-    (fetchpatch {
-      url = "https://patch-diff.githubusercontent.com/raw/litecoin-project/litecoin/pull/929.patch";
-      hash = "sha256-1y4Iz2plMw5HMAjl9x50QQpYrYaUd2WKrrAcUnQmlBY=";
-    })
-  ];
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];
 

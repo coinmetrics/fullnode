@@ -32,7 +32,7 @@
   pivx = [ "5.6.1" ];
   polkadot = [ "1.15.1" ];
   polygon-bor = [ "1.4.0" ];
-  spring = [ "1.0.2" ];
+  spring = [ "1.0.3" ];
   vertcoin = [ "23.2" ];
   zcash = [ "6.0.0" ];
 }

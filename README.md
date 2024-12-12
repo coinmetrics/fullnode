@@ -17,6 +17,32 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 
 ## Updating versions
 
+### General procedure
+
+1. Add the new version to the node's versions array in `versions.nix`
+2. Create a new file in the fullnodes/$node folder with the new version as suffix (`fullnodes/my-node/my-node-x.y.z.nix`)
+3. Copy/paste the previous `.nix` file contents into that new file
+4. Update fields to match the new version:
+   - `version = ..` should be `version = 'x.y.z'`
+   - Update `src.hash` to the precomputed value (see the next section for how to compute those)
+
+#### For Golang projects
+
+Golang projects (files containing `buildGoModule`), some extra steps are required.
+The `vendorHash` field will need updating, however it cannot be pre-computed.
+You need to run the build locally (or in CI) and update it with the value expected by `nix`.
+If you don't have nix installed locally, you can use the CI pipeline to get the hashes computed as explained in the next section.
+
+Don't forget to `git add` new files otherwise the nix build will fail locally.
+
+The command to build a project is:
+
+```
+nix -L build .#my-node_x_y_z
+```
+
+### Pre-computing sources nix hash
+
 When updating a node's version, the source's hashes need to be recomputed.
 
 This can be done using either `nix-prefetch-git` for git repos:
@@ -62,7 +88,42 @@ path is '/nix/store/6rc7sqqgmnh91j99j3xsqlb91h4zz1gw-bitcoin-qt.desktop'
 0cpna0nxcd1dw3nnzli36nf9zj28d2g9jf5y0zl9j18lvanvniha
 ```
 
-For Go repositories, the vendor hash cannot be pre-computed.
+
+### Using the CI pipeline to get the source hash
+
+In order to get the proper source hash we need to force an error message by configuring a nonexistent hash in the new `.nix` file created for the new version as follows:
+```
+  src = fetchFromGitHub {
+    ...
+    rev = "v${version}";
+    hash = "sha256-0000000000000000000000000000000000000000000=";
+  };
+```
+Reference: https://gitlab.com/coinmetrics/fullnode/-/commit/733b00b54d6c3c170f6702bd8aaeaa27f9bd318b
+
+Once the build job runs, it will fail and print the following error message containing the computed hash:
+```
+error: hash mismatch in fixed-output derivation '/nix/store/qbl4n8p64m7gww9zlckh8n3xw24a8qm0-source.drv':
+         specified: sha256-0000000000000000000000000000000000000000000=
+            got:    sha256-iedhLVNtwU8wSQIaq0r0fAYGH8fNnCRJW69D7wPdyx0=
+```
+
+### Using the CI pipeline to get the vendor hash
+
+After fixing the source hash, change the vendor hash as follows to force an error that will print an error message with the correct value:
+```
+  vendorHash = "sha256-0000000000000000000000000000000000000000000=";
+  # vendorHash = "sha256-CNwqpRx0HNvYfkowEEZe/Ue6W2FDZVAkUgof5QH9XkI=";
+```
+Reference: https://gitlab.com/coinmetrics/fullnode/-/commit/d04a22b9c8e26ef181a6ba9a0d5a4b92b92ae6b5
+
+Once the build job runs, it will fail and print the following error message containing the computed hash:
+```
+error: hash mismatch in fixed-output derivation '/nix/store/m0lkgil9i3n16i9icq33i887k5qjg5x9-avalanchego-1.12.0-go-modules.drv':
+         specified: sha256-0000000000000000000000000000000000000000000=
+            got:    sha256-CNwqpRx0HNvYfkowEEZe/Ue6W2FDZVAkUgof5QH9XkI=
+```
+
 
 ## Changes to source code
 

@@ -22,7 +22,7 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "lighthouse";
-  version = "6.0.0-modified";
+  version = "6.0.1-modified";
 
   # lighthouse/common/deposit_contract/build.rs
   depositContractSpecVersion = "0.12.1";
@@ -30,12 +30,12 @@ rustPlatform.buildRustPackage rec {
 
   src = builtins.fetchGit {
     url = "git@gitlab.com:coinmetrics/research/lighthouse.git";
-    rev = "a15f4edd98582520d41a52e79bd6791736213d90";
-    ref = "v6.0.0-modified";
+    rev = "4d7acd35aa0c9815ddf3ce3942f089a1a617ffc0";
+    ref = "v6.0.1-modified";
   };
 
   cargoLock = {
-    lockFile = ./6.0.0-Cargo.lock;
+    lockFile = ./6.0.1-Cargo.lock;
     outputHashes = {
       "libmdbx-0.1.4" = "sha256-ONp4uPkVCN84MObjXorCZuSjnM6uFSMXK1vdJiX074o=";
       "lmdb-rkv-0.14.0" = "sha256-sxmguwqqcyOlfXOZogVz1OLxfJPo+Q0+UjkROkbbOCk=";

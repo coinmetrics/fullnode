@@ -7,10 +7,10 @@ buildGoModule rec {
     owner = "ethereum-optimism";
     repo = "op-geth";
     rev = "v${version}";
-    hash = "sha256-TPfeXakli8d0EqGgOnAmm/wEORvRcfr/KpuQ/rGragc=";
+    hash = "sha256-pMosMML+tyN/GcmAfKersvjXSQvr/zdrmbr5fKLyPpg=";
   };
 
-  vendorHash = "sha256-IoHxdmXnm4P2Y3OgTv8qHM2pRId5pGmJt2tBli3aA1w=";
+  vendorHash = "sha256-NKfbntxifwXct/pcFWOIYtggpirJKepXTklFgnyJnFo=";
 
   proxyVendor = true;
 

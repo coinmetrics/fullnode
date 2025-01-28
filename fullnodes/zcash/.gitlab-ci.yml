@@ -1,0 +1,9 @@
+build zcash:
+  extends: .generic-build
+  variables:
+    FULLNODE: zcash
+
+publish zcash:
+  extends: .generic-publish
+  variables:
+    FULLNODE: zcash

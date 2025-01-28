@@ -1,0 +1,9 @@
+build grin:
+  extends: .generic-build
+  variables:
+    FULLNODE: grin
+
+publish grin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: grin

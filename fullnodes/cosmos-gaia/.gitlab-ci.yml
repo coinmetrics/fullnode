@@ -1,0 +1,9 @@
+build cosmos-gaia:
+  extends: .generic-build
+  variables:
+    FULLNODE: cosmos-gaia
+
+publish cosmos-gaia:
+  extends: .generic-publish
+  variables:
+    FULLNODE: cosmos-gaia

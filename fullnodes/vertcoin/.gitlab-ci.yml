@@ -1,0 +1,10 @@
+build vertcoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: vertcoin
+
+publish vertcoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: vertcoin
+

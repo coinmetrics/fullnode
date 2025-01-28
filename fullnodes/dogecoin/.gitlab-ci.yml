@@ -1,0 +1,9 @@
+build dogecoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: dogecoin
+
+publish dogecoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: dogecoin

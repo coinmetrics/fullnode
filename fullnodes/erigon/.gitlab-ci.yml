@@ -1,0 +1,9 @@
+build erigon:
+  extends: .generic-build
+  variables:
+    FULLNODE: erigon
+
+publish erigon:
+  extends: .generic-publish
+  variables:
+    FULLNODE: erigon

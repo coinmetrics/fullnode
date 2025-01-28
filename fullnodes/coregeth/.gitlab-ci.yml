@@ -1,0 +1,9 @@
+build coregeth:
+  extends: .generic-build
+  variables:
+    FULLNODE: coregeth
+
+publish coregeth:
+  extends: .generic-publish
+  variables:
+    FULLNODE: coregeth

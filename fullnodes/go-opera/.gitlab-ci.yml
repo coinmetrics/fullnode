@@ -1,0 +1,9 @@
+build go-opera:
+  extends: .generic-build
+  variables:
+    FULLNODE: go-opera
+
+publish go-opera:
+  extends: .generic-publish
+  variables:
+    FULLNODE: go-opera

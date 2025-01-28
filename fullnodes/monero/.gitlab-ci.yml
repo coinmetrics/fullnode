@@ -1,0 +1,9 @@
+build monero:
+  extends: .generic-build
+  variables:
+    FULLNODE: monero
+
+publish monero:
+  extends: .generic-publish
+  variables:
+    FULLNODE: monero

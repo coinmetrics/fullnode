@@ -1,0 +1,9 @@
+build digibyte:
+  extends: .generic-build
+  variables:
+    FULLNODE: digibyte
+
+publish digibyte:
+  extends: .generic-publish
+  variables:
+    FULLNODE: digibyte

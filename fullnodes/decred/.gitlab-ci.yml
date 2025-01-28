@@ -1,0 +1,9 @@
+build decred:
+  extends: .generic-build
+  variables:
+    FULLNODE: decred
+
+publish decred:
+  extends: .generic-publish
+  variables:
+    FULLNODE: decred

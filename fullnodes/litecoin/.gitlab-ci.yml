@@ -1,0 +1,9 @@
+build litecoin:
+  extends: .generic-build
+  variables:
+    FULLNODE: litecoin
+
+publish litecoin:
+  extends: .generic-publish
+  variables:
+    FULLNODE: litecoin

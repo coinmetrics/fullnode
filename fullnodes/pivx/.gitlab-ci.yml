@@ -1,0 +1,9 @@
+build pivx:
+  extends: .generic-build
+  variables:
+    FULLNODE: pivx
+
+publish pivx:
+  extends: .generic-publish
+  variables:
+    FULLNODE: pivx

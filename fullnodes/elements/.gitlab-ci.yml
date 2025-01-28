@@ -1,0 +1,9 @@
+build elements:
+  extends: .generic-build
+  variables:
+    FULLNODE: elements
+
+publish elements:
+  extends: .generic-publish
+  variables:
+    FULLNODE: elements

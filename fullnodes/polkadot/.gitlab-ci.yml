@@ -1,0 +1,9 @@
+build polkadot:
+  extends: .generic-build
+  variables:
+    FULLNODE: polkadot
+
+publish polkadot:
+  extends: .generic-publish
+  variables:
+    FULLNODE: polkadot

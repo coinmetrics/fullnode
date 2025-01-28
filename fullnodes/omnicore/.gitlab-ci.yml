@@ -1,0 +1,9 @@
+build omnicore:
+  extends: .generic-build
+  variables:
+    FULLNODE: omnicore
+
+publish omnicore:
+  extends: .generic-publish
+  variables:
+    FULLNODE: omnicore

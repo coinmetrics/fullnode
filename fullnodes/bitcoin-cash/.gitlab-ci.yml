@@ -1,0 +1,9 @@
+build bitcoin-cash:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-cash
+
+publish bitcoin-cash:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-cash

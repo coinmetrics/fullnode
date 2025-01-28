@@ -1,0 +1,9 @@
+build bitcoin-gold:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-gold
+
+publish bitcoin-gold:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-gold

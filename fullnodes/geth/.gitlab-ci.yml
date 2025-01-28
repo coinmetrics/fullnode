@@ -1,0 +1,9 @@
+build geth:
+  extends: .generic-build
+  variables:
+    FULLNODE: geth
+
+publish geth:
+  extends: .generic-publish
+  variables:
+    FULLNODE: geth

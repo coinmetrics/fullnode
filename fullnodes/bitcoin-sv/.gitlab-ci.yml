@@ -1,0 +1,9 @@
+build bitcoin-sv:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-sv
+
+publish bitcoin-sv:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-sv

@@ -1,0 +1,9 @@
+build spring:
+  extends: .generic-build
+  variables:
+    FULLNODE: spring
+
+publish spring:
+  extends: .generic-publish
+  variables:
+    FULLNODE: spring

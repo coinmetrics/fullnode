@@ -1,0 +1,9 @@
+build cosmos-rosetta:
+  extends: .generic-build
+  variables:
+    FULLNODE: cosmos-rosetta
+
+publish cosmos-rosetta:
+  extends: .generic-publish
+  variables:
+    FULLNODE: cosmos-rosetta

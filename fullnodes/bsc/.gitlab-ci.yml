@@ -1,0 +1,9 @@
+build bsc:
+  extends: .generic-build
+  variables:
+    FULLNODE: bsc
+
+publish bsc:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bsc

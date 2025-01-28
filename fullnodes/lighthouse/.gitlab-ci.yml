@@ -1,0 +1,10 @@
+build lighthouse:
+  extends: .generic-build
+  variables:
+    FULLNODE: lighthouse
+
+publish lighthouse:
+  extends: .generic-publish
+  variables:
+    FULLNODE: lighthouse
+    PRIVATE: "true"

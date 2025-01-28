@@ -1,0 +1,10 @@
+build bitcoin-zmce:
+  extends: .generic-build
+  variables:
+    FULLNODE: bitcoin-zmce
+
+publish bitcoin-zmce:
+  extends: .generic-publish
+  variables:
+    FULLNODE: bitcoin-zmce
+    PRIVATE: "true"

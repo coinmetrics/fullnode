@@ -1,0 +1,9 @@
+build leap:
+  extends: .generic-build
+  variables:
+    FULLNODE: leap
+
+publish leap:
+  extends: .generic-publish
+  variables:
+    FULLNODE: leap

@@ -1,0 +1,9 @@
+build op-node:
+  extends: .generic-build
+  variables:
+    FULLNODE: op-node
+
+publish op-node:
+  extends: .generic-publish
+  variables:
+    FULLNODE: op-node

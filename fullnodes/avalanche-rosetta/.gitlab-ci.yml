@@ -1,0 +1,9 @@
+build avalanche-rosetta:
+  extends: .generic-build
+  variables:
+    FULLNODE: avalanche-rosetta
+
+publish avalanche-rosetta:
+  extends: .generic-publish
+  variables:
+    FULLNODE: avalanche-rosetta

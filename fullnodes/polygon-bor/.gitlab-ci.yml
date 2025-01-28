@@ -1,0 +1,9 @@
+build polygon-bor:
+  extends: .generic-build
+  variables:
+    FULLNODE: polygon-bor
+
+publish polygon-bor:
+  extends: .generic-publish
+  variables:
+    FULLNODE: polygon-bor

@@ -1,7 +1,6 @@
 ---
 stages:
   - update lock file
-  - cleanup
   - build
   - publish
 
@@ -19,16 +18,7 @@ update lock file:
     - git remote set-url origin --push ${CI_SERVER_PROTOCOL}://${FULLNODE_GIT_USERNAME}:${FULLNODE_GIT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
     - git push origin HEAD:${CI_COMMIT_REF_NAME}
   tags:
-    - kube-hel1-nix
-
-nix store gc:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB_TO_RUN == "cleanup"
-  stage: cleanup
-  script:
-    - nix store gc --max 100G
-  tags:
-    - kube-hel1-nix
+    - rt-containerd
 
 .generic-build:
   rules:
@@ -38,13 +28,25 @@ nix store gc:
           - fullnodes/$FULLNODE/**/*
           - flake.lock
   stage: build
+  image: docker.io/coinmetrics/nix-builder:latest
+  variables:
+    KUBERNETES_CPU_REQUEST: "16"
+    KUBERNETES_CPU_LIMIT: "16"
+    KUBERNETES_MEMORY_REQUEST: "24Gi"
+    KUBERNETES_MEMORY_LIMIT: "24Gi"
+    KUBERNETES_EPHEMERAL_STORAGE_REQUEST: "32Gi"
+    KUBERNETES_EPHEMERAL_STORAGE_LIMIT: "32Gi"
+  before_script:
+    - /before-script.sh
   script:
     - nix --print-build-logs run .#publish-$FULLNODE -- dry-run
+  after_script:
+    - /after-script.sh
   artifacts:
     expire_in: "1 week"
     when: always
   tags:
-    - kube-hel1-nix
+    - rt-containerd
 
 .generic-publish:
   variables:
@@ -56,11 +58,15 @@ nix store gc:
           - fullnodes/$FULLNODE/**/*
           - flake.lock
   stage: publish
+  before_script:
+    - /before-script.sh
   script:
     - nix --print-build-logs run .#login
     - nix --print-build-logs run .#publish-$FULLNODE
+  after_script:
+    - /after-script.sh
   tags:
-    - kube-hel1-nix
+    - rt-containerd
 
 # We separate each asset into its own .gitlab-ci.yml to avoid the old behaviour of rebuilding all images if we change the global .gitlab-ci.yml
 include:

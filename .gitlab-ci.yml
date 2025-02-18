@@ -58,6 +58,7 @@ update lock file:
           - fullnodes/$FULLNODE/**/*
           - flake.lock
   stage: publish
+  image: docker.io/coinmetrics/nix-builder:latest
   before_script:
     - /before-script.sh
   script:

@@ -1,17 +1,17 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "geth";
-  version = "1.14.13";
+  version = "1.15.2";
 
   src = fetchFromGitHub {
     owner = "ethereum";
     repo = "go-ethereum";
     rev = "v${version}";
-    hash = "sha256-oJe+V11WArXVmoIC7nYN6oKc0VoHtRtelidyb3v6skI=";
+    hash = "sha256-eaUkPl8vQzvotYfZcnuBwphSfO33RPjWOYhyNNvXli4=";
   };
 
   proxyVendor = true;
-  vendorHash = "sha256-IEwy3XRyj+5GjAWRjPsd5qzwEMpI/pZIwPjKdeATgkE=";
+  vendorHash = "sha256-cfBTSroeDb/htGzIWG8c9Jty+Qo0TrQBrnyYy/Yo2C4=";
 
   subPackages = [
     "cmd/geth"

@@ -7,3 +7,5 @@ publish spring:
   extends: .generic-publish
   variables:
     FULLNODE: spring
+    KUBERNETES_MEMORY_REQUEST: "4Gi"
+    KUBERNETES_MEMORY_LIMIT: "4Gi"

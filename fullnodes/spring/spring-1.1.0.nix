@@ -13,7 +13,7 @@
 
 (overrideCC stdenv gcc).mkDerivation rec {
   pname = "spring";
-  version = "1.0.4";
+  version = "1.1.0";
 
   src = fetchFromGitHub {
     owner = "AntelopeIO";
@@ -21,7 +21,7 @@
     rev = "v${version}";
     fetchSubmodules = true;
     leaveDotGit = true;
-    hash = "sha256-uQ/ne/CpAbaKBXVa1IEIwDhaQpbAerIssk2ChSPwERE=";
+    hash = "sha256-2WXfazrWSjE3kaW4TXiHQTZMVo4N4Aj7HIs4W/HQ1qs=";
   };
 
   patches = [

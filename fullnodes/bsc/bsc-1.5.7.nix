@@ -1,16 +1,16 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "bsc";
-  version = "1.4.15";
+  version = "1.5.7";
 
   src = fetchFromGitHub {
     owner = "bnb-chain";
     repo = "bsc";
     rev = "refs/tags/v${version}";
-    hash = "sha256-v10ZQDgwASBh1YskUPr+eZgf6qb/y8jEpTuJfsnwl+Q=";
+    hash = "sha256-ZBHMeHiG3epJzlq1IulOe+sIUBb8LScDptYov+GY5ic=";
   };
 
-  vendorHash = "sha256-4irfVqv1v9Ff1H9KRB4BUmceLqdKdhBbUUouGrB6mqU=";
+  vendorHash = "sha256-nWfLkaw2hGN/prljjJw1j5xjncg2mlDBCHcYXXxOTZE=";
   proxyVendor = true;
 
   subPackages = [

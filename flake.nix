@@ -2,68 +2,15 @@
   description = "Fullnodes";
 
   inputs = {
-    nixpkgs = {
-      url = "github:NixOS/nixpkgs";
-    };
+    nixpkgs.url = "github:NixOS/nixpkgs";
   };
 
-  outputs = { self, flake-utils, nixpkgs }:
+  outputs = { self, nixpkgs, flake-utils }:
   flake-utils.lib.eachDefaultSystem (system:
-    let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [ self.overlays.default ];
-      };
-
-      allFullnodeVersions = import ./versions.nix;
-
-      importVersion = name: version: {
-        "${version}" = import (./fullnodes/${name}) { inherit pkgs version; };
-      };
-
-      allFullnodes = builtins.mapAttrs (name: versions:
-        builtins.zipAttrsWith (version: bundles:
-          builtins.head bundles
-        ) (builtins.map (importVersion name) versions)
-      ) allFullnodeVersions;
-
-      fullnodeImage = name: version: fullnode: pkgs.dockerTools.buildLayeredImage ({
-        name = "coinmetrics/${name}";
-        tag = version;
-        maxLayers = 2;
-        created = "now";
-      } // fullnode.imageConfig);
-
-      allFullnodeImages = builtins.mapAttrs (name: versions:
-        builtins.mapAttrs (fullnodeImage name) versions
-      ) allFullnodes;
-
-      allFullnodeBinaries = builtins.mapAttrs (_: versions:
-        builtins.mapAttrs (_: fullnode: fullnode.package) versions
-      ) allFullnodes;
-
-      flattenAttrs = f: s: builtins.concatLists (
-        pkgs.lib.mapAttrsToList (outerName: outerValue:
-          pkgs.lib.mapAttrsToList (innerName: innerValue:
-            { "${f outerName innerName}" = innerValue; }
-          ) outerValue
-        ) s
-      );
-
-      flatBinaryMap = builtins.zipAttrsWith
-        (_: binaries: builtins.head binaries)
-        (flattenAttrs
-          (outer: inner: builtins.replaceStrings [ "." ] [ "_" ] "${outer}_${inner}")
-          allFullnodeBinaries
-        );
-
-      flatImageMap = builtins.zipAttrsWith
-        (_: images: builtins.head images)
-        (flattenAttrs
-          (outer: inner: builtins.replaceStrings [ "." ] [ "_" ] "${outer}_${inner}-image")
-          allFullnodeImages
-        );
-
+  let
+    pkgs = import nixpkgs { inherit system; };
+  in {
+    lib = rec {
       registryLoginScript = pkgs.writeShellApplication {
         name = "authenticate-to-registries";
 
@@ -75,55 +22,51 @@
         '';
       };
 
-      imagesFor = fullnode: pkgs.lib.mapAttrsToList (tag: image:
-        { inherit tag image; }
-      ) allFullnodeImages.${fullnode};
+      publishScript = name: version: image: pkgs.writeShellApplication {
+        name = "publish";
 
-      publishImagesFor = fullnode:
-        let
-          images = imagesFor fullnode;
-        in
-        pkgs.writeShellApplication {
-          name = "publish-${fullnode}";
+        runtimeInputs = [ pkgs.skopeo ];
 
-          runtimeInputs = [ pkgs.skopeo ];
-
-          text = ''
-            if [[ $# -gt 0 ]] && [[ $1 == "dry-run" ]]; then
-              echo "Build complete, not pushing images."
-              exit 0
-            fi
-
-            images=(${builtins.concatStringsSep " " (builtins.map (i: "\"${i.image}\"") images)})
-            tags=(${builtins.concatStringsSep " " (builtins.map (i: "\"${i.tag}\"") images)})
-
-            for i in "''${!images[@]}"; do
-              if [[ -n ''${CI_REGISTRY_IMAGE+x} ]]; then
-                until skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"''${images[i]}" docker://"$CI_REGISTRY_IMAGE"/${fullnode}:"''${tags[i]}"; do
-                  echo Copy failed, retrying in 10 seconds...
-                  sleep 10
-                done
-              fi
-
-              if [[ $PRIVATE == "true" ]]; then
-                echo "Image marked private: Skipping publish to Docker Hub."
-              else
-                skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"''${images[i]}" docker://docker.io/coinmetrics/${fullnode}:"''${tags[i]}"
-              fi
+        text = ''
+          if [[ -n ''${CI_REGISTRY_IMAGE+x} ]]; then
+            until skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"${image}" docker://"$CI_REGISTRY_IMAGE"/${name}:${version}; do
+              echo Copy failed, retrying in 10 seconds...
+              sleep 10
             done
-          '';
-        };
-    in
-    {
-      packages = flatBinaryMap // flatImageMap;
+          fi
 
-      apps = {
-        login = { type = "app"; program = "${registryLoginScript}/bin/authenticate-to-registries"; };
-      } // builtins.foldl' (accum: fullnode:
-        accum // { "publish-${fullnode}" = { type = "app"; program = "${publishImagesFor fullnode}/bin/publish-${fullnode}"; }; }
-      ) {} (builtins.attrNames allFullnodeImages);
-    }
-  ) // {
-    overlays.default = import ./overlays/default.nix;
-  };
+          skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"${image}" docker://docker.io/coinmetrics/${name}:${version}
+        '';
+      };
+
+      loginApp = {
+        login = {
+          type = "app";
+          program = "${registryLoginScript}/bin/authenticate-to-registries";
+        };
+      };
+
+      makeFlake = { name, version, vars, makeImageConfig }:
+        let
+          normalizedName = builtins.replaceStrings [ "." ] [ "_" ] "${name}-${version}";
+        in rec {
+          packages = {
+            ${normalizedName} = pkgs.callPackage (./. + "/fullnodes/${name}/${name}-${version}.nix") vars;
+            "${normalizedName}-image" = pkgs.dockerTools.buildLayeredImage ({
+              inherit name;
+              tag = version;
+              maxLayers = 2;
+              created = "now";
+            } // makeImageConfig normalizedName);
+          };
+
+          apps = {
+            "${normalizedName}-publish" = {
+              type = "app";
+              program = "${publishScript name version packages."${normalizedName}-image"}/bin/publish";
+            };
+          };
+        };
+    };
+  });
 }

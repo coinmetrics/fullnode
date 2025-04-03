@@ -12,7 +12,7 @@ build avalanchego:
     - /before-script.sh
   script:
     - cd fullnodes/avalanchego
-    - nix --print-build-logs build .#v1_13_0
+    - nix --print-build-logs build .#avalanchego-1_13_0-image
   after_script:
     - /after-script.sh
   artifacts:
@@ -29,7 +29,7 @@ publish avalanchego:
   script:
     - cd fullnodes/avalanchego
     - nix --print-build-logs run .#login
-    - nix --print-build-logs run .#publish
+    - nix --print-build-logs run .#avalanchego-1_13_0-publish
   after_script:
     - /after-script.sh
   tags:

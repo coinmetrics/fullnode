@@ -64,3 +64,4 @@ include:
  - fullnodes/bsc/.gitlab-ci.yml
  - fullnodes/coregeth/.gitlab-ci.yml
  - fullnodes/cosmos-gaia/.gitlab-ci.yml
+ - fullnodes/cosmos-rosetta/.gitlab-ci.yml

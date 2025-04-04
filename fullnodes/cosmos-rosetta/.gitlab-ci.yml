@@ -2,8 +2,10 @@ build cosmos-rosetta:
   extends: .generic-build
   variables:
     FULLNODE: cosmos-rosetta
+    VERSION: "1_0_0"
 
 publish cosmos-rosetta:
   extends: .generic-publish
   variables:
     FULLNODE: cosmos-rosetta
+    VERSION: "1_0_0"

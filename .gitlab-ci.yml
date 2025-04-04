@@ -59,3 +59,4 @@ include:
  - fullnodes/avalanchego/.gitlab-ci.yml
  - fullnodes/bitcoin-cash/.gitlab-ci.yml
  - fullnodes/bitcoin-gold/.gitlab-ci.yml
+ - fullnodes/bitcoin-sv/.gitlab-ci.yml

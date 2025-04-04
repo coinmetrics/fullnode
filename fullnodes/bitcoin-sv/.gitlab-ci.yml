@@ -2,8 +2,10 @@ build bitcoin-sv:
   extends: .generic-build
   variables:
     FULLNODE: bitcoin-sv
+    VERSION: "1_0_16"
 
 publish bitcoin-sv:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-sv
+    VERSION: "1_0_16"

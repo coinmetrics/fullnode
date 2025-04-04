@@ -1,24 +1,7 @@
 ---
 stages:
-  - update lock file
   - build
   - publish
-
-update lock file:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB_TO_RUN == "update"
-  stage: update lock file
-  script:
-    - nix flake update
-    - if git diff --exit-code; then echo "No changes."; exit 0; fi
-    - git add flake.lock
-    - git config --global user.name "${GITLAB_USER_NAME}"
-    - git config --global user.email "${GITLAB_USER_EMAIL}"
-    - git commit -m 'Update flake.lock'
-    - git remote set-url origin --push ${CI_SERVER_PROTOCOL}://${FULLNODE_GIT_USERNAME}:${FULLNODE_GIT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git
-    - git push origin HEAD:${CI_COMMIT_REF_NAME}
-  tags:
-    - rt-containerd
 
 .generic-build:
   rules:
@@ -26,7 +9,6 @@ update lock file:
       changes:
         paths:
           - fullnodes/$FULLNODE/**/*
-          - flake.lock
   stage: build
   image: docker.io/coinmetrics/nix-builder:latest
   variables:
@@ -39,7 +21,8 @@ update lock file:
   before_script:
     - /before-script.sh
   script:
-    - nix --print-build-logs run .#publish-$FULLNODE -- dry-run
+    - cd fullnodes/$FULLNODE
+    - nix --print-build-logs build .#$FULLNODE-$VERSION-image
   after_script:
     - /after-script.sh
   artifacts:
@@ -56,14 +39,14 @@ update lock file:
       changes:
         paths:
           - fullnodes/$FULLNODE/**/*
-          - flake.lock
   stage: publish
   image: docker.io/coinmetrics/nix-builder:latest
   before_script:
     - /before-script.sh
   script:
+    - cd fullnodes/$FULLNODE
     - nix --print-build-logs run .#login
-    - nix --print-build-logs run .#publish-$FULLNODE
+    - nix --print-build-logs run .#$FULLNODE-$VERSION-publish
   after_script:
     - /after-script.sh
   tags:
@@ -71,109 +54,4 @@ update lock file:
 
 # We separate each asset into its own .gitlab-ci.yml to avoid the old behaviour of rebuilding all images if we change the global .gitlab-ci.yml
 include:
- - fullnodes/algorand/.gitlab-ci.yml
- - fullnodes/avalanche-rosetta/.gitlab-ci.yml
  - fullnodes/avalanchego/.gitlab-ci.yml
- - fullnodes/bitcoin-cash/.gitlab-ci.yml
- - fullnodes/bitcoin-gold/.gitlab-ci.yml
- - fullnodes/bitcoin-sv/.gitlab-ci.yml
- - fullnodes/bitcoin-zmce/.gitlab-ci.yml
- - fullnodes/bsc/.gitlab-ci.yml
- - fullnodes/coregeth/.gitlab-ci.yml
- - fullnodes/cosmos-gaia/.gitlab-ci.yml
- - fullnodes/cosmos-rosetta/.gitlab-ci.yml
- - fullnodes/dash/.gitlab-ci.yml
- - fullnodes/decred/.gitlab-ci.yml
- - fullnodes/digibyte/.gitlab-ci.yml
- - fullnodes/dogecoin/.gitlab-ci.yml
- - fullnodes/elements/.gitlab-ci.yml
- - fullnodes/erigon/.gitlab-ci.yml
- - fullnodes/geth/.gitlab-ci.yml
- - fullnodes/go-opera/.gitlab-ci.yml
- - fullnodes/grin/.gitlab-ci.yml
- - fullnodes/leap/.gitlab-ci.yml
- - fullnodes/lighthouse/.gitlab-ci.yml
- - fullnodes/litecoin/.gitlab-ci.yml
- - fullnodes/monero/.gitlab-ci.yml
- - fullnodes/neo/.gitlab-ci.yml
- - fullnodes/omnicore/.gitlab-ci.yml
- - fullnodes/op-geth/.gitlab-ci.yml
- - fullnodes/op-node/.gitlab-ci.yml
- - fullnodes/pivx/.gitlab-ci.yml
- - fullnodes/polkadot/.gitlab-ci.yml
- - fullnodes/polygon-bor/.gitlab-ci.yml
- - fullnodes/spring/.gitlab-ci.yml
- - fullnodes/vertcoin/.gitlab-ci.yml
- - fullnodes/zcash/.gitlab-ci.yml
-
-
-build geth:
-  extends: .generic-build
-  variables:
-    FULLNODE: geth
-
-publish geth:
-  extends: .generic-publish
-  variables:
-    FULLNODE: geth
-
-build go-opera:
-  extends: .generic-build
-  variables:
-    FULLNODE: go-opera
-
-publish go-opera:
-  extends: .generic-publish
-  variables:
-    FULLNODE: go-opera
-
-build grin:
-  extends: .generic-build
-  variables:
-    FULLNODE: grin
-
-publish grin:
-  extends: .generic-publish
-  variables:
-    FULLNODE: grin
-
-build leap:
-  extends: .generic-build
-  variables:
-    FULLNODE: leap
-
-publish leap:
-  extends: .generic-publish
-  variables:
-    FULLNODE: leap
-
-build lighthouse:
-  extends: .generic-build
-  variables:
-    FULLNODE: lighthouse
-
-publish lighthouse:
-  extends: .generic-publish
-  variables:
-    FULLNODE: lighthouse
-    PRIVATE: "true"
-
-build litecoin:
-  extends: .generic-build
-  variables:
-    FULLNODE: litecoin
-
-publish litecoin:
-  extends: .generic-publish
-  variables:
-    FULLNODE: litecoin
-
-build monero:
-  extends: .generic-build
-  variables:
-    FULLNODE: monero
-
-publish monero:
-  extends: .generic-publish
-  variables:
-    FULLNODE: monero

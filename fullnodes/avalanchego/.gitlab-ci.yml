@@ -1,36 +1,11 @@
 build avalanchego:
-  stage: build
-  image: docker.io/coinmetrics/nix-builder:latest
+  extends: .generic-build
   variables:
-    KUBERNETES_CPU_REQUEST: "16"
-    KUBERNETES_CPU_LIMIT: "16"
-    KUBERNETES_MEMORY_REQUEST: "24Gi"
-    KUBERNETES_MEMORY_LIMIT: "24Gi"
-    KUBERNETES_EPHEMERAL_STORAGE_REQUEST: "32Gi"
-    KUBERNETES_EPHEMERAL_STORAGE_LIMIT: "32Gi"
-  before_script:
-    - /before-script.sh
-  script:
-    - cd fullnodes/avalanchego
-    - nix --print-build-logs build .#avalanchego-1_13_0-image
-  after_script:
-    - /after-script.sh
-  artifacts:
-    expire_in: "1 week"
-    when: always
-  tags:
-    - rt-containerd
+    FULLNODE: avalanchego
+    VERSION: "1_13_0"
 
 publish avalanchego:
-  stage: publish
-  image: docker.io/coinmetrics/nix-builder:latest
-  before_script:
-    - /before-script.sh
-  script:
-    - cd fullnodes/avalanchego
-    - nix --print-build-logs run .#login
-    - nix --print-build-logs run .#avalanchego-1_13_0-publish
-  after_script:
-    - /after-script.sh
-  tags:
-    - rt-containerd
+  extends: .generic-publish
+  variables:
+    FULLNODE: avalanchego
+    VERSION: "1_13_0"

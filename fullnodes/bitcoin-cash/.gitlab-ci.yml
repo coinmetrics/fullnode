@@ -2,8 +2,10 @@ build bitcoin-cash:
   extends: .generic-build
   variables:
     FULLNODE: bitcoin-cash
+    VERSION: "28_0_1"
 
 publish bitcoin-cash:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-cash
+    VERSION: "28_0_1"

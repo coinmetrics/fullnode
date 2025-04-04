@@ -1,20 +1,35 @@
-{ stdenv, fetchFromGitLab, cmake, python3, openssl, boost, libevent, zeromq
-, pkg-config, help2man, ninja }:
+{ stdenv, fetchFromGitLab, cmake, git, python3, openssl, boost, libevent, zeromq
+, pkg-config, help2man, ninja, gmp, libnatpmp, zlib }:
 
 stdenv.mkDerivation rec {
   name = "bitcoin-cash-node";
-  version = "27.0.0";
+  version = "28.0.1";
 
   src = fetchFromGitLab {
     owner = "bitcoin-cash-node";
     repo = "bitcoin-cash-node";
     rev = "v${version}";
-    hash = "sha256-MbuXlPtbbB4hw4Pn0NT795PfCkkxCH+2fuVXcky7JEk=";
+    hash = "sha256-FLTGcJROoo69ZkR+fzzXUox0gjbBNvFev4kY+Ji+mVA=";
   };
 
-  nativeBuildInputs = [ cmake python3 pkg-config help2man ninja ];
+  nativeBuildInputs = [
+    cmake
+    python3
+    pkg-config
+    help2man
+    ninja
+    git
+  ];
 
-  buildInputs = [ openssl boost libevent zeromq ];
+  buildInputs = [
+    openssl
+    boost
+    gmp
+    libevent
+    libnatpmp
+    zeromq
+    zlib
+  ];
 
   cmakeFlags = [
     "-DBUILD_BITCOIN_WALLET=OFF"

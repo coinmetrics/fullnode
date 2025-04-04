@@ -57,3 +57,4 @@ include:
  - fullnodes/algorand/.gitlab-ci.yml
  - fullnodes/avalanche-rosetta/.gitlab-ci.yml
  - fullnodes/avalanchego/.gitlab-ci.yml
+ - fullnodes/bitcoin-cash/.gitlab-ci.yml

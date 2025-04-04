@@ -54,4 +54,5 @@ stages:
 
 # We separate each asset into its own .gitlab-ci.yml to avoid the old behaviour of rebuilding all images if we change the global .gitlab-ci.yml
 include:
+ - fullnodes/algorand/.gitlab-ci.yml
  - fullnodes/avalanchego/.gitlab-ci.yml

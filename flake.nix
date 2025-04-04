@@ -53,11 +53,11 @@
           packages = {
             ${normalizedName} = pkgs.callPackage (./. + "/fullnodes/${name}/${name}-${version}.nix") vars;
             "${normalizedName}-image" = pkgs.dockerTools.buildLayeredImage ({
-              inherit name;
+              name = "${name}-${version}";
               tag = version;
               maxLayers = 2;
               created = "now";
-            } // makeImageConfig normalizedName);
+            } // makeImageConfig packages.${normalizedName});
           };
 
           apps = {

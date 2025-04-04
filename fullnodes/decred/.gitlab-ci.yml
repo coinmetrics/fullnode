@@ -2,8 +2,10 @@ build decred:
   extends: .generic-build
   variables:
     FULLNODE: decred
+    VERSION: "2_0_6"
 
 publish decred:
   extends: .generic-publish
   variables:
     FULLNODE: decred
+    VERSION: "2_0_6"

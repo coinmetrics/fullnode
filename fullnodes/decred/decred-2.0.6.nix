@@ -1,7 +1,7 @@
 { lib, buildGoModule, fetchFromGitHub }:
 
 buildGoModule rec {
-  pname = "dcrd";
+  pname = "decred";
   version = "2.0.6";
 
   src = fetchFromGitHub {

@@ -66,3 +66,4 @@ include:
  - fullnodes/cosmos-gaia/.gitlab-ci.yml
  - fullnodes/cosmos-rosetta/.gitlab-ci.yml
  - fullnodes/dash/.gitlab-ci.yml
+ - fullnodes/decred/.gitlab-ci.yml

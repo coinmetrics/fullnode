@@ -62,3 +62,4 @@ include:
  - fullnodes/bitcoin-sv/.gitlab-ci.yml
  - fullnodes/bitcoin-zmce/.gitlab-ci.yml
  - fullnodes/bsc/.gitlab-ci.yml
+ - fullnodes/coregeth/.gitlab-ci.yml

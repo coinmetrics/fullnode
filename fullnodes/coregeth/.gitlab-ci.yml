@@ -2,8 +2,10 @@ build coregeth:
   extends: .generic-build
   variables:
     FULLNODE: coregeth
+    VERSION: "1_12_20"
 
 publish coregeth:
   extends: .generic-publish
   variables:
     FULLNODE: coregeth
+    VERSION: "1_12_20"

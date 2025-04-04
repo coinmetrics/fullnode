@@ -1,5 +1,5 @@
-{ buildGo122Module, fetchFromGitHub }:
-buildGo122Module rec {
+{ buildGoModule, fetchFromGitHub }:
+buildGoModule rec {
   pname = "coregeth";
   version = "1.12.20";
 

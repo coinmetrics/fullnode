@@ -2,8 +2,10 @@ build bitcoin-gold:
   extends: .generic-build
   variables:
     FULLNODE: bitcoin-gold
+    VERSION: "0_17_3"
 
 publish bitcoin-gold:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-gold
+    VERSION: "0_17_3"

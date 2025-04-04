@@ -46,7 +46,7 @@
         };
       };
 
-      makeFlake = { name, version, vars, makeImageConfig }:
+      makeFlake = { name, version, vars ? {}, makeImageConfig }:
         let
           normalizedName = builtins.replaceStrings [ "." ] [ "_" ] "${name}-${version}";
         in rec {

@@ -60,3 +60,4 @@ include:
  - fullnodes/bitcoin-cash/.gitlab-ci.yml
  - fullnodes/bitcoin-gold/.gitlab-ci.yml
  - fullnodes/bitcoin-sv/.gitlab-ci.yml
+ - fullnodes/bitcoin-zmce/.gitlab-ci.yml

@@ -80,3 +80,4 @@ include:
  - fullnodes/go-opera/.gitlab-ci.yml
  - fullnodes/grin/.gitlab-ci.yml
  - fullnodes/leap/.gitlab-ci.yml
+ - fullnodes/lighthouse/.gitlab-ci.yml

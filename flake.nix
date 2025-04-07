@@ -35,7 +35,11 @@
             done
           fi
 
-          skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"${image}" docker://docker.io/coinmetrics/${name}:${version}
+          if [[ $PRIVATE == "true" ]]; then
+            echo "Image marked private: Skipping publish to Docker Hub."
+          else
+            skopeo --insecure-policy copy --retry-times 10 -f oci docker-archive:"${image}" docker://docker.io/coinmetrics/${name}:${version}
+          fi
         '';
       };
 

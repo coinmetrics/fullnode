@@ -2,9 +2,11 @@ build lighthouse:
   extends: .generic-build
   variables:
     FULLNODE: lighthouse
+    VERSION: "6_0_1"
 
 publish lighthouse:
   extends: .generic-publish
   variables:
     FULLNODE: lighthouse
     PRIVATE: "true"
+    VERSION: "6_0_1"

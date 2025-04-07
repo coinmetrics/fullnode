@@ -2,7 +2,7 @@
 stdenv,
 fetchFromGitHub,
 openssl,
-boost184,
+boost,
 libevent,
 autoreconfHook,
 db4,
@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     openssl
-    boost184
+    boost
     libevent
     db4
     zeromq
@@ -54,7 +54,7 @@ stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   configureFlags = [
-      "--with-boost-libdir=${boost184.out}/lib"
+      "--with-boost-libdir=${boost.out}/lib"
   ] ++ optionals withGui [
       "--with-gui=qt5"
       "--with-qt-bindir=${qtbase.dev}/bin:${qttools.dev}/bin"

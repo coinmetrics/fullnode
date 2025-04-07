@@ -2,8 +2,10 @@ build digibyte:
   extends: .generic-build
   variables:
     FULLNODE: digibyte
+    VERSION: "8_22_2"
 
 publish digibyte:
   extends: .generic-publish
   variables:
     FULLNODE: digibyte
+    VERSION: "8_22_2"

@@ -2,8 +2,10 @@ build litecoin:
   extends: .generic-build
   variables:
     FULLNODE: litecoin
+    VERSION: "0_21_4"
 
 publish litecoin:
   extends: .generic-publish
   variables:
     FULLNODE: litecoin
+    VERSION: "0_21_4"

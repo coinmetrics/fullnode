@@ -2,8 +2,10 @@ build go-opera:
   extends: .generic-build
   variables:
     FULLNODE: go-opera
+    VERSION: "1_1_1-rc_2"
 
 publish go-opera:
   extends: .generic-publish
   variables:
     FULLNODE: go-opera
+    VERSION: "1_1_1-rc_2"

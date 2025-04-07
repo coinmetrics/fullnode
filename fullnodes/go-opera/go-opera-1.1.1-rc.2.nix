@@ -1,5 +1,5 @@
-{ buildGo122Module, fetchFromGitHub }:
-buildGo122Module rec {
+{ buildGoModule, fetchFromGitHub }:
+buildGoModule rec {
   pname = "go-opera";
   version = "1.1.1-rc.2";
 

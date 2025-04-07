@@ -2,8 +2,10 @@ build dogecoin:
   extends: .generic-build
   variables:
     FULLNODE: dogecoin
+    VERSION: "1_14_9"
 
 publish dogecoin:
   extends: .generic-publish
   variables:
     FULLNODE: dogecoin
+    VERSION: "1_14_9"

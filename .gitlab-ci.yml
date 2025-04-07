@@ -68,3 +68,4 @@ include:
  - fullnodes/dash/.gitlab-ci.yml
  - fullnodes/decred/.gitlab-ci.yml
  - fullnodes/digibyte/.gitlab-ci.yml
+ - fullnodes/dogecoin/.gitlab-ci.yml

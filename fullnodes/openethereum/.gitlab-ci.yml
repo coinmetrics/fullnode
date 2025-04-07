@@ -1,0 +1,11 @@
+build openethereum:
+  extends: .generic-build
+  variables:
+    FULLNODE: openethereum
+    VERSION: "3_3_5"
+
+publish openethereum:
+  extends: .generic-publish
+  variables:
+    FULLNODE: openethereum
+    VERSION: "3_3_5"

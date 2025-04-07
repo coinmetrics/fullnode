@@ -69,3 +69,4 @@ include:
  - fullnodes/decred/.gitlab-ci.yml
  - fullnodes/digibyte/.gitlab-ci.yml
  - fullnodes/dogecoin/.gitlab-ci.yml
+ - fullnodes/elements/.gitlab-ci.yml

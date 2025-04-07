@@ -2,8 +2,10 @@ build elements:
   extends: .generic-build
   variables:
     FULLNODE: elements
+    VERSION: "23_2_1"
 
 publish elements:
   extends: .generic-publish
   variables:
     FULLNODE: elements
+    VERSION: "23_2_1"

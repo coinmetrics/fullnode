@@ -2,8 +2,10 @@ build omnicore:
   extends: .generic-build
   variables:
     FULLNODE: omnicore
+    VERSION: "0_12_0_1"
 
 publish omnicore:
   extends: .generic-publish
   variables:
     FULLNODE: omnicore
+    VERSION: "0_12_0_1"

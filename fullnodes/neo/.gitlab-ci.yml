@@ -2,8 +2,10 @@ build neo:
   extends: .generic-build
   variables:
     FULLNODE: neo
+    VERSION: "3_7_5"
 
 publish neo:
   extends: .generic-publish
   variables:
     FULLNODE: neo
+    VERSION: "3_7_5"

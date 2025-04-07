@@ -83,3 +83,4 @@ include:
  - fullnodes/lighthouse/.gitlab-ci.yml
  - fullnodes/litecoin/.gitlab-ci.yml
  - fullnodes/monero/.gitlab-ci.yml
+ - fullnodes/neo/.gitlab-ci.yml

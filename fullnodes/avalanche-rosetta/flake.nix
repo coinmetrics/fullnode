@@ -3,7 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
-    utils.url = "path:../..";
+    utils = {
+      url = "path:../..";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, flake-utils, nixpkgs, utils }:

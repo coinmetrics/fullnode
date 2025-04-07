@@ -21,7 +21,7 @@
     rev = "v${version}";
     fetchSubmodules = true;
     leaveDotGit = true;
-    hash = "sha256-V3dYgIPaOaFhmLfRKYuyBxTjABV7jU2eC2E63L8sQ6Y=";
+    hash = "sha256-j0RXKc8PPn6XooNWiLQ9P+d8XkBbEvqISFGWNofyuOA=";
   };
 
   patches = [

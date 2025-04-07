@@ -79,3 +79,4 @@ include:
  - fullnodes/geth/.gitlab-ci.yml
  - fullnodes/go-opera/.gitlab-ci.yml
  - fullnodes/grin/.gitlab-ci.yml
+ - fullnodes/leap/.gitlab-ci.yml

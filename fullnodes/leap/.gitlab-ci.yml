@@ -2,8 +2,10 @@ build leap:
   extends: .generic-build
   variables:
     FULLNODE: leap
+    VERSION: "5_0_3"
 
 publish leap:
   extends: .generic-publish
   variables:
     FULLNODE: leap
+    VERSION: "5_0_3"

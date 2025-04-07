@@ -85,3 +85,4 @@ include:
  - fullnodes/monero/.gitlab-ci.yml
  - fullnodes/neo/.gitlab-ci.yml
  - fullnodes/omnicore/.gitlab-ci.yml
+ - fullnodes/op-geth/.gitlab-ci.yml

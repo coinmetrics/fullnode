@@ -2,8 +2,10 @@ build monero:
   extends: .generic-build
   variables:
     FULLNODE: monero
+    VERSION: "0_18_3_1"
 
 publish monero:
   extends: .generic-publish
   variables:
     FULLNODE: monero
+    VERSION: "0_18_3_1"

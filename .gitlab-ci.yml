@@ -76,3 +76,4 @@ include:
  - fullnodes/dogecoin/.gitlab-ci.yml
  - fullnodes/elements/.gitlab-ci.yml
  - fullnodes/erigon/.gitlab-ci.yml
+ - fullnodes/geth/.gitlab-ci.yml

@@ -86,3 +86,4 @@ include:
  - fullnodes/neo/.gitlab-ci.yml
  - fullnodes/omnicore/.gitlab-ci.yml
  - fullnodes/op-geth/.gitlab-ci.yml
+ - fullnodes/op-node/.gitlab-ci.yml

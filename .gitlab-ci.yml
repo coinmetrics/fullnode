@@ -89,3 +89,4 @@ include:
  - fullnodes/op-node/.gitlab-ci.yml
  - fullnodes/openethereum/.gitlab-ci.yml
  - fullnodes/pivx/.gitlab-ci.yml
+ - fullnodes/polkadot/.gitlab-ci.yml

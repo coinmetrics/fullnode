@@ -2,8 +2,10 @@ build polkadot:
   extends: .generic-build
   variables:
     FULLNODE: polkadot
+    VERSION: "1_15_1"
 
 publish polkadot:
   extends: .generic-publish
   variables:
     FULLNODE: polkadot
+    VERSION: "1_15_1"

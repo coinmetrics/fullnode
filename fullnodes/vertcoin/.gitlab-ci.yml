@@ -2,9 +2,10 @@ build vertcoin:
   extends: .generic-build
   variables:
     FULLNODE: vertcoin
+    VERSION: "23_2"
 
 publish vertcoin:
   extends: .generic-publish
   variables:
     FULLNODE: vertcoin
-
+    VERSION: "23_2"

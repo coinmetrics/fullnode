@@ -2,10 +2,10 @@ build spring:
   extends: .generic-build
   variables:
     FULLNODE: spring
+    VERSION: "1_1_0"
 
 publish spring:
   extends: .generic-publish
   variables:
     FULLNODE: spring
-    KUBERNETES_MEMORY_REQUEST: "8Gi"
-    KUBERNETES_MEMORY_LIMIT: "8Gi"
+    VERSION: "1_1_0"

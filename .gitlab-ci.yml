@@ -91,3 +91,4 @@ include:
  - fullnodes/pivx/.gitlab-ci.yml
  - fullnodes/polkadot/.gitlab-ci.yml
  - fullnodes/polygon-bor/.gitlab-ci.yml
+ - fullnodes/spring/.gitlab-ci.yml

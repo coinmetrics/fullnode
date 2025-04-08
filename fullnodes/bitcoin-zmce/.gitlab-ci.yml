@@ -8,4 +8,5 @@ publish bitcoin-zmce:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-zmce
+    PRIVATE: "true"
     VERSION: "28_1"

@@ -2,8 +2,10 @@ build pivx:
   extends: .generic-build
   variables:
     FULLNODE: pivx
+    VERSION: "5_6_1"
 
 publish pivx:
   extends: .generic-publish
   variables:
     FULLNODE: pivx
+    VERSION: "5_6_1"

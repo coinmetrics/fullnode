@@ -2,8 +2,10 @@ build polygon-bor:
   extends: .generic-build
   variables:
     FULLNODE: polygon-bor
+    VERSION: "1_4_0"
 
 publish polygon-bor:
   extends: .generic-publish
   variables:
     FULLNODE: polygon-bor
+    VERSION: "1_4_0"

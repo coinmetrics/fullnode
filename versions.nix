@@ -1,0 +1,37 @@
+{
+  algorand = [ "3.26.0" "4.0.1" ];
+  avalanchego = [ "1.11.11" "1.12.0" ];
+  avalanche-rosetta = [ "0.1.47" ];
+  bitcoin-cash = [ "27.0.0" ];
+  bitcoin-gold = [ "0.17.3" ];
+  bitcoin-sv = [ "1.0.16" ];
+  bitcoin-zmce = [ "26.0" "27.0" "28.0" "28.1" ];
+  bsc = [ "1.4.17" "1.5.7" ];
+  coregeth = [ "1.12.20" ];
+  cosmos-gaia = [ "9.0.2" ];
+  cosmos-rosetta = [ "1.0.0" ];
+  dash = [ "21.1.1" "22.0.0" ];
+  decred = [ "1.8.1" "2.0.1" "2.0.5" "2.0.6"];
+  digibyte = [ "7.17.3" "8.22.0" "8.22.1" "8.22.2" ];
+  dogecoin = [ "1.14.9" ];
+  elements = [ "23.2.1" ];
+  erigon = [ "2.60.8" ];
+  geth = [ "1.15.5" "1.15.7"];
+  go-opera = [ "1.1.1-rc.2" ];
+  grin = [ "5.3.2" ];
+  leap = [ "5.0.3" ];
+  lighthouse = [ "5.3.0" "6.0.1" ];
+  litecoin = [ "0.21.3" "0.21.4" ];
+  monero = [ "0.18.3.1" ];
+  neo = [ "3.7.5" ];
+  omnicore = [ "0.12.0.1" ];
+  op-geth = [ "1.101503.2" ];
+  op-node = [ "1.13.0" ];
+  openethereum = [ "3.3.5" ];
+  pivx = [ "5.6.1" ];
+  polkadot = [ "1.15.1" ];
+  polygon-bor = [ "1.4.0" ];
+  spring = [ "1.0.4" "1.1.0" ];
+  vertcoin = [ "23.2" ];
+  zcash = [ "6.0.0" "6.1.0" ];
+}

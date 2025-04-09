@@ -19,12 +19,41 @@ This repository is **new**, **experimental**, and **work in progress**. If you w
 
 ### General procedure
 
-1. Add the new version to the node's versions array in `versions.nix`
-2. Create a new file in the fullnodes/$node folder with the new version as suffix (`fullnodes/my-node/my-node-x.y.z.nix`)
-3. Copy/paste the previous `.nix` file contents into that new file
-4. Update fields to match the new version:
-   - `version = ..` should be `version = 'x.y.z'`
+1. Create a new file in the fullnodes/$node folder with the new version as suffix (`fullnodes/my-node/my-node-x.y.z.nix`)
+2. Copy/paste the previous `.nix` file contents into that new file
+3. Update fields to match the new version:
+   - The fullnode’s `flake.nix` file:
+     ```
+     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
+       inherit makeImageConfig;
+       name = "zcash";
+       version = "6.1.0";
+     ...
+     ```
+   - The derivation file:
+     ```
+     rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
+       pname = "zcash";
+       version = "6.1.0";
+     ...
+     ```
+   - The `.gitlab-ci.yml` file:
+     ```
+     build zcash:
+       extends: .generic-build
+       variables:
+         FULLNODE: zcash
+         VERSION: "6_1_0"
+
+     publish zcash:
+       extends: .generic-publish
+       variables:
+         FULLNODE: zcash
+         VERSION: "6_1_0"
+     ```
    - Update `src.hash` to the precomputed value (see the next section for how to compute those)
+
+Due to a technical limitation, the version needs to be represented with underscores instead of periods in the `gitlab-ci.yml` file.
 
 #### For Golang projects
 

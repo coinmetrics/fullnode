@@ -27,7 +27,7 @@
     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "bitcoin-zmce";
-      version = "28.1";
+      version = "29.0";
       vars = {
         boost = boost181;
         miniupnpc = miniupnpc;

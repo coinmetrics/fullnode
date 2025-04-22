@@ -2,11 +2,11 @@ build bitcoin-zmce:
   extends: .generic-build
   variables:
     FULLNODE: bitcoin-zmce
-    VERSION: "28_1"
+    VERSION: "29_0"
 
 publish bitcoin-zmce:
   extends: .generic-publish
   variables:
     FULLNODE: bitcoin-zmce
     PRIVATE: "true"
-    VERSION: "28_1"
+    VERSION: "29_0"

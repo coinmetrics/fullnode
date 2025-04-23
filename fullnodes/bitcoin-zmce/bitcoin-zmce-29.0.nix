@@ -30,7 +30,7 @@ let
   majorVersion = versions.major version;
   desktop = fetchurl {
     url = "https://raw.githubusercontent.com/bitcoin-core/packaging/${majorVersion}.x/debian/bitcoin-qt.desktop";
-    sha256 = "ACpna0nxcd1dw3nnzli36nf9zj28d2g9jf5y0zl9j18lvanvniha";
+    sha256 = "0000000000000000000000000000000000000000000000000000";
   };
 in
 stdenv.mkDerivation (finalAttrs: {
@@ -79,7 +79,7 @@ stdenv.mkDerivation (finalAttrs: {
       (lib.cmakeBool "WITH_USDT" (stdenv.hostPlatform.isLinux))
     ]
     ++ lib.optionals (!finalAttrs.doCheck) [
-      (lib.cmakeBool "BUILD_TESTS" false)
+      (lib.cmakeBool "BUILD_TESTS" true)
       (lib.cmakeBool "BUILD_FUZZ_BINARY" false)
       (lib.cmakeBool "BUILD_GUI_TESTS" false)
     ]

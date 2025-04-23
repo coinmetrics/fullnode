@@ -211,6 +211,23 @@ index 0000000000..8cfda98465
 +- `header` is the 80-byte serialized block header
 +- `sequence` is an `uint32` in Little Endian
 +
+diff --git a/cmake/module/FindZeroMQ.cmake b/cmake/module/FindZeroMQ.cmake
+index eecd9b2453..a2b934a5b6 100644
+--- a/cmake/module/FindZeroMQ.cmake
++++ b/cmake/module/FindZeroMQ.cmake
+@@ -16,6 +16,12 @@ This is a wrapper around find_package()/pkg_check_modules() commands that:
+ 
+ include(FindPackageHandleStandardArgs)
+ find_package(ZeroMQ ${ZeroMQ_FIND_VERSION} NO_MODULE QUIET)
++find_package(Boost)
++if(Boost_FOUND)
++    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
++    ADD_DEFINITIONS( "-DHAS_BOOST" )
++endif()
++
+ if(ZeroMQ_FOUND)
+   find_package_handle_standard_args(ZeroMQ
+     REQUIRED_VARS ZeroMQ_DIR
 diff --git a/src/init.cpp b/src/init.cpp
 index 7fdbf75dc6..a3eab5cae6 100644
 --- a/src/init.cpp

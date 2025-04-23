@@ -21,7 +21,7 @@ When a new version is released, the procedure is to:
 2. create a new branch that will contain the patched changes: `git branch vXX.Z-zmce`
 3. checkout that branch: `git checkout vXX.Z-zmce`
 4. cherry-pick commits from the previous patch: `git cherry-pick vXX.Y..vXX.Y-zmce`
-5. build the binary and run tests: `make clean && ./autogen.sh &&  ./configure --disable-bench --disable-gui --disable-wallet && make -j8 check`
+5. build the binary and run tests: `cmake -B build -DENABLE_WALLET=OFF -DWITH_ZMQ=ON && cmake --build build --target clean && cmake --build build && ctest --test-dir build`
 6. if compiling or tests fail, the patch needs to be updated, otherwise, the patch is ready
 
 ## Generating the Nix image

@@ -669,7 +669,7 @@ index c879fdd0dd..70f3763415 100644
      CZMQNotificationInterface();
  
 diff --git a/src/zmq/zmqpublishnotifier.cpp b/src/zmq/zmqpublishnotifier.cpp
-index c0a04d28a6..35d89af04a 100644
+index c0a04d28a6..768a5e43c6 100644
 --- a/src/zmq/zmqpublishnotifier.cpp
 +++ b/src/zmq/zmqpublishnotifier.cpp
 @@ -46,6 +46,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
@@ -716,7 +716,7 @@ index c0a04d28a6..35d89af04a 100644
 +        zmq_msg_close(&msg);
 +    }
 +
-+    LogPrint(BCLog::ZMQ, "sent message with %d parts\n", message.size());
++    LogDebug(BCLog::ZMQ, "sent message with %d parts\n", message.size());
 +    return 0;
 +}
 +
@@ -812,7 +812,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishMempolAddedNotifier::NotifyTransactionFee(const CTransaction &transaction, const CAmount fee)
 +{
 +    uint256 txid = transaction.GetHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish mempooladded %s\n", txid.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish mempooladded %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(txid));
@@ -825,7 +825,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishMempoolRemovedNotifier::NotifyTransactionRemovalReason(const CTransaction &transaction, const MemPoolRemovalReason reason)
 +{
 +    uint256 txid = transaction.GetHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolremoved %s\n", txid.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish mempoolremoved %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(txid));
@@ -839,7 +839,7 @@ index c0a04d28a6..35d89af04a 100644
 +{
 +    uint256 hash_replaced = tx_replaced.GetHash();
 +    uint256 hash_replacement = tx_replacement.GetHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolreplaced %s by %s\n", hash_replaced.GetHex(), hash_replacement.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish mempoolreplaced %s by %s\n", hash_replaced.GetHex(), hash_replacement.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(hash_replaced));
@@ -855,7 +855,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishMempoolConfirmedNotifier::NotifyMempoolTransactionConfirmed(const CTransaction &transaction, const CBlockIndex *pindex)
 +{
 +    uint256 txid = transaction.GetHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish mempoolconfirmed %s\n", txid.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish mempoolconfirmed %s\n", txid.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(txid));
@@ -870,7 +870,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishChainTipChangedNotifier::NotifyChainTipChanged(const CBlockIndex *pindex)
 +{
 +    uint256 hash = pindex->GetBlockHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish chaintipchanged %s\n", hash.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish chaintipchanged %s\n", hash.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(hash));
@@ -883,7 +883,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishChainConnectedNotifier::NotifyChainBlockConnected(const CBlockIndex *pindex)
 +{
 +    uint256 hash = pindex->GetBlockHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish chainconnected %s\n", hash.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish chainconnected %s\n", hash.GetHex());
 +
 +    DataStream ss;
 +    std::vector<uint8_t> block{};
@@ -906,7 +906,7 @@ index c0a04d28a6..35d89af04a 100644
 +bool CZMQPublishChainHeaderAddedNotifier::NotifyChainHeaderAdded(const CBlockIndex *pindex)
 +{
 +    uint256 hash = pindex->GetBlockHash();
-+    LogPrint(BCLog::ZMQ, "zmq: Publish chainheaderadded %s\n", hash.GetHex());
++    LogDebug(BCLog::ZMQ, "zmq: Publish chainheaderadded %s\n", hash.GetHex());
 +
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(hash));

@@ -33,7 +33,7 @@ let
     sha256 = "ACpna0nxcd1dw3nnzli36nf9zj28d2g9jf5y0zl9j18lvanvniha";
   };
 in
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = if withGui then "bitcoin" else "bitcoind";
   inherit version;
 
@@ -55,9 +55,8 @@ stdenv.mkDerivation rec {
     ++ optionals (stdenv.isDarwin && stdenv.isAarch64) [ autoSignDarwinBinariesHook ]
     ++ optionals withGui [ wrapQtAppsHook ];
 
-  cmakeFlags = [ "-DENABLE_WALLET=OFF" ];
-
   buildInputs = [ boost libevent miniupnpc zeromq zlib ]
+    ++ lib.optionals (stdenv.hostPlatform.isLinux) [ libsystemtap ]
     ++ optionals withWallet [ db48 sqlite ]
     ++ optionals withGui [ qrencode qtbase qttools ];
 
@@ -71,24 +70,31 @@ stdenv.mkDerivation rec {
     install -Dm644 share/pixmaps/bitcoin256.png $out/share/pixmaps/bitcoin.png
   '';
 
-  configureFlags = [
-    "--with-boost-libdir=${boost.out}/lib"
-    "--disable-bench"
-  ] ++ optionals (!doCheck) [
-    "--disable-tests"
-    "--disable-gui-tests"
-  ] ++ optionals (!withWallet) [
-    "--disable-wallet"
-  ] ++ optionals withGui [
-    "--with-gui=qt5"
-    "--with-qt-bindir=${qtbase.dev}/bin:${qttools.dev}/bin"
-  ];
+  cmakeFlags =
+    [
+      (lib.cmakeBool "BUILD_BENCH" false)
+      (lib.cmakeBool "WITH_ZMQ" true)
+      # building with db48 (for legacy wallet support) is broken on Darwin
+      (lib.cmakeBool "WITH_BDB" (withWallet && !stdenv.hostPlatform.isDarwin))
+      (lib.cmakeBool "WITH_USDT" (stdenv.hostPlatform.isLinux))
+    ]
+    ++ lib.optionals (!finalAttrs.doCheck) [
+      (lib.cmakeBool "BUILD_TESTS" false)
+      (lib.cmakeBool "BUILD_FUZZ_BINARY" false)
+      (lib.cmakeBool "BUILD_GUI_TESTS" false)
+    ]
+    ++ lib.optionals (!withWallet) [
+      (lib.cmakeBool "ENABLE_WALLET" false)
+    ]
+    ++ lib.optionals withGui [
+      (lib.cmakeBool "BUILD_GUI" true)
+    ];
 
   # fix "Killed: 9  test/test_bitcoin"
   # https://github.com/NixOS/nixpkgs/issues/179474
   hardeningDisable = lib.optionals (stdenv.isAarch64 && stdenv.isDarwin) [ "stackprotector" ];
 
-  checkInputs = [ python3 ];
+  nativeCheckInputs = [ python3 ];
 
   doCheck = true;
 
@@ -99,6 +105,13 @@ stdenv.mkDerivation rec {
     ++ optional withGui "QT_PLUGIN_PATH=${qtbase}/${qtbase.qtPluginPrefix}";
 
   enableParallelBuilding = true;
+
+  nativeInstallCheckInputs = [
+    versionCheckHook
+  ];
+  versionCheckProgram = "${placeholder "out"}/bin/bitcoin-cli";
+  versionCheckProgramArg = "--version";
+  doInstallCheck = true;
 
   passthru.tests = {
     smoke-test = nixosTests.bitcoind;
@@ -119,4 +132,4 @@ stdenv.mkDerivation rec {
     license = licenses.mit;
     platforms = platforms.unix;
   };
-}
+})

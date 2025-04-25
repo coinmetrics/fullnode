@@ -32,7 +32,7 @@
     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "zcash";
-      version = "6.1.0";
+      version = "6.2.0";
       vars = {
         inherit (darwin.apple_sdk.frameworks) Security;
         boost = boost183;

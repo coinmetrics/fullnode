@@ -2,10 +2,10 @@ build bsc:
   extends: .generic-build
   variables:
     FULLNODE: bsc
-    VERSION: "1_5_10"
+    VERSION: "1_5_13"
 
 publish bsc:
   extends: .generic-publish
   variables:
     FULLNODE: bsc
-    VERSION: "1_5_10"
+    VERSION: "1_5_13"

@@ -13,7 +13,7 @@
 }:
 buildGoModule rec {
   pname = "algorand";
-  version = "4.0.1";
+  version = "4.1.1";
 
   outputs = [ "out" "genesis" ];
 
@@ -21,10 +21,10 @@ buildGoModule rec {
     owner = "algorand";
     repo = "go-algorand";
     rev = "v${version}-stable";
-    hash = "sha256-aV+FXvv6FnTEW7jKNzXIhAIUodeesNrtSS/CHEDJFRo=";
+    hash = "sha256-/fO2zm4V13BpsSBY3OvSl+dOHJigYHkBqztmdiYTteU=";
   };
 
-  vendorHash = "sha256-hm+P1ru/ghOHNScX56vBnNVid4n+0mV8Zs5UgupP8bI=";
+  vendorHash = "sha256-EuZcKCWz5pJnABFlyNyvDkK+g9gSd+S2rfaf5S7B5PE=";
 
   postPatch = ''
     patchShebangs --build ./scripts

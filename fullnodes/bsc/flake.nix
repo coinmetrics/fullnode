@@ -21,7 +21,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "bsc";
-      version = "1.5.13";
+      version = "1.5.16";
     };
   in {
     packages = generatedFlake.packages;

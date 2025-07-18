@@ -24,7 +24,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "monero";
-      version = "0.18.3.1";
+      version = "0.18.4.1";
     };
   in {
     packages = generatedFlake.packages;

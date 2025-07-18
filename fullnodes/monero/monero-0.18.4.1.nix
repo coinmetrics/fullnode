@@ -11,14 +11,14 @@
 
 stdenv.mkDerivation rec {
   pname = "monero";
-  version = "0.18.3.1";
+  version = "0.18.4.1";
 
   src = fetchFromGitHub {
     owner = "monero-project";
     repo = "monero";
     rev = "refs/tags/v${version}";
     fetchSubmodules = true;
-    hash = "sha256-ndeCYOgy8dzsP8YAIm+tEj4ndrpVTsRLmk7juvXL1cw=";
+    hash = "sha256-MviNAzwcNsC7AOM8gjHrmQcljeVZeVAM/MruhmgAn0w=";
   };
 
   nativeBuildInputs = [ cmake ninja pkg-config ];

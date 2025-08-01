@@ -2,10 +2,10 @@ build erigon:
   extends: .generic-build
   variables:
     FULLNODE: erigon
-    VERSION: "2_60_8"
+    VERSION: "3_0_15"
 
 publish erigon:
   extends: .generic-publish
   variables:
     FULLNODE: erigon
-    VERSION: "2_60_8"
+    VERSION: "3_0_15"

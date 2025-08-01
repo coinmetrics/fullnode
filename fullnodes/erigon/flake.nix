@@ -21,11 +21,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "erigon";
-      version = "2.60.8";
-      vars = {
-        boost = pkgs.boost181;
-        llvmPackages = pkgs.llvmPackages_17;
-      };
+      version = "3.0.15";
     };
   in {
     packages = generatedFlake.packages;

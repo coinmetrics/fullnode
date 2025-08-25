@@ -13,7 +13,7 @@
 
 (overrideCC stdenv gcc).mkDerivation rec {
   pname = "spring";
-  version = "1.1.2";
+  version = "1.2.2";
 
   src = fetchFromGitHub {
     owner = "AntelopeIO";
@@ -21,12 +21,8 @@
     rev = "v${version}";
     fetchSubmodules = true;
     leaveDotGit = true;
-    hash = "sha256-VEiztWSFDFOrD2XblNBhs42OFBcPPH36uVbTThFU5KI=";
+    hash = "sha256-1nl5V4wq8asmC5AH1VOp9hOpnRrvWBSsPFD2M8R9Gpk=";
   };
-
-  patches = [
-    ./patches/fix-threading-issue.patch
-  ];
 
   nativeBuildInputs = [
     cmake

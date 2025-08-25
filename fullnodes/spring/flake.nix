@@ -42,7 +42,7 @@
     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "spring";
-      version = "1.1.2";
+      version = "1.2.2";
       vars = {
         gcc = gcc11;
         llvm = llvmPackages_11.llvm;

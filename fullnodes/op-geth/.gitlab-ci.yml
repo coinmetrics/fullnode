@@ -2,10 +2,10 @@ build op-geth:
   extends: .generic-build
   variables:
     FULLNODE: op-geth
-    VERSION: "1_101511_0"
+    VERSION: "1_101602_0"
 
 publish op-geth:
   extends: .generic-publish
   variables:
     FULLNODE: op-geth
-    VERSION: "1_101511_0"
+    VERSION: "1_101602_0"

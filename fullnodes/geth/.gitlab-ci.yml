@@ -2,10 +2,10 @@ build geth:
   extends: .generic-build
   variables:
     FULLNODE: geth
-    VERSION: "1_16_1"
+    VERSION: "1_16_3"
 
 publish geth:
   extends: .generic-publish
   variables:
     FULLNODE: geth
-    VERSION: "1_16_1"
+    VERSION: "1_16_3"

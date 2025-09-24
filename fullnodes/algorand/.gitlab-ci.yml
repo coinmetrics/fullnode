@@ -2,10 +2,10 @@ build algorand:
   extends: .generic-build
   variables:
     FULLNODE: algorand
-    VERSION: "4_1_1"
+    VERSION: "4_3_0"
 
 publish algorand:
   extends: .generic-publish
   variables:
     FULLNODE: algorand
-    VERSION: "4_1_1"
+    VERSION: "4_3_0"

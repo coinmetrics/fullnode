@@ -14,6 +14,8 @@ default:
       changes:
         paths:
           - fullnodes/$FULLNODE/**/*
+          - flake.nix
+          - flake.lock
   stage: build
   image: docker.io/coinmetrics/nix-builder:latest
   variables:

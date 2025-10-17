@@ -17,7 +17,6 @@
 , pkg-config
 , rust
 , rustPlatform
-, Security
 , stdenv
 , testers
 , tl-expected
@@ -60,7 +59,7 @@ let
   }).overrideAttrs (old: {
     patches = old.patches ++ [
       (fetchpatch {
-        url = "https://raw.githubusercontent.com/zcash/zcash/v6.3.0/depends/patches/boost/6753-signals2-function-fix.patch";
+        url = "https://raw.githubusercontent.com/zcash/zcash/v6.10.0/depends/patches/boost/6753-signals2-function-fix.patch";
         stripLen = 0;
         sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
       })
@@ -71,26 +70,18 @@ let
 in
 rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
   pname = "zcash";
-  version = "6.3.0";
+  version = "6.10.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-8juT348xfnQHDPg4tTfvltvoeuF8l8m5Ke8UeL/9e+Y=";
+    hash = "sha256-Qe2eoRSgWSXvBRFV6Vg5R3QNDJfhdtYjxhZ6lkOH/FU=";
   };
-
-  cargoHash = "";
 
   cargoLock = {
-    lockFile = ./6.3.0-Cargo.lock;
+    lockFile = ./6.10.0-Cargo.lock;
   };
-
-  prePatch = lib.optionalString clangStdenv.isAarch64 ''
-    substituteInPlace .cargo/config.offline \
-      --replace "[target.aarch64-unknown-linux-gnu]" "" \
-      --replace "linker = \"aarch64-linux-gnu-gcc\"" ""
-  '';
 
   nativeBuildInputs = [
     autoreconfHook
@@ -109,8 +100,6 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     tl-expected
     utf8cpp
     zeromq
-  ] ++ lib.optionals clangStdenv.isDarwin [
-    Security
   ];
 
   # Use the stdenv default phases (./configure; make) instead of the

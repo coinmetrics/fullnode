@@ -3,6 +3,11 @@ build lighthouse:
   variables:
     FULLNODE: lighthouse
     VERSION: "6_0_1"
+    KUBERNETES_CPU_REQUEST: "12"
+    KUBERNETES_CPU_LIMIT: "12"
+    KUBERNETES_MEMORY_REQUEST: "32Gi"
+    KUBERNETES_MEMORY_LIMIT: "32Gi"
+
 
 publish lighthouse:
   extends: .generic-publish

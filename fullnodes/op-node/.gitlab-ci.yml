@@ -2,10 +2,10 @@ build op-node:
   extends: .generic-build
   variables:
     FULLNODE: op-node
-    VERSION: "1_13_7"
+    VERSION: "1_14_3"
 
 publish op-node:
   extends: .generic-publish
   variables:
     FULLNODE: op-node
-    VERSION: "1_13_7"
+    VERSION: "1_14_3"

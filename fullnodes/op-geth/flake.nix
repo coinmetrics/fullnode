@@ -24,7 +24,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "op-geth";
-      version = "1.101603.2";
+      version = "1.101603.3";
     };
   in {
     packages = generatedFlake.packages;

@@ -20,7 +20,7 @@ with lib;
 
 stdenv.mkDerivation rec {
   pname = "digibyte";
-  version = "8.22.2";
+  version = "8.26.1";
 
   name = pname + toString (optional (!withGui) "d") + "-" + version;
 
@@ -28,7 +28,7 @@ stdenv.mkDerivation rec {
     owner = "DigiByte-Core";
     repo = "digibyte";
     rev = "refs/tags/v${version}";
-    hash = "sha256-7ambzxGANqbKrBtrlaIHCwnowLH44QFCH0YiM4YVZ70=";
+    hash = "sha256-OkwOJMf5ZVsJ66isYx7Nx+Gerb099VLdQ4ZysfNRe8c=";
   };
 
   nativeBuildInputs = [

@@ -21,10 +21,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "avalanchego";
-      version = "1.13.0";
-      vars = {
-        inherit (pkgs.darwin.apple_sdk.frameworks) IOKit;
-      };
+      version = "1.14.0";
     };
   in {
     packages = generatedFlake.packages;

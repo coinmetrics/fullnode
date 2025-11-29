@@ -28,7 +28,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "decred";
-      version = "2.0.6";
+      version = "2.1.1";
     };
   in {
     packages = generatedFlake.packages;

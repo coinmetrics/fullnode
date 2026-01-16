@@ -29,7 +29,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "bitcoin-cash";
-      version = "28.0.1";
+      version = "29.0.0";
     };
   in {
     packages = generatedFlake.packages;

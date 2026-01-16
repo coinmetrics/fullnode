@@ -3,7 +3,7 @@
 
 stdenv.mkDerivation rec {
   name = "bitcoin-cash-node";
-  version = "28.0.1";
+  version = "29.0.0";
 
   src = fetchFromGitLab {
     owner = "bitcoin-cash-node";

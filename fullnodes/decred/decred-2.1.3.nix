@@ -2,16 +2,16 @@
 
 buildGoModule rec {
   pname = "decred";
-  version = "2.1.1";
+  version = "2.1.3";
 
   src = fetchFromGitHub {
     owner = "decred";
     repo = "dcrd";
     rev = "refs/tags/release-v${version}";
-    hash = "sha256-mSq4SRSnZOoCuRKVwmb8Y6+KbaTtg+DLf4YX5oApx0k=";
+    hash = "sha256-7hlrsKFYENgVn4Se0Wk3qXk9QUM1o4cod9TiIBH4kFQ=";
   };
 
-  vendorHash = "sha256-kzb8qh1j2+TlX+et0RSq5qU1LHSEs3Kaf0nHOnGjdd0=";
+  vendorHash = "sha256-Rf74x9hK4F2DhgR7QTuXgRJKZ6Kc4WhNw/SPBFEyIvk=";
 
   doCheck = false;
 

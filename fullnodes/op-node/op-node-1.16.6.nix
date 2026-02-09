@@ -1,16 +1,16 @@
 { buildGoModule, fetchFromGitHub }:
 buildGoModule rec {
   pname = "op-node";
-  version = "1.16.1";
+  version = "1.16.6";
 
   src = fetchFromGitHub {
     owner = "ethereum-optimism";
     repo = "optimism";
     rev = "op-node/v${version}";
-    hash = "sha256-CeOH5UfYshBEnZ5hiyE9D3kBFYXCC/ZK1cpOqlR7go8=";
+    hash = "sha256-UxpgDtQ6n/iQC4oDPnIlictUmTmUaAKl2RNMGxhYG8Q=";
   };
 
-  vendorHash = "sha256-vhksq7SFVuDUJb74CSjC+z+yh2cQ1yKnB1R925VAR2g=";
+  vendorHash = "sha256-UYjXfk3HFgklC65H9kKA6SsXzI083nNSzwxFwJfxPDg=";
 
   subPackages = [
     "op-node/cmd"

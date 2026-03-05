@@ -66,8 +66,13 @@ Don't forget to `git add` new files otherwise the nix build will fail locally.
 
 The command to build a project is:
 
+```shell
+nix -L build ./fullnodes/my-node#my-node-x_y_z
 ```
-nix -L build .#my-node_x_y_z
+
+For example, for Geth 1.17.1:
+```shell
+nix -L build ./fullnodes/geth#geth-1_17_1
 ```
 
 ### Pre-computing sources nix hash

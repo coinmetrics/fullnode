@@ -2,10 +2,10 @@ build grin:
   extends: .generic-build
   variables:
     FULLNODE: grin
-    VERSION: "5_3_2"
+    VERSION: "5_4_0"
 
 publish grin:
   extends: .generic-publish
   variables:
     FULLNODE: grin
-    VERSION: "5_3_2"
+    VERSION: "5_4_0"

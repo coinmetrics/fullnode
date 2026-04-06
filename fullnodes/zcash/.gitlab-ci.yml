@@ -2,10 +2,10 @@ build zcash:
   extends: .generic-build
   variables:
     FULLNODE: zcash
-    VERSION: "6_11_0"
+    VERSION: "6_12_0"
 
 publish zcash:
   extends: .generic-publish
   variables:
     FULLNODE: zcash
-    VERSION: "6_11_0"
+    VERSION: "6_12_0"

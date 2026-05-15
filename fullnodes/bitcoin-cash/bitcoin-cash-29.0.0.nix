@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
     owner = "bitcoin-cash-node";
     repo = "bitcoin-cash-node";
     rev = "v${version}";
-    hash = "sha256-FLTGcJROoo69ZkR+fzzXUox0gjbBNvFev4kY+Ji+mVA=";
+    hash = "sha256-OAY6SlPQIa/npH4tnkNvofckaDW7knZxRduHHTMojnw=";
   };
 
   nativeBuildInputs = [

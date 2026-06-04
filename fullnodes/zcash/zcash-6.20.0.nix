@@ -12,10 +12,11 @@
 , libevent
 , libsodium
 , llvmPackages
+, makeRustPlatform
 , makeWrapper
 , overrideCC
 , pkg-config
-, rust
+, rust-bin
 , rustPlatform
 , stdenv
 , testers
@@ -28,6 +29,8 @@
 
 let
   cpu = stdenv.targetPlatform.parsed.cpu.name;
+
+  rustToolchain = rust-bin.stable."1.96.0".default;
 
   clangStdenv = if stdenv.isDarwin
     then llvmPackages.libcxxStdenv
@@ -59,7 +62,7 @@ let
   }).overrideAttrs (old: {
     patches = old.patches ++ [
       (fetchpatch {
-        url = "https://raw.githubusercontent.com/zcash/zcash/v6.12.0/depends/patches/boost/6753-signals2-function-fix.patch";
+        url = "https://raw.githubusercontent.com/zcash/zcash/v6.12.3/depends/patches/boost/6753-signals2-function-fix.patch";
         stripLen = 0;
         sha256 = "sha256-LSmGZkswjbT1tDEKabGq/0e4UC6iJoo/8dJLOOHGGls=";
       })
@@ -67,25 +70,55 @@ let
   });
 
   db' = db.override { stdenv = clangStdenv; };
+
+  # cxx 1.0.189 introduced version-encoded symbol names for non-Cargo builds.
+  # nixpkgs ships cxx-rs 1.0.175 which generates cxxbridge1$* symbols; zcash
+  # 6.12.5 links against cxx 1.0.194 which exports cxxbridge194$* symbols.
+  # Override to match exactly.
+  cxx-rs' = rustPlatform.buildRustPackage {
+    pname = "cxx-rs";
+    version = "1.0.194";
+    src = fetchFromGitHub {
+      owner = "dtolnay";
+      repo = "cxx";
+      rev = "1.0.194";
+      hash = "sha256-PIeF9VuyJOIs1x02YETKIP0+nCG3RZXLMJdFNlgAFzo=";
+    };
+    cargoLock.lockFile = ./cxx-rs-1.0.194-Cargo.lock;
+    cargoBuildFlags = [ "--workspace" "--exclude=demo" ];
+    postPatch = ''
+      cp ${./cxx-rs-1.0.194-Cargo.lock} Cargo.lock
+    '';
+    postInstall = ''
+      mkdir -p $dev/include/rust
+      install -D -m 0644 ./include/cxx.h $dev/include/rust
+    '';
+    outputs = [ "out" "dev" ];
+  };
+
+  rustPlatform' = makeRustPlatform {
+    rustc = rustToolchain;
+    cargo = rustToolchain;
+  };
 in
-rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
+rustPlatform'.buildRustPackage.override { stdenv = clangStdenv; } rec {
   pname = "zcash";
-  version = "6.12.0";
+  version = "6.20.0";
 
   src = fetchFromGitHub {
     owner = "zcash";
     repo  = "zcash";
     rev = "v${version}";
-    hash = "sha256-lS5AQcv2683c1pYoig90a+Etxc60fj7oh/ryE8Qx1Q4=";
+    hash = "sha256-NX6/yYK1h0jhFj9EjT8MYbj/1xIhcSid9xhtjoxlzCo=";
   };
 
   cargoLock = {
-    lockFile = ./6.12.0-Cargo.lock;
+    lockFile = ./6.20.0-Cargo.lock;
   };
 
   nativeBuildInputs = [
     autoreconfHook
-    cxx-rs
+    cxx-rs'
     git
     hexdump
     makeWrapper
@@ -113,11 +146,22 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     # Have to do this here instead of in preConfigure because
     # cargoDepsCopy gets unset after postPatch.
     configureFlagsArray+=("RUST_VENDORED_SOURCES=$cargoDepsCopy")
+
+    # ecdsa_signature_parse_der_lax is non-static in zcash's lax_der_parsing.c
+    # but only listed as noinst_HEADERS so it never gets compiled into
+    # libsecp256k1.a. secp256k1-sys 0.10.1 (new in 6.12.5) needs it as a
+    # global symbol when using rust_secp_no_symbol_renaming.
+    sed -i 's|libsecp256k1_la_SOURCES = src/secp256k1.c|libsecp256k1_la_SOURCES = src/secp256k1.c contrib/lax_der_parsing.c|' src/secp256k1/Makefile.am
+
+    # lax_der_parsing.h uses <secp256k1.h> (angle brackets) but the include/
+    # directory is not in the -I search path when built as a secp256k1 subdir.
+    sed -i 's|#include <secp256k1.h>|#include "../include/secp256k1.h"|' src/secp256k1/contrib/lax_der_parsing.h
   '';
 
   preConfigure = ''
     export CFLAGS="-pipe -O3 -Wno-unknown-warning-option"
-    export CXXFLAGS="-pipe -O3 -Wno-unknown-warning-option -I${lib.getDev utf8cpp}/include/utf8cpp -I${lib.getDev cxx-rs}/include"
+    export CXXFLAGS="-pipe -O3 -Wno-unknown-warning-option -I${lib.getDev utf8cpp}/include/utf8cpp -I${lib.getDev cxx-rs'}/include"
+    export CARGO_PROFILE_RELEASE_LTO=false
   '';
 
   hardeningEnable = [ ];
@@ -127,7 +171,7 @@ rustPlatform.buildRustPackage.override { stdenv = clangStdenv; } rec {
     "--disable-tests"
     "--disable-bench"
     "--with-boost-libdir=${lib.getLib boost'}/lib"
-    "RUST_TARGET=${rust.toRustTargetSpec clangStdenv.hostPlatform}"
+    "RUST_TARGET=${clangStdenv.hostPlatform.rust.rustcTargetSpec}"
   ];
 
   enableParallelBuilding = true;

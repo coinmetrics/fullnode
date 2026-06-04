@@ -7,12 +7,16 @@
       url = "path:../..";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, flake-utils, nixpkgs, utils }:
+  outputs = { self, flake-utils, nixpkgs, utils, rust-overlay }:
   flake-utils.lib.eachDefaultSystem (system:
   let
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs {
+      inherit system;
+      overlays = [ rust-overlay.overlays.default ];
+    };
 
     makeImageConfig = package: {
       config = {
@@ -32,11 +36,13 @@
     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "zcash";
-      version = "6.12.1";
+      version = "6.20.0";
       vars = {
         boost = boost183;
         db = db62;
-        llvmPackages = llvmPackages_18;
+        llvmPackages = llvmPackages_21;
+        rust-bin = pkgs.rust-bin;
+        makeRustPlatform = pkgs.makeRustPlatform;
       };
     };
   in {

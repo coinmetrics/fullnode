@@ -21,7 +21,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "litecoin";
-      version = "0.21.4";
+      version = "0.21.5.5";
     };
   in {
     packages = generatedFlake.packages;

@@ -24,7 +24,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "dash";
-      version = "23.0.0";
+      version = "23.1.4";
       vars = {
         boost = pkgs.boost182;
       };

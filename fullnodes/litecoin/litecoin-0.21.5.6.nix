@@ -11,13 +11,13 @@
 , zeromq }:
 stdenv.mkDerivation rec {
   pname = "litecoin";
-  version = "0.21.5.5";
+  version = "0.21.5.6";
 
   src = fetchFromGitHub {
     owner = "litecoin-project";
     repo = "litecoin";
     rev = "v${version}";
-    hash = "sha256-lGWZ8SVa4depLXr/TJvk2G/sAbK/bVvHAnaN83XfIbA=";
+    hash = "sha256-cMPAd9XK+435+wyIQ6rWH1Q2xE57v/R5NAJPyytfaoM=";
   };
 
   nativeBuildInputs = [ autoreconfHook pkg-config ];

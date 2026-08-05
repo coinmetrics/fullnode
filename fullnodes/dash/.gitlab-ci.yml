@@ -2,10 +2,10 @@ build dash:
   extends: .generic-build
   variables:
     FULLNODE: dash
-    VERSION: "23_1_4"
+    VERSION: "23_1_8"
 
 publish dash:
   extends: .generic-publish
   variables:
     FULLNODE: dash
-    VERSION: "23_1_4"
+    VERSION: "23_1_8"

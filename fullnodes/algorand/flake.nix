@@ -71,9 +71,9 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "algorand";
-      version = "4.3.0";
+      version = "5.0.0";
       vars = {
-        buildGoModule = pkgs.buildGo123Module;
+        buildGoModule = pkgs.buildGo125Module;
       };
     };
   in {

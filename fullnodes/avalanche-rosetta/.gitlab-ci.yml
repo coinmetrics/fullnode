@@ -2,10 +2,10 @@ build avalanche-rosetta:
   extends: .generic-build
   variables:
     FULLNODE: avalanche-rosetta
-    VERSION: "0_1_49"
+    VERSION: "0_1_50"
 
 publish avalanche-rosetta:
   extends: .generic-publish
   variables:
     FULLNODE: avalanche-rosetta
-    VERSION: "0_1_49"
+    VERSION: "0_1_50"

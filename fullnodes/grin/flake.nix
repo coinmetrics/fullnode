@@ -25,7 +25,7 @@
 generatedFlake = utils.lib.${system}.makeFlake {
   inherit makeImageConfig;
   name = "grin";
-  version = "5.4.0";
+  version = "5.5.2";
   vars = {
     rust-bin = pkgs.rust-bin;
     makeRustPlatform = pkgs.makeRustPlatform;

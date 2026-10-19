@@ -21,7 +21,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "geth";
-      version = "1.17.7";
+      version = "1.17.8";
       vars = {
         buildGoModule = pkgs.buildGo127Module;
       };

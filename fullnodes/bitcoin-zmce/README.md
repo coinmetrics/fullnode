@@ -26,8 +26,8 @@ When a new version is released, the procedure is to:
 
 ## Generating the Nix image
 
-1. Add the new version to the list of versions [here](https://gitlab.com/coinmetrics/fullnode/blob/80e3293e5047301a0fe15f4835f15ea46be3756a/versions.nix#L9)
-1. Copy the latest version to a new file with the new version. I.e: [bitcoin-zmce-28.0.nix](https://gitlab.com/coinmetrics/fullnode/blob/master/fullnodes/bitcoin-zmce/bitcoin-zmce-28.0.nix) -> bitcoin-zmce-28.1.nix
+1. Update the version in `flake.nix` and in `.gitlab-ci.yml` (e.g. `"32_0"`)
+1. Copy the latest version to a new file with the new version. I.e: [bitcoin-zmce-29.0.nix](https://gitlab.com/coinmetrics/fullnode/blob/master/fullnodes/bitcoin-zmce/bitcoin-zmce-29.0.nix) -> bitcoin-zmce-32.0.nix
 1. In the newly created file
     - make all the hashes zero* so they can be recomputed as explained in the [readme file](https://gitlab.com/coinmetrics/fullnode/blob/9bc33b752d479618f14f92fbee360dea78d17005/README.md) (Hopefully there's a better way to do this)
 

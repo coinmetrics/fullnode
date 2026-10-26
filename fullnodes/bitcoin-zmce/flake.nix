@@ -27,10 +27,9 @@
     generatedFlake = with pkgs; utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "bitcoin-zmce";
-      version = "29.0";
+      version = "32.0";
       vars = {
         boost = boost181;
-        miniupnpc = miniupnpc;
         withGui = false;
         withWallet = false;
         inherit (darwin) autoSignDarwinBinariesHook;

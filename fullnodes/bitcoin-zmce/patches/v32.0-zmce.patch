@@ -1,3 +1,1453 @@
+diff --git a/.github/actions/cache/restore/action.yml b/.github/actions/cache/restore/action.yml
+deleted file mode 100644
+index 2cc5b53a1e..0000000000
+--- a/.github/actions/cache/restore/action.yml
++++ /dev/null
+@@ -1,55 +0,0 @@
+-name: 'Restore Caches'
+-description: 'Restore ccache, depends sources, and built depends caches'
+-inputs:
+-  provider:
+-    description: 'The cache provider to use'
+-    required: true
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Restore Ccache cache
+-      id: ccache-cache
+-      uses: ./.github/actions/cache/restore/internal
+-      with:
+-        path: ${{ env.CCACHE_DIR }}
+-        key: ccache-${{ env.CONTAINER_NAME }}-${{ github.run_id }}
+-        restore-keys: |
+-          ccache-${{ env.CONTAINER_NAME }}-
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Restore depends sources cache
+-      id: depends-sources
+-      uses: ./.github/actions/cache/restore/internal
+-      with:
+-        path: ${{ env.SOURCES_PATH }}
+-        key: depends-sources-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
+-        restore-keys: |
+-          depends-sources-${{ env.CONTAINER_NAME }}-
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Restore built depends cache
+-      id: depends-built
+-      uses: ./.github/actions/cache/restore/internal
+-      with:
+-        path: ${{ env.BASE_CACHE }}
+-        key: depends-built-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
+-        restore-keys: |
+-          depends-built-${{ env.CONTAINER_NAME }}-
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Restore previous releases cache
+-      id: previous-releases
+-      uses: ./.github/actions/cache/restore/internal
+-      with:
+-        path: ${{ env.PREVIOUS_RELEASES_DIR }}
+-        key: previous-releases-${{ env.CONTAINER_NAME }}-${{ env.PREVIOUS_RELEASES_HASH }}
+-        restore-keys: |
+-          previous-releases-${{ env.CONTAINER_NAME }}-
+-        provider: ${{ inputs.provider }}
+-
+-    - name: export cache hits
+-      shell: bash
+-      run: |
+-        echo "depends-sources-cache-hit=${{ steps.depends-sources.outputs.cache-hit }}" >> $GITHUB_ENV
+-        echo "depends-built-cache-hit=${{ steps.depends-built.outputs.cache-hit }}" >> $GITHUB_ENV
+-        echo "previous-releases-cache-hit=${{ steps.previous-releases.outputs.cache-hit }}" >> $GITHUB_ENV
+diff --git a/.github/actions/cache/restore/internal/action.yml b/.github/actions/cache/restore/internal/action.yml
+deleted file mode 100644
+index 43dd206345..0000000000
+--- a/.github/actions/cache/restore/internal/action.yml
++++ /dev/null
+@@ -1,43 +0,0 @@
+-name: 'Cache Restore'
+-description: 'Restore a cache with WarpBuild on Warp runners and GitHub Actions cache otherwise'
+-inputs:
+-  path:
+-    description: 'A list of files, directories, and wildcard patterns to restore'
+-    required: true
+-  key:
+-    description: 'An explicit key for restoring the cache'
+-    required: true
+-  restore-keys:
+-    description: 'An ordered multiline string listing prefix-matched restore keys'
+-    required: false
+-    default: ''
+-  provider:
+-    description: 'The cache provider to use'
+-    required: true
+-outputs:
+-  cache-hit:
+-    description: 'A boolean value to indicate an exact match was found for the primary key'
+-    value: ${{ steps.warp.outputs.cache-hit || steps.gha.outputs.cache-hit }}
+-  cache-primary-key:
+-    description: 'The primary key used to restore the cache'
+-    value: ${{ steps.warp.outputs.cache-primary-key || steps.gha.outputs.cache-primary-key }}
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Restore cache with WarpBuild
+-      id: warp
+-      if: ${{ inputs.provider == 'warp' }}
+-      uses: WarpBuilds/cache/restore@v1
+-      with:
+-        path: ${{ inputs.path }}
+-        key: ${{ inputs.key }}
+-        restore-keys: ${{ inputs.restore-keys }}
+-
+-    - name: Restore cache with GitHub Actions
+-      id: gha
+-      if: ${{ inputs.provider == 'gha' }}
+-      uses: actions/cache/restore@v5
+-      with:
+-        path: ${{ inputs.path }}
+-        key: ${{ inputs.key }}
+-        restore-keys: ${{ inputs.restore-keys }}
+diff --git a/.github/actions/cache/save/action.yml b/.github/actions/cache/save/action.yml
+deleted file mode 100644
+index 5c543b3f9e..0000000000
+--- a/.github/actions/cache/save/action.yml
++++ /dev/null
+@@ -1,47 +0,0 @@
+-name: 'Save Caches'
+-description: 'Save ccache, depends sources, and built depends caches'
+-inputs:
+-  provider:
+-    description: 'The cache provider to use'
+-    required: true
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: debug cache hit inputs
+-      shell: bash
+-      run: |
+-        echo "depends sources direct cache hit to primary key: ${{ env.depends-sources-cache-hit }}"
+-        echo "depends built direct cache hit to primary key: ${{ env.depends-built-cache-hit }}"
+-        echo "previous releases direct cache hit to primary key: ${{ env.previous-releases-cache-hit }}"
+-
+-    - name: Save Ccache cache
+-      uses: ./.github/actions/cache/save/internal
+-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) }}
+-      with:
+-        path: ${{ env.CCACHE_DIR }}
+-        key: ccache-${{ env.CONTAINER_NAME }}-${{ github.run_id }}
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Save depends sources cache
+-      uses: ./.github/actions/cache/save/internal
+-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.depends-sources-cache-hit != 'true') }}
+-      with:
+-        path: ${{ env.SOURCES_PATH }}
+-        key: depends-sources-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Save built depends cache
+-      uses: ./.github/actions/cache/save/internal
+-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.depends-built-cache-hit != 'true' )}}
+-      with:
+-        path: ${{ env.BASE_CACHE }}
+-        key: depends-built-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
+-        provider: ${{ inputs.provider }}
+-
+-    - name: Save previous releases cache
+-      uses: ./.github/actions/cache/save/internal
+-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.previous-releases-cache-hit != 'true' )}}
+-      with:
+-        path: ${{ env.PREVIOUS_RELEASES_DIR }}
+-        key: previous-releases-${{ env.CONTAINER_NAME }}-${{ env.PREVIOUS_RELEASES_HASH }}
+-        provider: ${{ inputs.provider }}
+diff --git a/.github/actions/cache/save/internal/action.yml b/.github/actions/cache/save/internal/action.yml
+deleted file mode 100644
+index 12f4156a07..0000000000
+--- a/.github/actions/cache/save/internal/action.yml
++++ /dev/null
+@@ -1,28 +0,0 @@
+-name: 'Cache Save'
+-description: 'Save a cache with WarpBuild on Warp runners and GitHub Actions cache otherwise'
+-inputs:
+-  path:
+-    description: 'A list of files, directories, and wildcard patterns to cache'
+-    required: true
+-  key:
+-    description: 'An explicit key for saving the cache'
+-    required: true
+-  provider:
+-    description: 'The cache provider to use'
+-    required: true
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Save cache with WarpBuild
+-      if: ${{ inputs.provider == 'warp' }}
+-      uses: WarpBuilds/cache/save@v1
+-      with:
+-        path: ${{ inputs.path }}
+-        key: ${{ inputs.key }}
+-
+-    - name: Save cache with GitHub Actions
+-      if: ${{ inputs.provider == 'gha' }}
+-      uses: actions/cache/save@v5
+-      with:
+-        path: ${{ inputs.path }}
+-        key: ${{ inputs.key }}
+diff --git a/.github/actions/clear-files/action.yml b/.github/actions/clear-files/action.yml
+deleted file mode 100644
+index 0008f825ff..0000000000
+--- a/.github/actions/clear-files/action.yml
++++ /dev/null
+@@ -1,12 +0,0 @@
+-name: 'Clear unnecessary files'
+-description: 'Clear out unnecessary files to make space on the VM'
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Clear unnecessary files
+-      shell: bash
+-      env:
+-        DEBIAN_FRONTEND: noninteractive
+-      run: |
+-        set +o errexit
+-        sudo bash -c '(ionice -c 3 nice -n 19 rm -rf /usr/share/dotnet/ /usr/local/graalvm/ /usr/local/.ghcup/ /usr/local/share/powershell /usr/local/share/chromium /usr/local/lib/android /usr/local/lib/node_modules)&'
+diff --git a/.github/actions/configure-docker/action.yml b/.github/actions/configure-docker/action.yml
+deleted file mode 100644
+index a447741a0a..0000000000
+--- a/.github/actions/configure-docker/action.yml
++++ /dev/null
+@@ -1,60 +0,0 @@
+-name: 'Configure Docker'
+-description: 'Set up Docker build driver and configure build cache args'
+-inputs:
+-  provider:
+-    description: 'The cache provider to use'
+-    required: false
+-    default: 'gha'
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Set up Docker Buildx for Warp cache
+-      if: ${{ inputs.provider == 'warp' }}
+-      uses: docker/setup-buildx-action@v4
+-      with:
+-        driver-opts: |
+-          network=host
+-          env.BUILDKIT_STEP_LOG_MAX_SIZE=5242880
+-
+-    - name: Set up Docker Buildx
+-      if: ${{ inputs.provider != 'warp' }}
+-      uses: docker/setup-buildx-action@v4
+-      with:
+-        driver-opts: |
+-          env.BUILDKIT_STEP_LOG_MAX_SIZE=5242880
+-
+-    # This is required when using the gha cache backend with a manual docker buildx invocation.
+-    # Docker will check for variables $ACTIONS_CACHE_URL, $ACTIONS_RESULTS_URL and $ACTIONS_RUNTIME_TOKEN
+-    # which are set automatically when running on GitHub infra: https://docs.docker.com/build/cache/backends/gha/#synopsis
+-    - name: Expose actions cache variables
+-      uses: actions/github-script@v8
+-      with:
+-        script: |
+-          Object.keys(process.env).forEach(function (key) {
+-            if (key.startsWith('ACTIONS_')) {
+-              core.info(`Exporting ${key}`);
+-              core.exportVariable(key, process.env[key]);
+-            }
+-          });
+-
+-    - name: Construct docker build cache args
+-      shell: bash
+-      run: |
+-        cache_options="scope=${CONTAINER_NAME}"
+-        if [[ "${{ inputs.provider }}" == "warp" ]]; then
+-          cache_options="url=http://127.0.0.1:49160/,version=1,${cache_options}"
+-        fi
+-
+-        # Configure docker build cache backend
+-        # Always optimistically --cache‑from in case a cache blob exists
+-        args=(--cache-from "type=gha,${cache_options}")
+-
+-        # Only add --cache-to when pushing to the default branch.
+-        if [[ ${{ github.event_name }} == "push" && ${{ github.ref_name }} == ${{ github.event.repository.default_branch }} ]]; then
+-          args+=(--cache-to "type=gha,mode=max,ignore-error=true,${cache_options}")
+-        fi
+-
+-        # Always `--load` into docker images (needed when using the `docker-container` build driver).
+-        args+=(--load)
+-
+-        echo "DOCKER_BUILD_CACHE_ARG=${args[*]}" >> $GITHUB_ENV
+diff --git a/.github/actions/configure-environment/action.yml b/.github/actions/configure-environment/action.yml
+deleted file mode 100644
+index d3c928cf3f..0000000000
+--- a/.github/actions/configure-environment/action.yml
++++ /dev/null
+@@ -1,29 +0,0 @@
+-name: 'Configure environment'
+-description: 'Configure CI, cache and container name environment variables'
+-runs:
+-  using: 'composite'
+-  steps:
+-    - name: Set CI and cache directories
+-      shell: bash
+-      run: |
+-        echo "BASE_ROOT_DIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+-        # Space and non-ASCII symbols mimic BASE_SCRATCH_DIR in ci/test/00_setup_env.sh,
+-        # to test word-splitting and UTF-8 path handling on CI.
+-        echo "BASE_BUILD_DIR=${{ runner.temp }}/build_ ₿🧪_" >> "$GITHUB_ENV"
+-        echo "CCACHE_DIR=${{ runner.temp }}/ccache_dir" >> $GITHUB_ENV
+-        echo "DEPENDS_DIR=${{ runner.temp }}/depends" >> "$GITHUB_ENV"
+-        echo "BASE_CACHE=${{ runner.temp }}/depends/built" >> $GITHUB_ENV
+-        echo "SOURCES_PATH=${{ runner.temp }}/depends/sources" >> $GITHUB_ENV
+-        echo "PREVIOUS_RELEASES_DIR=${{ runner.temp }}/previous_releases" >> $GITHUB_ENV
+-
+-    - name: Set cache hashes
+-      shell: bash
+-      run: |
+-        echo "DEPENDS_HASH=$(git ls-tree HEAD depends "$FILE_ENV" | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+-        echo "PREVIOUS_RELEASES_HASH=$(git ls-tree HEAD test/get_previous_releases.py | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+-
+-    - name: Get container name
+-      shell: bash
+-      run: |
+-        source $FILE_ENV
+-        echo "CONTAINER_NAME=$CONTAINER_NAME" >> "$GITHUB_ENV"
+diff --git a/.github/ci-test-each-commit-exec.py b/.github/ci-test-each-commit-exec.py
+deleted file mode 100755
+index 402e73527b..0000000000
+--- a/.github/ci-test-each-commit-exec.py
++++ /dev/null
+@@ -1,71 +0,0 @@
+-#!/usr/bin/env python3
+-# Copyright (c) The Bitcoin Core developers
+-# Distributed under the MIT software license, see the accompanying
+-# file COPYING or https://opensource.org/license/mit/.
+-
+-import subprocess
+-import sys
+-import shlex
+-
+-
+-def run(cmd, **kwargs):
+-    print("+ " + shlex.join(cmd), flush=True)
+-    kwargs.setdefault("check", True)
+-    try:
+-        return subprocess.run(cmd, **kwargs)
+-    except Exception as e:
+-        sys.exit(str(e))
+-
+-
+-def main():
+-    print("Running tests on commit ...")
+-    run(["git", "log", "-1"])
+-
+-    num_procs = int(run(["nproc"], stdout=subprocess.PIPE).stdout)
+-    build_dir = "ci_build"
+-
+-    run([
+-        "cmake",
+-        "-B",
+-        build_dir,
+-        "-Werror=dev",
+-        # Use clang++, because it is a bit faster and uses less memory than g++
+-        "-DCMAKE_C_COMPILER=clang",
+-        "-DCMAKE_CXX_COMPILER=clang++",
+-        # Use mold, because it is faster than the default linker
+-        "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=mold",
+-        # Use Debug build type for more debug checks, but enable optimizations
+-        "-DAPPEND_CXXFLAGS='-O3 -g2'",
+-        "-DAPPEND_CFLAGS='-O3 -g2'",
+-        "-DCMAKE_BUILD_TYPE=Debug",
+-        "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
+-        "--preset=dev-mode",
+-        # Tolerate unused (member) functions in intermediate commits in a pull request
+-        "-DCMAKE_CXX_FLAGS=-Wno-error=unused-member-function -Wno-error=unused-function",
+-    ])
+-
+-    if run(["cmake", "--build", build_dir, "-j", str(num_procs)], check=False).returncode != 0:
+-        print("Build failure. Verbose build follows.")
+-        run(["cmake", "--build", build_dir, "-j1", "--verbose"])
+-
+-    run([
+-        "ctest",
+-        "--output-on-failure",
+-        "--stop-on-failure",
+-        "--test-dir",
+-        build_dir,
+-        "-j",
+-        str(num_procs),
+-    ])
+-    run([
+-        sys.executable,
+-        f"./{build_dir}/test/functional/test_runner.py",
+-        "-j",
+-        str(num_procs * 2),
+-        "--failfast",
+-        "--combinedlogslen=99999999",
+-    ])
+-
+-
+-if __name__ == "__main__":
+-    main()
+diff --git a/.github/ci-windows-cross.py b/.github/ci-windows-cross.py
+deleted file mode 100755
+index 936e52acbc..0000000000
+--- a/.github/ci-windows-cross.py
++++ /dev/null
+@@ -1,187 +0,0 @@
+-#!/usr/bin/env python3
+-# Copyright (c) The Bitcoin Core developers
+-# Distributed under the MIT software license, see the accompanying
+-# file COPYING or https://opensource.org/license/mit/.
+-
+-import argparse
+-import os
+-import re
+-import shlex
+-import subprocess
+-import sys
+-from pathlib import Path
+-
+-sys.path.append(str(Path(__file__).resolve().parent.parent / "test"))
+-from download_utils import download_script_assets
+-
+-
+-def run(cmd, **kwargs):
+-    print("+ " + shlex.join(cmd), flush=True)
+-    kwargs.setdefault("check", True)
+-    try:
+-        return subprocess.run(cmd, **kwargs)
+-    except Exception as e:
+-        sys.exit(str(e))
+-
+-
+-def print_version():
+-    bitcoind = Path.cwd() / "bin" / "bitcoind.exe"
+-    run([str(bitcoind), "-version"])
+-
+-
+-def check_imports():
+-    bitcoind = Path.cwd() / "bin" / "bitcoind.exe"
+-    output = run(
+-        ["dumpbin.exe", "/imports", str(bitcoind)],
+-        capture_output=True,
+-        text=True,
+-    ).stdout
+-    dlls = re.findall(r"^\s*(\S+\.dll)\s*$", output, re.IGNORECASE | re.MULTILINE)
+-    print("\n".join(dlls))
+-
+-    # Ensure the executable is linked against the expected C runtime.
+-    dlls = {name.lower() for name in dlls}
+-    uses_msvcrt = "msvcrt.dll" in dlls
+-    uses_ucrt = any(name.startswith("api-ms-win-crt-") for name in dlls)
+-    crt = os.environ["CRT"]
+-    if crt == "msvcrt":
+-        crt_ok = uses_msvcrt and not uses_ucrt
+-    elif crt == "ucrt":
+-        crt_ok = uses_ucrt and not uses_msvcrt
+-    else:
+-        sys.exit(f"Unexpected CRT value: {crt!r}")
+-    if not crt_ok:
+-        sys.exit(f"Imported DLLs do not match the expected {crt!r} C runtime.")
+-
+-
+-def check_manifests():
+-    release_dir = Path.cwd() / "bin"
+-    manifest_path = release_dir / "bitcoind.manifest"
+-
+-    cmd_bitcoind_manifest = [
+-        "mt.exe",
+-        "-nologo",
+-        f"-inputresource:{release_dir / 'bitcoind.exe'}",
+-        f"-out:{manifest_path}",
+-    ]
+-    run(cmd_bitcoind_manifest)
+-    print(manifest_path.read_text())
+-
+-    skipped = {  # Skip as they currently do not have manifests
+-        "fuzz.exe",
+-        "bench_bitcoin.exe",
+-    }
+-    for entry in release_dir.iterdir():
+-        if entry.suffix.lower() != ".exe":
+-            continue
+-        if entry.name in skipped:
+-            print(f"Skipping {entry.name} (no manifest present)")
+-            continue
+-        print(f"Checking {entry.name}")
+-        run(["mt.exe", "-nologo", f"-inputresource:{entry}", "-validate_manifest"])
+-
+-
+-def prepare_tests():
+-    workspace = Path.cwd()
+-    config_path = workspace / "test" / "config.ini"
+-    rpcauth_path = workspace / "share" / "rpcauth" / "rpcauth.py"
+-    replacements = {
+-        "SRCDIR=": f"SRCDIR={workspace}",
+-        "BUILDDIR=": f"BUILDDIR={workspace}",
+-        "RPCAUTH=": f"RPCAUTH={rpcauth_path}",
+-    }
+-    lines = config_path.read_text().splitlines()
+-    for index, line in enumerate(lines):
+-        for prefix, new_value in replacements.items():
+-            if line.startswith(prefix):
+-                lines[index] = new_value
+-                break
+-    content = "\n".join(lines) + "\n"
+-    config_path.write_text(content)
+-    print(content)
+-    cmd_download_prev_rel = [
+-        sys.executable,
+-        str(workspace / "test" / "get_previous_releases.py"),
+-    ]
+-    run(cmd_download_prev_rel)
+-    run([sys.executable, "-m", "pip", "install", "pyzmq"])
+-
+-    dest = workspace / "unit_test_data"
+-    download_script_assets(dest)
+-
+-
+-def run_functional_tests():
+-    workspace = Path.cwd()
+-    num_procs = str(os.process_cpu_count())
+-    test_runner_cmd = [
+-        sys.executable,
+-        str(workspace / "test" / "functional" / "test_runner.py"),
+-        "--jobs",
+-        num_procs,
+-        "--quiet",
+-        f"--tmpdirprefix={workspace / '_ _'}",
+-        "--combinedlogslen=99999999",
+-        *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
+-        # Tests using ancient releases fail on Windows because of emojis in the test data directory.
+-        "--exclude",
+-        "feature_unsupported_utxo_db.py",
+-        "--exclude",
+-        "wallet_ancient_migration.py",
+-    ]
+-    run(test_runner_cmd)
+-
+-    # Run ancient release tests sequentially in ASCII-only tmp dir,
+-    # because they are excluded above due to lack of UTF-8 support in the
+-    # ancient release.
+-    for test_name in ["feature_unsupported_utxo_db", "wallet_ancient_migration"]:
+-        cmd = [
+-            sys.executable,
+-            str(workspace / "test" / "functional" / f"{test_name}.py"),
+-            "--previous-releases",
+-            "--tmpdir",
+-            str(workspace / f"test_{test_name}"),
+-        ]
+-        run(cmd)
+-
+-
+-def run_unit_tests():
+-    workspace = Path.cwd()
+-    os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
+-    # Can't use ctest here like other jobs as we don't have a CMake build tree.
+-    commands = [
+-        ["./bin/test_bitcoin-qt.exe"],
+-        # Intentionally run sequentially here, to catch test case failures caused by dirty global state from prior test cases:
+-        ["./bin/test_bitcoin.exe", "-l", "test_suite"],
+-        ["./src/secp256k1/bin/exhaustive_tests.exe"],
+-        ["./src/secp256k1/bin/noverify_tests.exe"],
+-        ["./src/secp256k1/bin/tests.exe"],
+-        ["./src/univalue/object.exe"],
+-        ["./src/univalue/unitester.exe"],
+-    ]
+-    for cmd in commands:
+-        run(cmd)
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(description="Utility to run Windows CI steps.")
+-    steps = list(map(lambda f: f.__name__, [
+-        print_version,
+-        check_imports,
+-        check_manifests,
+-        prepare_tests,
+-        run_unit_tests,
+-        run_functional_tests,
+-    ]))
+-    parser.add_argument("step", choices=steps, help="CI step to perform.")
+-    args = parser.parse_args()
+-
+-    os.environ.setdefault(
+-        "PREVIOUS_RELEASES_DIR",
+-        str(Path.cwd() / "previous_releases"),
+-    )
+-
+-    exec(f'{args.step}()')
+-
+-
+-if __name__ == "__main__":
+-    main()
+diff --git a/.github/ci-windows.py b/.github/ci-windows.py
+deleted file mode 100755
+index 2635682266..0000000000
+--- a/.github/ci-windows.py
++++ /dev/null
+@@ -1,237 +0,0 @@
+-#!/usr/bin/env python3
+-# Copyright (c) The Bitcoin Core developers
+-# Distributed under the MIT software license, see the accompanying
+-# file COPYING or https://opensource.org/license/mit/.
+-
+-import argparse
+-import os
+-import shlex
+-import subprocess
+-import sys
+-import time
+-from pathlib import Path
+-
+-sys.path.append(str(Path(__file__).resolve().parent.parent / "test"))
+-from download_utils import download_script_assets
+-
+-
+-def run(cmd, **kwargs):
+-    print("+ " + shlex.join(cmd), flush=True)
+-    kwargs.setdefault("check", True)
+-    try:
+-        return subprocess.run(cmd, **kwargs)
+-    except Exception as e:
+-        sys.exit(str(e))
+-
+-
+-GENERATE_OPTIONS = {
+-    "standard": [
+-        "-DBUILD_BENCH=ON",
+-        "-DBUILD_KERNEL_LIB=ON",
+-        "-DBUILD_UTIL_CHAINSTATE=ON",
+-        "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
+-    ],
+-    "fuzz": [
+-        "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
+-        "-DVCPKG_MANIFEST_FEATURES=wallet",
+-        "-DBUILD_FOR_FUZZING=ON",
+-        "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
+-    ],
+-}
+-
+-
+-def github_import_vs_env(_ci_type):
+-    vswhere_path = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+-    installation_path = run(
+-        [str(vswhere_path), "-latest", "-property", "installationPath"],
+-        capture_output=True,
+-        text=True,
+-    ).stdout.strip()
+-    vsdevcmd = Path(installation_path) / "Common7" / "Tools" / "vsdevcmd.bat"
+-    comspec = os.environ["COMSPEC"]
+-    output = run(
+-        f'"{comspec}" /s /c ""{vsdevcmd}" -arch=x64 -no_logo && set"',
+-        capture_output=True,
+-        text=True,
+-    ).stdout
+-    github_env = os.environ["GITHUB_ENV"]
+-    with open(github_env, "a") as env_file:
+-        for line in output.splitlines():
+-            if "=" not in line:
+-                continue
+-            name, value = line.split("=", 1)
+-            env_file.write(f"{name}={value}\n")
+-
+-
+-def generate(ci_type):
+-    command = [
+-        "cmake",
+-        "-B",
+-        "build",
+-        "-Werror=dev",
+-        "--preset=vs2026",
+-        # Using x64-windows-release for both host and target triplets
+-        # to ensure vcpkg builds only release packages, thereby optimizing
+-        # build time.
+-        # See https://github.com/microsoft/vcpkg/issues/50927.
+-        "-DVCPKG_HOST_TRIPLET=x64-windows-release",
+-        "-DVCPKG_TARGET_TRIPLET=x64-windows-release",
+-    ] + GENERATE_OPTIONS[ci_type]
+-    if run(command, check=False).returncode != 0:
+-        print("=== ⚠️ ===")
+-        print("Generate failure! Network issue? Retry once ...")
+-        time.sleep(12)
+-        print("=== ⚠️ ===")
+-        run(command)
+-
+-
+-def build(_ci_type):
+-    command = [
+-        "cmake",
+-        "--build",
+-        "build",
+-        "--config",
+-        "Release",
+-    ]
+-    if run(command + ["-j", str(os.process_cpu_count())], check=False).returncode != 0:
+-        print("Build failure. Verbose build follows.")
+-        run(command + ["-j1", "--verbose"])
+-
+-
+-def check_manifests(ci_type):
+-    if ci_type != "standard":
+-        print(f"Skipping manifest validation for '{ci_type}' ci type.")
+-        return
+-
+-    release_dir = Path.cwd() / "build" / "bin" / "Release"
+-    manifest_path = release_dir / "bitcoind.manifest"
+-    cmd_bitcoind_manifest = [
+-        "mt.exe",
+-        "-nologo",
+-        f"-inputresource:{release_dir / 'bitcoind.exe'}",
+-        f"-out:{manifest_path}",
+-    ]
+-    run(cmd_bitcoind_manifest)
+-    print(manifest_path.read_text())
+-
+-    skips = {  # Skip as they currently do not have manifests
+-        "fuzz.exe",
+-        "bench_bitcoin.exe",
+-        "test_bitcoin-qt.exe",
+-        "bitcoin-chainstate.exe",
+-    }
+-    for entry in release_dir.iterdir():
+-        if entry.suffix.lower() != ".exe":
+-            continue
+-        if entry.name in skips:
+-            print(f"Skipping {entry.name} (no manifest present)")
+-            continue
+-        print(f"Checking {entry.name}")
+-        cmd_check_manifest = [
+-            "mt.exe",
+-            "-nologo",
+-            f"-inputresource:{entry}",
+-            "-validate_manifest",
+-        ]
+-        run(cmd_check_manifest)
+-
+-
+-def prepare_tests(ci_type):
+-    workspace = Path.cwd()
+-    if ci_type == "standard":
+-        run([sys.executable, "-m", "pip", "install", "pyzmq"])
+-        dest = workspace / "unit_test_data"
+-        download_script_assets(dest)
+-    elif ci_type == "fuzz":
+-        repo_dir = str(workspace / "qa-assets")
+-        clone_cmd = [
+-            "git",
+-            "clone",
+-            "--depth=1",
+-            "https://github.com/bitcoin-core/qa-assets",
+-            repo_dir,
+-        ]
+-        run(clone_cmd)
+-        print("Using qa-assets repo from commit ...")
+-        run(["git", "-C", repo_dir, "log", "-1"])
+-
+-
+-def run_tests(ci_type):
+-    workspace = Path.cwd()
+-    build_dir = workspace / "build"
+-    num_procs = str(os.process_cpu_count())
+-    release_bin = build_dir / "bin" / "Release"
+-
+-    if ci_type == "standard":
+-        os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
+-        test_envs = {
+-            "BITCOIN_BIN": "bitcoin.exe",
+-            "BITCOIND": "bitcoind.exe",
+-            "BITCOINCLI": "bitcoin-cli.exe",
+-            "BITCOIN_BENCH": "bench_bitcoin.exe",
+-            "BITCOINTX": "bitcoin-tx.exe",
+-            "BITCOINUTIL": "bitcoin-util.exe",
+-            "BITCOINWALLET": "bitcoin-wallet.exe",
+-            "BITCOINCHAINSTATE": "bitcoin-chainstate.exe",
+-        }
+-        for var, exe in test_envs.items():
+-            os.environ[var] = str(release_bin / exe)
+-
+-        ctest_cmd = [
+-            "ctest",
+-            "--test-dir",
+-            str(build_dir),
+-            "--output-on-failure",
+-            "--stop-on-failure",
+-            "-j",
+-            num_procs,
+-            "--build-config",
+-            "Release",
+-        ]
+-        run(ctest_cmd)
+-
+-        test_cmd = [
+-            sys.executable,
+-            str(build_dir / "test" / "functional" / "test_runner.py"),
+-            "--jobs",
+-            num_procs,
+-            "--quiet",
+-            f"--tmpdirprefix={workspace / '_ _'}",
+-            "--combinedlogslen=99999999",
+-            *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
+-        ]
+-        run(test_cmd)
+-
+-    elif ci_type == "fuzz":
+-        os.environ["BITCOINFUZZ"] = str(release_bin / "fuzz.exe")
+-        fuzz_cmd = [
+-            sys.executable,
+-            str(build_dir / "test" / "fuzz" / "test_runner.py"),
+-            "--par",
+-            num_procs,
+-            "--loglevel",
+-            "DEBUG",
+-            str(workspace / "qa-assets" / "fuzz_corpora"),
+-        ]
+-        run(fuzz_cmd)
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(description="Utility to run Windows CI steps.")
+-    parser.add_argument("ci_type", choices=GENERATE_OPTIONS, help="CI type to run.")
+-    steps = list(map(lambda f: f.__name__, [
+-        github_import_vs_env,
+-        generate,
+-        build,
+-        check_manifests,
+-        prepare_tests,
+-        run_tests,
+-    ]))
+-    parser.add_argument("step", choices=steps, help="CI step to perform.")
+-    args = parser.parse_args()
+-
+-    exec(f'{args.step}("{args.ci_type}")')
+-
+-
+-if __name__ == "__main__":
+-    main()
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+deleted file mode 100644
+index d8d48eecb3..0000000000
+--- a/.github/workflows/ci.yml
++++ /dev/null
+@@ -1,615 +0,0 @@
+-# Copyright (c) 2023-present The Bitcoin Core developers
+-# Distributed under the MIT software license, see the accompanying
+-# file COPYING or https://opensource.org/license/mit.
+-
+-name: CI
+-on:
+-  # See: https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request.
+-  pull_request:
+-  # See: https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#push.
+-  push:
+-    branches:
+-      - '**'
+-    tags-ignore:
+-      - '**'
+-
+-concurrency:
+-  group: ${{ github.event_name != 'pull_request' && github.run_id || github.ref }}
+-  cancel-in-progress: true
+-
+-env:
+-  CI_FAILFAST_TEST_LEAVE_DANGLING: 1  # GHA does not care about dangling processes and setting this variable avoids killing the CI script itself on error
+-
+-defaults:
+-  run:
+-    # Enforce fail-fast behavior for all platforms.
+-    # See: https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+-    shell: bash
+-
+-jobs:
+-  test-each-commit:
+-    name: 'test ancestor commits'
+-    runs-on: ${{ github.repository == 'bitcoin/bitcoin' && 'warp-ubuntu-latest-x64-8x' || 'ubuntu-latest' }}
+-    env:
+-      TEST_RUNNER_PORT_MIN: "14000"  # Use a larger port range to avoid colliding with other CI services.
+-    if: github.event_name == 'pull_request' && github.event.pull_request.commits != 1
+-    timeout-minutes: 360  # Use maximum time, see https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes.
+-    steps:
+-      - name: Determine fetch depth
+-        run: echo "FETCH_DEPTH=$((${{ github.event.pull_request.commits }} + 2))" >> "$GITHUB_ENV"
+-      - &ANNOTATION_PR_NUMBER
+-        name: Annotate with pull request number
+-        # This annotation is machine-readable and can be used to assign a check
+-        # run to its corresponding pull request. Running in all check runs is
+-        # required, because check re-runs discard the annotations of other
+-        # tasks in the test suite.
+-        run: |
+-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+-            echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
+-          fi
+-      - uses: actions/checkout@v6
+-        with:
+-          ref: ${{ github.event.pull_request.head.sha }}
+-          fetch-depth: ${{ env.FETCH_DEPTH }}
+-      - name: Determine commit range
+-        run: |
+-          # Checkout HEAD~ and find the test base commit.
+-          # Checkout HEAD~ because it would be wasteful to rerun
+-          # tests on the PR head commit that are already run
+-          # by other jobs.
+-          git checkout HEAD~
+-          # Moreover, pull requests that contain a merge commit
+-          # are generally draft pull requests that merge in other
+-          # pull requests, so only check the relevant commits
+-          # after the last merge commit. A merge commit could
+-          # also be a subtree merge commit, which may be
+-          # worthwhile to check. However, it is rare that the
+-          # subtree merge commit is not the top commit (which
+-          # would be skipped anyway by this task, because it is
+-          # run by all other tasks). Also, `git rebase --exec`
+-          # does not work on merge commits, so if this was
+-          # important to check, the logic would have to be
+-          # rewritten.
+-          #
+-          # Figure out test base commit by listing ancestors of
+-          # HEAD, excluding ancestors of the most recent merge
+-          # commit, ordering them from oldest to newest, and
+-          # taking the first one.
+-          #
+-          # In the command below, the ^@ suffix is used to refer
+-          # to all parents of the merge commit as described in:
+-          # https://git-scm.com/docs/git-rev-parse#_other_rev_parent_shorthand_notations
+-          # and the ^ prefix is used to exclude these parents
+-          # and all their ancestors from the rev-list output
+-          # as described in:
+-          # https://git-scm.com/docs/git-rev-list
+-          MERGE_BASE=$(git rev-list -n1 --merges HEAD)
+-          EXCLUDE_MERGE_BASE_ANCESTORS=
+-          # MERGE_BASE can be empty due to limited fetch-depth
+-          if test -n "$MERGE_BASE"; then
+-            EXCLUDE_MERGE_BASE_ANCESTORS=^${MERGE_BASE}^@
+-          fi
+-          echo "TEST_BASE=$(git rev-list -n${{ github.event.pull_request.commits }} --reverse HEAD $EXCLUDE_MERGE_BASE_ANCESTORS | head -1)" >> "$GITHUB_ENV"
+-      - run: |
+-          git fetch origin "${GITHUB_BASE_REF}"
+-          git config user.email "ci@example.com"
+-          git config user.name "CI"
+-      - run: |
+-          sudo apt-get update
+-          sudo apt-get install clang mold ccache build-essential cmake ninja-build pkgconf python3-zmq libboost-dev libsqlite3-dev systemtap-sdt-dev libzmq3-dev qt6-base-dev qt6-tools-dev qt6-l10n-tools libqrencode-dev capnproto libcapnp-dev -y
+-          sudo pip3 install --break-system-packages pycapnp
+-      - name: Compile and run tests
+-        run: |
+-          # Run tests on commits after the last merge commit and before the PR head commit
+-          git rebase --exec "git merge --no-commit origin/${GITHUB_BASE_REF} && python3 ./.github/ci-test-each-commit-exec.py && git reset --hard" ${{ env.TEST_BASE }}
+-
+-  macos-native-arm64:
+-    name: ${{ matrix.job-name }}
+-    # Use any image to support the xcode-select below, but hardcode version to avoid silent upgrades (and breaks).
+-    # See: https://github.com/actions/runner-images#available-images.
+-    runs-on: macos-15
+-
+-    # When a contributor maintains a fork of the repo, any pull request they make
+-    # to their own fork, or to the main repository, will trigger two CI runs:
+-    # one for the branch push and one for the pull request.
+-    # This can be avoided by setting SKIP_BRANCH_PUSH=true as a custom env variable
+-    # in Github repository settings.
+-    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+-
+-    timeout-minutes: 120
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        job-type: [standard, fuzz]
+-        include:
+-          - job-type: standard
+-            file-env: './ci/test/00_setup_env_mac_native.sh'
+-            job-name: 'macOS native'
+-          - job-type: fuzz
+-            file-env: './ci/test/00_setup_env_mac_native_fuzz.sh'
+-            job-name: 'macOS native, fuzz'
+-
+-    env:
+-      DANGER_RUN_CI_ON_HOST: 1
+-      BASE_ROOT_DIR: ${{ github.workspace }}/repo_archive
+-
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - &CHECKOUT
+-        name: Checkout
+-        uses: actions/checkout@v6
+-        with:
+-          # Ensure the latest merged pull request state is used, even on re-runs.
+-          ref: &CHECKOUT_REF_TMPL ${{ github.event_name == 'pull_request' && github.ref || '' }}
+-
+-      - name: Clang version
+-        run: |
+-          # Use the latest Xcode supported by the version of macOS denoted in
+-          # doc/release-notes-empty-template.md and providing at least the
+-          # minimum clang version denoted in doc/dependencies.md.
+-          # See: https://developer.apple.com/documentation/xcode-release-notes/xcode-16_2-release-notes
+-          sudo xcode-select --switch /Applications/Xcode_16.2.app
+-          clang --version
+-
+-      - name: Install Homebrew packages
+-        env:
+-          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+-        run: |
+-          # A workaround for "The `brew link` step did not complete successfully" error.
+-          brew install --quiet python@3 || brew link --overwrite python@3
+-          brew install --quiet coreutils ninja pkgconf ccache boost zeromq qt@6 qrencode capnp
+-
+-      - name: Set Ccache directory
+-        run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache_dir" >> "$GITHUB_ENV"
+-
+-      - name: Restore Ccache cache
+-        id: ccache-cache
+-        uses: actions/cache/restore@v5
+-        with:
+-          path: ${{ env.CCACHE_DIR }}
+-          key: ${{ github.job }}-${{ matrix.job-type }}-ccache-${{ github.run_id }}
+-          restore-keys: ${{ github.job }}-${{ matrix.job-type }}-ccache-
+-
+-      - name: Create git archive
+-        run: |
+-          git log -1
+-          git archive --format=tar --prefix=repo_archive/ --output=repo.tar HEAD
+-          tar -xf repo.tar
+-
+-      - name: CI script
+-        run: |
+-          cd repo_archive
+-          ./ci/test_run_all.sh
+-        env:
+-          FILE_ENV: ${{ matrix.file-env }}
+-
+-      - name: Save Ccache cache
+-        uses: actions/cache/save@v5
+-        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.ccache-cache.outputs.cache-hit != 'true'
+-        with:
+-          path: ${{ env.CCACHE_DIR }}
+-          # https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+-          key: ${{ steps.ccache-cache.outputs.cache-primary-key }}
+-
+-  windows-native-dll:
+-    name: ${{ matrix.job-name }}
+-    runs-on: windows-2025-vs2026
+-
+-    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+-
+-    env:
+-      PYTHONUTF8: 1
+-      TEST_RUNNER_TIMEOUT_FACTOR: 40
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        job-type: [standard, fuzz]
+-        include:
+-          - job-type: standard
+-            job-name: 'Windows native, VS'
+-          - job-type: fuzz
+-            job-name: 'Windows native, fuzz, VS'
+-
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - *CHECKOUT
+-
+-      - &IMPORT_VS_ENV
+-        name: Import Visual Studio env vars
+-        run: py -3 .github/ci-windows.py "standard" github_import_vs_env
+-
+-      - name: Get tool information
+-        run: |
+-          set -o errexit -o pipefail -o xtrace -o nounset
+-
+-          cmake -version | tee cmake_version
+-          echo '---'
+-          msbuild.exe -version | tee msbuild_version
+-          echo "${VCToolsVersion-}" | tee toolset_version
+-          py -3 --version
+-          bash --version
+-
+-      - name: Restore vcpkg downloads cache
+-        id: vcpkg-downloads-cache
+-        uses: actions/cache/restore@v5
+-        with:
+-          path: |
+-            ~/AppData/Local/vcpkg/downloads/*
+-            !~/AppData/Local/vcpkg/downloads/tools
+-          key: ${{ github.job }}-vcpkg-downloads-${{ hashFiles('vcpkg.json') }}
+-
+-      - name: Restore vcpkg binary cache
+-        uses: actions/cache/restore@v5
+-        id: vcpkg-binary-cache
+-        with:
+-          path: ~/AppData/Local/vcpkg/archives
+-          key: ${{ github.job }}-vcpkg-binary-release-${{ hashFiles('cmake_version', 'msbuild_version', 'toolset_version', 'vcpkg.json') }}
+-
+-      - name: Generate build system
+-        run: |
+-          py -3 .github/ci-windows.py ${{ matrix.job-type }} generate
+-
+-      - name: Save vcpkg binary cache
+-        uses: actions/cache/save@v5
+-        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
+-        with:
+-          path: ~/AppData/Local/vcpkg/archives
+-          key: ${{ steps.vcpkg-binary-cache.outputs.cache-primary-key }}
+-
+-      - name: Save vcpkg downloads cache
+-        uses: actions/cache/save@v5
+-        # Only save cache from the 'standard' job, as it includes the necessary downloads for other jobs in the matrix. If the matrix is modified, this may need amending.
+-        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && steps.vcpkg-downloads-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
+-        with:
+-          # Cache the tools once as archives, but not redundantly in extracted form.
+-          path: |
+-            ~/AppData/Local/vcpkg/downloads/*
+-            !~/AppData/Local/vcpkg/downloads/tools
+-          key: ${{ steps.vcpkg-downloads-cache.outputs.cache-primary-key }}
+-
+-      - name: Build
+-        run: |
+-          py -3 .github/ci-windows.py ${{ matrix.job-type }} build
+-
+-      - name: Check executable manifests
+-        run: |
+-          py -3 .github/ci-windows.py ${{ matrix.job-type }} check_manifests
+-
+-      - name: Prepare tests
+-        run: |
+-          py -3 .github/ci-windows.py ${{ matrix.job-type }} prepare_tests
+-
+-      - name: Run tests
+-        env:
+-          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} ${{ case(github.event_name == 'pull_request', '', '--extended') }}"
+-        run: |
+-          py -3 .github/ci-windows.py ${{ matrix.job-type }} run_tests
+-
+-  record-frozen-commit:
+-    # Record frozen commit, so that the native tests on cross-builds can run on
+-    # the exact same commit id of the build.
+-    name: '[meta] record frozen commit'
+-    runs-on: ubuntu-slim
+-    outputs:
+-      commit: ${{ steps.record-commit.outputs.commit }}
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-      - *CHECKOUT
+-      - name: Record commit
+-        id: record-commit
+-        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+-
+-  windows-cross:
+-    name: 'Windows-cross to x86_64, ${{ matrix.crt }}'
+-    needs: record-frozen-commit
+-    runs-on: ${{ github.repository == 'bitcoin/bitcoin' && 'warp-ubuntu-latest-x64-4x' || 'ubuntu-latest' }}
+-    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        crt: [msvcrt, ucrt]
+-        include:
+-          - crt: msvcrt
+-            file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
+-            artifact-name: 'x86_64-w64-mingw32-executables'
+-          - crt: ucrt
+-            file-env: './ci/test/00_setup_env_win64.sh'
+-            artifact-name: 'x86_64-w64-mingw32ucrt-executables'
+-
+-    env:
+-      FILE_ENV: ${{ matrix.file-env }}
+-      DANGER_CI_ON_HOST_FOLDERS: 1
+-
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - name: Checkout
+-        uses: actions/checkout@v6
+-        with:
+-          ref: ${{ needs.record-frozen-commit.outputs.commit }}
+-
+-      - name: Configure environment
+-        uses: ./.github/actions/configure-environment
+-
+-      - name: Restore caches
+-        id: restore-cache
+-        uses: ./.github/actions/cache/restore
+-        with:
+-          provider: ${{ github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha' }}
+-
+-      - name: Configure Docker
+-        uses: ./.github/actions/configure-docker
+-        with:
+-          provider: ${{ github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha' }}
+-
+-      - name: CI script
+-        run: ./ci/test_run_all.sh
+-
+-      - name: Save caches
+-        uses: ./.github/actions/cache/save
+-        with:
+-          provider: ${{ github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha' }}
+-
+-      - name: Upload built executables
+-        uses: actions/upload-artifact@v7
+-        with:
+-          name: ${{ matrix.artifact-name }}-${{ github.run_id }}
+-          path: |
+-            ${{ env.BASE_BUILD_DIR }}/bin/*.dll
+-            ${{ env.BASE_BUILD_DIR }}/bin/*.exe
+-            ${{ env.BASE_BUILD_DIR }}/src/secp256k1/bin/*.exe
+-            ${{ env.BASE_BUILD_DIR }}/src/univalue/*.exe
+-            ${{ env.BASE_BUILD_DIR }}/test/config.ini
+-
+-  windows-native-test:
+-    name: 'Windows, ${{ matrix.crt }}, test cross-built'
+-    runs-on: windows-2022
+-    needs: [windows-cross, record-frozen-commit]
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        crt: [msvcrt, ucrt]
+-        include:
+-          - crt: msvcrt
+-            artifact-name: 'x86_64-w64-mingw32-executables'
+-          - crt: ucrt
+-            artifact-name: 'x86_64-w64-mingw32ucrt-executables'
+-
+-    env:
+-      PYTHONUTF8: 1
+-      TEST_RUNNER_TIMEOUT_FACTOR: 40
+-
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - name: Checkout
+-        uses: actions/checkout@v6
+-        with:
+-          ref: ${{ needs.record-frozen-commit.outputs.commit }}
+-
+-      - name: Download built executables
+-        uses: actions/download-artifact@v8
+-        with:
+-          name: ${{ matrix.artifact-name }}-${{ github.run_id }}
+-
+-      - name: Run bitcoind.exe
+-        run: py -3 .github/ci-windows-cross.py print_version
+-
+-      - *IMPORT_VS_ENV
+-
+-      - name: Check imported DLLs
+-        env:
+-          CRT: ${{ matrix.crt }}
+-        run: py -3 .github/ci-windows-cross.py check_imports
+-
+-      - name: Check executable manifests
+-        run: py -3 .github/ci-windows-cross.py check_manifests
+-
+-      - name: Prepare Windows test environment
+-        run: py -3 .github/ci-windows-cross.py prepare_tests
+-
+-      - name: Run unit tests
+-        run: py -3 .github/ci-windows-cross.py run_unit_tests
+-
+-      - name: Run functional tests
+-        env:
+-          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} ${{ case(github.event_name == 'pull_request', '', '--extended') }}"
+-        run: |
+-          py -3 .github/ci-windows-cross.py run_functional_tests
+-
+-  ci-matrix:
+-    name: ${{ matrix.name }}
+-    runs-on: ${{ github.repository == 'bitcoin/bitcoin' && matrix.warp-runner || matrix.fallback-runner }}
+-    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+-    timeout-minutes: ${{ matrix.timeout-minutes }}
+-
+-    env:
+-      DANGER_CI_ON_HOST_FOLDERS: 1
+-      FILE_ENV: ${{ matrix.file-env }}
+-
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        include:
+-          - name: 'iwyu'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_iwyu.sh'
+-
+-          - name: '32 bit ARM'
+-            warp-runner: 'ubuntu-24.04-arm' # Warp's Arm runners don't support 32-bit mode currently
+-            fallback-runner: 'ubuntu-24.04-arm'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_arm.sh'
+-            provider: 'gha'
+-
+-          - name: 'ASan + LSan + UBSan + integer'
+-            warp-runner: 'warp-ubuntu-2404-x64-8x' # has to match container in ci/test/00_setup_env_native_asan.sh for tracing tools
+-            fallback-runner: 'ubuntu-24.04'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_asan.sh'
+-
+-          - name: 'macOS-cross to arm64'
+-            warp-runner: 'warp-ubuntu-latest-x64-4x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_mac_cross.sh'
+-
+-          - name: 'macOS-cross to x86_64'
+-            warp-runner: 'warp-ubuntu-latest-x64-4x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_mac_cross_intel.sh'
+-
+-          - name: 'NetBSD Cross'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_netbsd_cross.sh'
+-
+-          - name: 'FreeBSD Cross'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_freebsd_cross.sh'
+-
+-          - name: 'OpenBSD Cross'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_openbsd_cross.sh'
+-
+-          - name: 'No wallet'
+-            warp-runner: 'warp-ubuntu-latest-x64-4x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_nowallet.sh'
+-
+-          - name: 'i686, no IPC'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_i686_no_ipc.sh'
+-
+-          - name: 'fuzzer,address,undefined,integer'
+-            warp-runner: 'warp-ubuntu-latest-x64-16x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 240
+-            file-env: './ci/test/00_setup_env_native_fuzz.sh'
+-
+-          - name: 'previous releases'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_previous_releases.sh'
+-
+-          - name: 'Alpine (musl)'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_alpine_musl.sh'
+-
+-          - name: 'tidy'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_tidy.sh'
+-
+-          - name: 'TSan'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_tsan.sh'
+-
+-          - name: 'MSan, fuzz'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 180
+-            file-env: './ci/test/00_setup_env_native_fuzz_with_msan.sh'
+-
+-          - name: 'MSan'
+-            warp-runner: 'warp-ubuntu-latest-x64-16x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_native_msan.sh'
+-
+-          - name: 'riscv32 bare metal, static libbitcoin_consensus'
+-            warp-runner: 'warp-ubuntu-latest-x64-8x'
+-            fallback-runner: 'ubuntu-latest'
+-            timeout-minutes: 120
+-            file-env: './ci/test/00_setup_env_riscv_bare_cross.sh'
+-
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - *CHECKOUT
+-
+-      - name: Configure environment
+-        uses: ./.github/actions/configure-environment
+-
+-      - name: Restore caches
+-        id: restore-cache
+-        uses: ./.github/actions/cache/restore
+-        with:
+-          provider: ${{ matrix.provider || (github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha') }}
+-
+-      - name: Configure Docker
+-        uses: ./.github/actions/configure-docker
+-        with:
+-          provider: ${{ matrix.provider || (github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha') }}
+-
+-      - name: Clear unnecessary files
+-        if: ${{ github.repository != 'bitcoin/bitcoin' || matrix.provider == 'gha' }} # Only needed on GHA runners
+-        uses: ./.github/actions/clear-files
+-
+-      - name: Enable bpfcc script
+-        if: ${{ env.CONTAINER_NAME == 'ci_native_asan' }}
+-        # In the image build step, no external environment variables are available,
+-        # so any settings will need to be written to the settings env file:
+-        run: sed -i "s|\${INSTALL_BCC_TRACING_TOOLS}|true|g" ./ci/test/00_setup_env_native_asan.sh
+-
+-      - name: Set mmap_rnd_bits
+-        if: ${{ env.CONTAINER_NAME == 'ci_native_tsan' || env.CONTAINER_NAME == 'ci_native_msan' || env.CONTAINER_NAME == 'ci_native_fuzz_msan' }}
+-        # Prevents crashes due to high ASLR entropy
+-        run: sudo sysctl -w vm.mmap_rnd_bits=28
+-
+-      - name: CI script
+-        run: ./ci/test_run_all.sh
+-
+-      - name: Save caches
+-        uses: ./.github/actions/cache/save
+-        with:
+-          provider: ${{ matrix.provider || (github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha') }}
+-
+-  lint:
+-    name: 'lint'
+-    runs-on: ${{ github.repository == 'bitcoin/bitcoin' && 'warp-ubuntu-latest-x64-2x' || 'ubuntu-latest' }}
+-    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
+-    timeout-minutes: 20
+-    env:
+-      CONTAINER_NAME: "bitcoin-linter"
+-    steps:
+-      - *ANNOTATION_PR_NUMBER
+-
+-      - name: Checkout
+-        uses: actions/checkout@v6
+-        with:
+-          ref: *CHECKOUT_REF_TMPL
+-          fetch-depth: 0
+-
+-      - name: Configure Docker
+-        uses: ./.github/actions/configure-docker
+-        with:
+-          provider: ${{ github.repository == 'bitcoin/bitcoin' && 'warp' || 'gha' }}
+-
+-      - name: CI script
+-        run: |
+-          git worktree add ../lint-worktree HEAD
+-          ../lint-worktree/ci/lint.py
 diff --git a/.github/workflows/mirror.yml b/.github/workflows/mirror.yml
 new file mode 100644
 index 0000000000..087c22890c
@@ -748,7 +2198,7 @@ index e2039df2fd..ee78874a90 100644
      CZMQNotificationInterface();
  
 diff --git a/src/zmq/zmqpublishnotifier.cpp b/src/zmq/zmqpublishnotifier.cpp
-index 07763a073d..6cfc5bf0d4 100644
+index 07763a073d..c22f506450 100644
 --- a/src/zmq/zmqpublishnotifier.cpp
 +++ b/src/zmq/zmqpublishnotifier.cpp
 @@ -36,6 +36,14 @@ static const char *MSG_RAWBLOCK  = "rawblock";
@@ -883,7 +2333,7 @@ index 07763a073d..6cfc5bf0d4 100644
  bool CZMQPublishHashBlockNotifier::NotifyBlock(const CBlockIndex *pindex)
  {
      uint256 hash = pindex->GetBlockHash();
-@@ -291,3 +402,110 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
+@@ -291,3 +402,107 @@ bool CZMQPublishSequenceNotifier::NotifyTransactionRemoval(const CTransaction &t
      LogDebug(BCLog::ZMQ, "Publish hashtx mempool removal %s to %s\n", hash.GetHex(), this->address);
      return SendSequenceMsg(*this, hash, /* Mempool (R)emoval */ 'R', mempool_sequence);
  }
@@ -964,20 +2414,17 @@ index 07763a073d..6cfc5bf0d4 100644
 +    uint256 hash = pindex->GetBlockHash();
 +    LogDebug(BCLog::ZMQ, "zmq: Publish chainconnected %s\n", hash.GetHex());
 +
-+    DataStream ss;
 +    std::vector<std::byte> block{};
 +    if (!m_get_block_by_index(block, *pindex)) {
 +        zmqError("Can't read block from disk");
 +        return false;
 +    }
 +
-+    ss << block;
-+
 +    std::vector<zmq_message_part> payload = {};
 +    payload.push_back(hashToZMQMessagePart(hash));
 +    payload.push_back(int32ToZMQMessagePart(pindex->nHeight));
 +    payload.push_back(hashToZMQMessagePart(pindex->GetBlockHeader().hashPrevBlock));
-+    payload.push_back(zmq_message_part(ss.begin(), ss.end()));
++    payload.push_back(std::move(block));
 +
 +    return SendZmqMessage(MSG_CHAINCONNECTED, payload);
 +}
@@ -1108,7 +2555,7 @@ index c9baad338c..9a1585de7f 100755
          assert_equal(self.nodes[1].getzmqnotifications(), [])
 diff --git a/test/functional/interface_zmq_chainblockconnected.py b/test/functional/interface_zmq_chainblockconnected.py
 new file mode 100644
-index 0000000000..720717f619
+index 0000000000..5ed289070d
 --- /dev/null
 +++ b/test/functional/interface_zmq_chainblockconnected.py
 @@ -0,0 +1,121 @@
@@ -1232,10 +2679,10 @@ index 0000000000..720717f619
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_chainheaderadded.py b/test/functional/interface_zmq_chainheaderadded.py
 new file mode 100644
-index 0000000000..1cfbb83f43
+index 0000000000..25752e86f0
 --- /dev/null
 +++ b/test/functional/interface_zmq_chainheaderadded.py
 @@ -0,0 +1,123 @@
@@ -1361,10 +2808,10 @@ index 0000000000..1cfbb83f43
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_chaintipchanged.py b/test/functional/interface_zmq_chaintipchanged.py
 new file mode 100644
-index 0000000000..16c557fdbe
+index 0000000000..9482f29d2c
 --- /dev/null
 +++ b/test/functional/interface_zmq_chaintipchanged.py
 @@ -0,0 +1,110 @@
@@ -1477,13 +2924,13 @@ index 0000000000..16c557fdbe
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempooladded.py b/test/functional/interface_zmq_mempooladded.py
 new file mode 100644
-index 0000000000..ff65386b8a
+index 0000000000..a89ec0ef68
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempooladded.py
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,82 @@
 +#!/usr/bin/env python3
 +# Copyright (c) 2015-2020 The Bitcoin Core developers
 +# Distributed under the MIT software license, see the accompanying
@@ -1552,8 +2999,7 @@ index 0000000000..ff65386b8a
 +        r_rawtx = payload[1]
 +        tx = CTransaction()
 +        tx.deserialize(BytesIO(r_rawtx))
-+        tx.calc_sha256()
-+        assert_equal(txid, tx.hash)
++        assert_equal(txid, tx.txid_hex)
 +
 +        self.log.info("Third payload element should be the transaction fee")
 +        r_fee = struct.unpack('<q', payload[2])[-1]
@@ -1566,10 +3012,10 @@ index 0000000000..ff65386b8a
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolconfirmed.py b/test/functional/interface_zmq_mempoolconfirmed.py
 new file mode 100644
-index 0000000000..805d975935
+index 0000000000..d30ef6192c
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolconfirmed.py
 @@ -0,0 +1,69 @@
@@ -1641,10 +3087,10 @@ index 0000000000..805d975935
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_block.py b/test/functional/interface_zmq_mempoolremove_block.py
 new file mode 100644
-index 0000000000..b676e7a4ba
+index 0000000000..699f22338e
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_block.py
 @@ -0,0 +1,61 @@
@@ -1708,10 +3154,10 @@ index 0000000000..b676e7a4ba
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_conflict.py b/test/functional/interface_zmq_mempoolremove_conflict.py
 new file mode 100644
-index 0000000000..1c0cdea7aa
+index 0000000000..290892a7c3
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_conflict.py
 @@ -0,0 +1,101 @@
@@ -1815,10 +3261,10 @@ index 0000000000..1c0cdea7aa
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_expiry.py b/test/functional/interface_zmq_mempoolremove_expiry.py
 new file mode 100644
-index 0000000000..48e4cfc676
+index 0000000000..843d58c3f8
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_expiry.py
 @@ -0,0 +1,111 @@
@@ -1932,10 +3378,10 @@ index 0000000000..48e4cfc676
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_reorg.py b/test/functional/interface_zmq_mempoolremove_reorg.py
 new file mode 100644
-index 0000000000..2a3f3dfc25
+index 0000000000..d74bd1a762
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_reorg.py
 @@ -0,0 +1,99 @@
@@ -2037,10 +3483,10 @@ index 0000000000..2a3f3dfc25
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_replaced.py b/test/functional/interface_zmq_mempoolremove_replaced.py
 new file mode 100644
-index 0000000000..069900cac0
+index 0000000000..9b509552db
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_replaced.py
 @@ -0,0 +1,65 @@
@@ -2108,10 +3554,10 @@ index 0000000000..069900cac0
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolremove_sizelimit.py b/test/functional/interface_zmq_mempoolremove_sizelimit.py
 new file mode 100644
-index 0000000000..c67f3a2b32
+index 0000000000..2468a92b2b
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolremove_sizelimit.py
 @@ -0,0 +1,84 @@
@@ -2127,7 +3573,9 @@ index 0000000000..c67f3a2b32
 +from random import randint
 +
 +from test_framework.test_framework import BitcoinTestFramework
-+from test_framework.util import create_confirmed_utxos, create_lots_of_big_transactions, gen_return_txouts
++from test_framework.blocktools import COINBASE_MATURITY
++from test_framework.util import create_lots_of_big_transactions, gen_return_txouts
++from test_framework.wallet import MiniWallet
 +
 +from test_framework.util_patched_zmq import ZMQSubscriber
 +
@@ -2139,7 +3587,6 @@ index 0000000000..c67f3a2b32
 +    def skip_test_if_missing_module(self):
 +        self.skip_if_no_py3_zmq()
 +        self.skip_if_no_bitcoind_zmq()
-+        self.skip_if_no_wallet()
 +
 +    def run_test(self):
 +        import zmq
@@ -2163,8 +3610,7 @@ index 0000000000..c67f3a2b32
 +
 +        self.log.info("Testing ZMQ publisher mempoolremoved")
 +        subscriber = ZMQSubscriber(socket, topic)
-+        self.restart_node(0, ["-acceptnonstdtxn=1", "-maxmempool=5",
-+                          "-spendzeroconfchange=0", arg_zmq_mempoolremoved])
++        self.restart_node(0, ["-maxmempool=5", arg_zmq_mempoolremoved])
 +        sleep(0.2)
 +        socket.connect(address)
 +
@@ -2172,36 +3618,36 @@ index 0000000000..c67f3a2b32
 +
 +        txouts = gen_return_txouts()
 +        relayfee = node0.getnetworkinfo()['relayfee']
-+        utxos = create_confirmed_utxos(self, relayfee, node0, 91)
++
++        num_of_batches = 75
++        wallet = MiniWallet(node0)
++        self.generate(wallet, 1 + num_of_batches)
++        self.generate(node0, COINBASE_MATURITY - 1)
++        utxos = [wallet.get_utxo(confirmed_only=True) for _ in range(1 + num_of_batches)]
 +
 +        self.log.info('Create a mempool tx that will be evicted')
-+        us0 = utxos.pop()
-+        inputs = [{"txid": us0["txid"], "vout": us0["vout"]}]
-+        outputs = {node0.getnewaddress(): 0.0001}
-+        tx = node0.createrawtransaction(inputs, outputs)
-+        node0.settxfee(relayfee)  # specifically fund this tx with low fee
-+        txF = node0.fundrawtransaction(tx)
-+        node0.settxfee(0)  # return to automatic fee selection
-+        txFS = node0.signrawtransactionwithwallet(txF['hex'])
-+        txid = node0.sendrawtransaction(txFS['hex'])
++        txid = wallet.send_self_transfer(
++            from_node=node0, utxo_to_spend=utxos.pop(0), fee_rate=relayfee)["txid"]
 +
-+        base_fee = relayfee*100
-+        for i in range(3):
++        # Each tx is ~65kvB, so a fee of relayfee*130 doubles the previous feerate
++        base_fee = relayfee * 130
++        for i in range(num_of_batches):
 +            create_lots_of_big_transactions(
-+                node0, txouts, utxos[30*i:30*i+30], 30, (i+1)*base_fee)
++                wallet, node0, (i + 1) * base_fee, 1, txouts, [utxos.pop(0)])
 +
 +        self.log.info('The tx should be evicted by now')
 +        # The ZMQ interface should receive the evicted transaction as the
 +        # first of multiple evicted transactions
++        assert txid not in node0.getrawmempool()
 +        expected = {txid: "SIZELIMIT"}
 +        subscriber.check_mempoolremoved_messages(expected)
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/interface_zmq_mempoolreplace.py b/test/functional/interface_zmq_mempoolreplace.py
 new file mode 100644
-index 0000000000..d771027d1d
+index 0000000000..6377cb0fd6
 --- /dev/null
 +++ b/test/functional/interface_zmq_mempoolreplace.py
 @@ -0,0 +1,79 @@
@@ -2283,13 +3729,13 @@ index 0000000000..d771027d1d
 +
 +
 +if __name__ == '__main__':
-+    ZMQTest().main()
++    ZMQTest(__file__).main()
 diff --git a/test/functional/test_framework/util_patched_zmq.py b/test/functional/test_framework/util_patched_zmq.py
 new file mode 100644
-index 0000000000..ccd5a0d0bb
+index 0000000000..0fa909480a
 --- /dev/null
 +++ b/test/functional/test_framework/util_patched_zmq.py
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,97 @@
 +#!/usr/bin/env python3
 +"""Utility functionality for the patched ZMQ interface."""
 +
@@ -2363,13 +3809,12 @@ index 0000000000..ccd5a0d0bb
 +        r_rawtx = payload[1]
 +        tx = CTransaction()
 +        tx.deserialize(BytesIO(r_rawtx))
-+        tx.calc_sha256()
-+        assert_equal(r_txid.hex(), tx.hash)
++        assert_equal(r_txid.hex(), tx.txid_hex)
 +
 +        # Second payload element should be the removal reason
 +        reason = struct.unpack('<i', payload[2])[-1]
 +
-+        return [tx.hash, reason]
++        return [tx.txid_hex, reason]
 +
 +    def discard_mempoolremoved_message_block(self):
 +        """Retrieves one ZMQ message from the subscriber and checks that

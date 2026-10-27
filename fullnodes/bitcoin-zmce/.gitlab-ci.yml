@@ -3,6 +3,8 @@ build bitcoin-zmce:
   variables:
     FULLNODE: bitcoin-zmce
     VERSION: "32_0"
+    KUBERNETES_MEMORY_REQUEST: "48Gi"
+    KUBERNETES_MEMORY_LIMIT: "48Gi"
 
 publish bitcoin-zmce:
   extends: .generic-publish

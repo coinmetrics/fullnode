@@ -11,6 +11,7 @@
 , boost
 , libevent
 , zeromq
+, libsodium
 , zlib
 , sqlite
 , qrencode
@@ -54,7 +55,7 @@ stdenv.mkDerivation (finalAttrs: {
     ++ optionals (stdenv.isDarwin && stdenv.isAarch64) [ autoSignDarwinBinariesHook ]
     ++ optionals withGui [ wrapQtAppsHook ];
 
-  buildInputs = [ boost libevent zeromq zlib ]
+  buildInputs = [ boost libevent zeromq libsodium zlib ]
     ++ lib.optionals (stdenv.hostPlatform.isLinux) [ libsystemtap ]
     ++ optionals withWallet [ sqlite ]
     ++ optionals withGui [ qrencode qtbase qttools ];
@@ -75,10 +76,11 @@ stdenv.mkDerivation (finalAttrs: {
       (lib.cmakeBool "WITH_ZMQ" true)
       (lib.cmakeBool "ENABLE_IPC" false)
       (lib.cmakeBool "WITH_USDT" (stdenv.hostPlatform.isLinux))
+      (lib.cmakeBool "BUILD_TESTS" finalAttrs.doCheck)
+      # The fuzz binary is never run here and is expensive to link.
+      (lib.cmakeBool "BUILD_FUZZ_BINARY" false)
     ]
     ++ lib.optionals (!finalAttrs.doCheck) [
-      (lib.cmakeBool "BUILD_TESTS" true)
-      (lib.cmakeBool "BUILD_FUZZ_BINARY" false)
       (lib.cmakeBool "BUILD_GUI_TESTS" false)
     ]
     ++ lib.optionals (!withWallet) [
@@ -106,10 +108,30 @@ stdenv.mkDerivation (finalAttrs: {
 
   nativeInstallCheckInputs = [
     versionCheckHook
+    (python3.withPackages (ps: [ ps.pyzmq ]))
   ];
   versionCheckProgram = "${placeholder "out"}/bin/bitcoin-cli";
   versionCheckProgramArg = "--version";
   doInstallCheck = true;
+
+  # Run the functional test suite (including the ZMCE ZMQ publishers) against
+  # the installed binaries, so that runtime linking issues are caught too.
+  installCheckPhase = ''
+    runHook preInstallCheck
+
+    export BITCOIND=$out/bin/bitcoind
+    export BITCOINCLI=$out/bin/bitcoin-cli
+    # Each functional test spawns several bitcoind nodes, so running one test
+    # per core OOMs on large CI runners. Cap the concurrency.
+    jobs=$(( NIX_BUILD_CORES < 4 ? NIX_BUILD_CORES : 4 ))
+    python3 test/functional/test_runner.py \
+      --jobs=$jobs \
+      --tmpdirprefix=$TMPDIR \
+      --combinedlogslen=200 \
+      --failfast
+
+    runHook postInstallCheck
+  '';
 
   passthru.tests = {
     smoke-test = nixosTests.bitcoind;

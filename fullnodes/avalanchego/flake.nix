@@ -21,9 +21,9 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "avalanchego";
-      version = "1.15.0";
+      version = "1.15.2";
       vars = {
-        buildGoModule = pkgs.buildGo125Module;
+        buildGoModule = pkgs.buildGo127Module;
       };
     };
   in {

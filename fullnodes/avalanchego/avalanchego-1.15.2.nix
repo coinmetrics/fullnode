@@ -1,26 +1,23 @@
-{ IOKit
-, buildGo123Module
+{ buildGoModule
 , fetchFromGitHub
 , lib
 , stdenv
 }:
 
-buildGo123Module rec {
+buildGoModule rec {
   pname = "avalanchego";
-  version = "1.13.0";
+  version = "1.15.2";
 
   src = fetchFromGitHub {
     owner = "ava-labs";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-t6KruPHt51wJ4aJaCG/8tuwKYtaifHvQ3z9oVknNS4E=";
+    hash = "sha256-fItjOsCwupssk6wwbh0rVsbpjdlgc+AoZUfyX5g6RW0=";
   };
 
-  vendorHash = "sha256-iyx9k8mPPOwpHo9lEdNPf0sQHxbKbNTVLUZrPYY8dWM=";
+  vendorHash = "sha256-pw21akhnE4C1xs9vsBG9xPsYS9z6KxNgulk6H8vXYAs=";
   # go mod vendor has a bug, see: https://github.com/golang/go/issues/57529
   proxyVendor = true;
-
-  buildInputs = lib.optionals stdenv.isDarwin [ IOKit ];
 
   subPackages = [ "main" ];
 

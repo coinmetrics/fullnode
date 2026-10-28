@@ -24,7 +24,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "avalanche-rosetta";
-      version = "0.1.50";
+      version = "0.1.51";
     };
   in {
     packages = generatedFlake.packages;

@@ -7,7 +7,6 @@
 , libbacktrace
 , libevent
 , pkg-config
-, sqlite
 , stdenv
 , zeromq
 }:
@@ -35,7 +34,6 @@ stdenv.mkDerivation rec {
     db4
     gmp
     libevent
-    sqlite
     zeromq
   ];
 

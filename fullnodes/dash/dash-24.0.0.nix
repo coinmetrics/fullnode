@@ -40,7 +40,6 @@ stdenv.mkDerivation rec {
   ];
 
   configureFlags = [
-    "--with-sqlite"
     "--with-boost-libdir=${boost.out}/lib"
   ];
 

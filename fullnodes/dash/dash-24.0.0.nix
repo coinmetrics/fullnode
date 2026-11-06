@@ -7,19 +7,20 @@
 , libbacktrace
 , libevent
 , pkg-config
+, sqlite
 , stdenv
 , zeromq
 }:
 
 stdenv.mkDerivation rec {
   pname = "dash";
-  version = "23.1.10";
+  version = "24.0.0";
 
   src = fetchFromGitHub {
     owner = "dashpay";
     repo = "dash";
     rev = "v${version}";
-    hash = "sha256-HNtld3i/ZKTlwSWKUkYvQz2lFLd9WaNpO/KkHU4lg0E=";
+    hash = "sha256-X9TvAJhj0v/ppp8WDi5iM8J2Y44Psc6hjomR5X5kH+g=";
   };
 
   nativeBuildInputs = [
@@ -34,10 +35,12 @@ stdenv.mkDerivation rec {
     db4
     gmp
     libevent
+    sqlite
     zeromq
   ];
 
   configureFlags = [
+    "--with-sqlite"
     "--with-boost-libdir=${boost.out}/lib"
   ];
 

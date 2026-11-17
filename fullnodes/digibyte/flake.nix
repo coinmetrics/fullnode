@@ -26,7 +26,7 @@
     generatedFlake = utils.lib.${system}.makeFlake {
       inherit makeImageConfig;
       name = "digibyte";
-      version = "8.26.2";
+      version = "9.26.7";
       vars = {
         withGui = false;
       };
